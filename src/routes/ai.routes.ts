@@ -16,5 +16,3 @@ import {
  router.post('/chat', chatWithAssistant);
 
  export default router;
-
- 
