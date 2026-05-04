@@ -50,7 +50,7 @@ export interface AIComposeRequest {
 }
 
 export interface AIChatMessage {
-  role: 'user' | 'assistat';
+  role: 'user' | 'assistant';
   content: string;
 }
 
