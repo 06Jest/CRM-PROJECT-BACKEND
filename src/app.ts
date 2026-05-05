@@ -8,7 +8,8 @@ import emailRoutes from './routes/email.routes';
 import smsRoutes from './routes/sms.routes';
 import stripeRoutes from './routes/stripe.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
-import { timeStamp } from 'node:console';
+import analyticsRoutes from './routes/analytics.routes';
+import agentsRoutes from './routes/agents.routes';
 
 
 const app = express();;
@@ -35,6 +36,8 @@ app.use('/api/ai', aiRoutes);;
 app.use('/api/email', emailRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/agents', agentsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
