@@ -65,12 +65,12 @@ export const sendAgentInviteEmail = async (
     <body>
       <div class="container">
         <div class="header">
-          <h1 style="margin:0;font-size:24px;">Welcome to MiniCRM</h1>
+          <h1 style="margin:0;font-size:24px;">Welcome to uniThread</h1>
           <p style="margin:8px 0 0 0;opacity:0.9;">${orgName}</p>
         </div>
         <div class="content">
           <p>Hi <strong>${agentName}</strong>,</p>
-          <p>${adminName} has invited you to join <strong>${orgName}</strong> on MiniCRM.
+          <p>${adminName} has invited you to join <strong>${orgName}</strong> on uniThread CRM.
           Here are your login credentials:</p>
           <div class="cred-box">
             <div class="cred-row">
@@ -85,7 +85,7 @@ export const sendAgentInviteEmail = async (
           <p><strong>Important:</strong> Use your Employee ID (not your email) to log in.
           You will be asked to change your password on first login.</p>
           <a href="${process.env.FRONTEND_URL}/login" class="button">
-            Log in to MiniCRM
+            Log in to uniThread
           </a>
           <p>If you have any issues, contact your admin: ${adminName}</p>
           <div class="footer">
@@ -100,7 +100,7 @@ export const sendAgentInviteEmail = async (
 
   await sendEmail({
     to,
-    subject: `You've been invited to ${orgName} on MiniCRM`,
+    subject: `You've been invited to ${orgName} on uniThread CRM`,
     body: html,
     isHtml: true,
   });
@@ -178,3 +178,171 @@ export const sendWeeklySummaryEmail = async (
     isHtml: true,
   });
 }
+export const sendPasswordResetEmail = async (
+  to: string,
+  resetUrl: string,
+  recipientName?: string
+): Promise<void> => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          color: #333;
+          margin: 0;
+          padding: 0;
+          background: #f5f5f5;
+        }
+        .wrapper {
+          max-width: 600px;
+          margin: 40px auto;
+          background: white;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .header {
+          background: #1976d2;
+          color: white;
+          padding: 32px 40px;
+          text-align: center;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 800;
+          letter-spacing: -0.5px;
+        }
+        .header p {
+          margin: 6px 0 0 0;
+          opacity: 0.85;
+          font-size: 14px;
+        }
+        .content {
+          padding: 40px;
+        }
+        .content p {
+          margin: 0 0 16px 0;
+          font-size: 15px;
+          line-height: 1.6;
+          color: #444;
+        }
+        .button-wrapper {
+          text-align: center;
+          margin: 32px 0;
+        }
+        .button {
+          display: inline-block;
+          background: #1976d2;
+          color: white;
+          padding: 14px 36px;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 700;
+          font-size: 16px;
+          letter-spacing: 0.3px;
+        }
+        .divider {
+          border: none;
+          border-top: 1px solid #eee;
+          margin: 24px 0;
+        }
+        .url-box {
+          background: #f5f5f5;
+          border: 1px solid #e0e0e0;
+          border-radius: 6px;
+          padding: 12px 16px;
+          font-family: monospace;
+          font-size: 12px;
+          color: #666;
+          word-break: break-all;
+        }
+        .footer {
+          padding: 24px 40px;
+          background: #fafafa;
+          border-top: 1px solid #eee;
+          text-align: center;
+        }
+        .footer p {
+          margin: 0;
+          font-size: 12px;
+          color: #999;
+          line-height: 1.6;
+        }
+        .expiry-badge {
+          display: inline-block;
+          background: #fff3e0;
+          color: #e65100;
+          border: 1px solid #ffcc80;
+          border-radius: 4px;
+          padding: 4px 10px;
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 24px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="wrapper">
+
+        <!-- Header -->
+        <div class="header">
+          <h1>🔐uniThreadCRM</h1>
+          <p>Password Reset Request</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+          <p>Hi ${recipientName ? `<strong>${recipientName}</strong>` : 'there'},</p>
+          <p>
+            We received a request to reset your uniThread password.
+            If you made this request, click the button below to
+            choose a new password.
+          </p>
+
+          <div class="expiry-badge">⏱ This link expires in 1 hour</div>
+
+          <div class="button-wrapper">
+            <a href="${resetUrl}" class="button">
+              Reset my password
+            </a>
+          </div>
+
+          <hr class="divider" />
+
+          <p style="font-size:13px;color:#666;">
+            If the button doesn't work, copy and paste this link
+            into your browser:
+          </p>
+          <div class="url-box">${resetUrl}</div>
+
+          <hr class="divider" />
+
+          <p style="font-size:13px;color:#888;">
+            If you didn't request a password reset, you can safely
+            ignore this email. Your password will not be changed.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <p>
+            This email was sent by uniThread.<br />
+            © ${new Date().getFullYear()} uniThread. All rights reserved.
+          </p>
+        </div>
+
+      </div>
+    </body>
+    </html>
+  `;
+
+  await sendEmail({
+    to,
+    subject: 'Reset your uniThread password',
+    body: html,
+    isHtml: true,
+  });
+};

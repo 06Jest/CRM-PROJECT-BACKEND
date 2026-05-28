@@ -75,3 +75,43 @@ export interface SendSmsRequest {
   to: string;
   body: string;
 }
+
+export interface SuperAdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'super_admin';
+  org_id: null;
+  is_active: boolean;
+}
+
+export interface JWTPayload {
+  sub: string;
+  email: string;
+  user_metadata?: {
+    org_id?: string;
+  };
+  role: string;
+}
+
+export interface DashboardStats {
+  totalOrganizations: number;
+  activeOrganizations: number;
+  totalAdmins: number;
+  totalAgents: number;
+  totalUsers: number;
+  monthlyRevenue: number;
+  weeklyRevenue: number;
+  systemHealth: {
+    messageCount: number;
+    contactCount: number;
+    dealCount: number;
+    activityCount: number;
+  };
+  recentLogins: any[];
+  organizationData: any[];
+  userGrowth: any[];
+  revenueGrowth: any[];
+  topOrganizations: any[];
+  userDistribution: any[];
+}

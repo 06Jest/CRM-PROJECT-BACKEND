@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import {
   sendSmsHandler,
   getSmsStatusHandler,
@@ -7,7 +7,7 @@ import {
 } from '../controllers/sms.controller';
 
 const router = Router();
-router.use(requireAuth);
+router.use(verifyToken);
 
 router.post('/send', sendSmsHandler);
 router.get('/status/:sid', getSmsStatusHandler);

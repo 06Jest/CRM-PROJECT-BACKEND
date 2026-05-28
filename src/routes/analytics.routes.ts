@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import {
   getAllAnalytics,
   getSystemStatsHandler,
 } from '../controllers/analytics.controller';
 
 const router = Router();
-router.use(requireAuth);
+router.use(verifyToken);
 
 router.get('/', getAllAnalytics);
 

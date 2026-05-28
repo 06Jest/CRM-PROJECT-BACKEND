@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import { createAgent } from '../controllers/agents.controller';
 
 const router = Router();
-router.use(requireAuth);
+router.use(verifyToken);
 
 router.post('/create', createAgent);
 

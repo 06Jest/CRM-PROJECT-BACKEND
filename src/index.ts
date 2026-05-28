@@ -7,7 +7,7 @@ const PORT  = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`
   ╔═══════════════════════════════════════╗
-  ║        MiniCRM Backend Server         ║
+  ║     uniThread CRM Backend Server      ║
   ╠═══════════════════════════════════════╣
   ║  Status:  Running                     ║
   ║  Port:    ${PORT}                        ║
