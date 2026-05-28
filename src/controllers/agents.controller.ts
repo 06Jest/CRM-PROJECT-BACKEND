@@ -13,47 +13,68 @@ export const createAgent = async (
   res: Response
 ): Promise<void> => {
   try {
-    const {
-      name,
-      email,
-      employeeId,
-      tempPassword,
-      orgId,
-      orgName,
-      adminName,
-    } = req.body;
+    const { name, email, employeeId, tempPassword, orgName } = req.body;
+    const adminUser = (req as any).user;
 
-    // Validate required fields
-    if (!name || !email || !employeeId || !tempPassword || !orgId) {
+    // Validate
+    if (!name || !email || !employeeId || !tempPassword) {
       res.status(400).json({
         success: false,
-        error: 'name, email, employeeId, tempPassword, and orgId are required',
+        error: 'name, email, employeeId, and tempPassword are required',
       });
       return;
     }
 
+    // Get admin's org_id from the database server-side
+    // Never trust org_id from the frontend request body
+    const { data: adminProfile, error: adminError } =
+      await supabaseAdmin
+        .from('profiles')
+        .select('org_id, org_name, name')
+        .eq('id', adminUser.id)
+        .single();
+
+    if (adminError || !adminProfile?.org_id) {
+      res.status(400).json({
+        success: false,
+        error: 'Admin organization not found. Make sure your account has an org_id.',
+      });
+      return;
+    }
+
+    const orgId = adminProfile.org_id;
+    const resolvedOrgName = orgName || adminProfile.org_name || 'MiniCRM';
+    const adminName = adminProfile.name || 'Admin';
+
+    // Check Employee ID uniqueness within the org
     const { data: existing } = await supabaseAdmin
       .from('profiles')
       .select('id')
       .eq('employee_id', employeeId)
+      .eq('org_id', orgId)
       .single();
 
     if (existing) {
       res.status(400).json({
         success: false,
-        error: `Employee ID ${employeeId} is already in use`,
+        error: `Employee ID ${employeeId} is already in use in your organization`,
       });
       return;
     }
 
+    // Create Supabase Auth user
+    // Store org_id in metadata so agent's session always has it
     const { data: authData, error: authError } =
       await supabaseAdmin.auth.admin.createUser({
         email,
         password: tempPassword,
-        email_confirm: true, // skip email verification
+        email_confirm: true,
         user_metadata: {
           name,
           role: 'agent',
+          org_id: orgId,        // ← KEY: in JWT metadata
+          org_name: resolvedOrgName,
+          employee_id: employeeId,
         },
       });
 
@@ -65,7 +86,7 @@ export const createAgent = async (
       return;
     }
 
-    const adminUser = (req as any).user;
+    // Create profile row with same org_id as admin
     const { data: profile, error: profileError } =
       await supabaseAdmin
         .from('profiles')
@@ -75,10 +96,10 @@ export const createAgent = async (
           email,
           role: 'agent',
           employee_id: employeeId,
-          org_id: orgId,
-          org_name: orgName,
+          org_id: orgId,           // ← same as admin
+          org_name: resolvedOrgName,
           is_active: true,
-          created_by: adminUser?.id,
+          created_by: adminUser.id,
         })
         .select()
         .single();
@@ -87,33 +108,27 @@ export const createAgent = async (
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       res.status(500).json({
         success: false,
-        error: 'Failed to create profile: ' + profileError.message,
+        error: 'Failed to create agent profile: ' + profileError.message,
       });
       return;
     }
 
+    // Send invite email
     try {
       await sendAgentInviteEmail(
-        email,
-        name,
-        employeeId,
-        tempPassword,
-        adminName || 'Admin',
-        orgName || 'MiniCRM'
+        email, name, employeeId, tempPassword,
+        adminName, resolvedOrgName
       );
     } catch (emailErr) {
       console.error('[AGENTS] Invite email failed:', emailErr);
     }
 
-    console.log(`[AGENTS] Created agent: ${name} (${employeeId})`);
-
     res.json({
       success: true,
       data: profile,
-      message: `Agent ${name} created. Invite email sent to ${email}.`,
+      message: `Agent ${name} created with org_id ${orgId}`,
     });
   } catch (err: any) {
-    console.error('[AGENTS] Create error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 };

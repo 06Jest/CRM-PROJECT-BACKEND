@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import {
   getPlans,
   createCheckout,
@@ -12,7 +12,7 @@ const router = Router();
 
 router.post('/webhook', stripeWebhook);
 
-router.use(requireAuth);
+router.use(verifyToken);
 router.get('/plans', getPlans);
 router.get('/subscription', getSubscription);
 router.post('/checkout', createCheckout);

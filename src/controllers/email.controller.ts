@@ -4,6 +4,7 @@ import {
   sendAgentInviteEmail,
   sendWeeklySummaryEmail,
   verifySmtpConnection,
+  sendPasswordResetEmail
  } from "../services/email.service";
 
 export const sendEmailHandler = async (req: Request, res: Response): Promise<void> => {
@@ -76,4 +77,21 @@ export const verifySmtpHandler = async (
     success: ok,
     message: ok ? 'SMTP connected successfully' : 'SMTP connection failed',
   });
+};
+
+export const sendPasswordResetHandler = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { to, resetUrl, recipientName } = req.body;
+    if (!to || !resetUrl) {
+      res.status(400).json({ success: false, error: 'to and resetUrl required' });
+      return;
+    }
+    await sendPasswordResetEmail(to, resetUrl, recipientName);
+    res.json({ success: true, message: 'Password reset email sent' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 };

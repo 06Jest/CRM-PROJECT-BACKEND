@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.middleware'; 
+import { verifyToken } from '../middleware/auth.middleware'; 
 import {
   dashboardSummary, contactIntel,
   dealPredict, composeMessage, chatWithAssistant,
@@ -7,7 +7,7 @@ import {
 
  const router = Router();
 
- router.use(requireAuth);
+ router.use(verifyToken);
 
  router.post('/dashboard-summary', dashboardSummary);
  router.post('/contact-intel', contactIntel);
