@@ -6,10 +6,9 @@ export const supabaseAdmin = createClient(
   config.supabase.serviceRoleKey
 );
 
-// Regular Client (for user-scoped operations)
+
 export const supabase = createClient(
   config.supabase.url,
   config.supabase.anonKey
 );
 
-console.log('✅ Supabase clients initialized');

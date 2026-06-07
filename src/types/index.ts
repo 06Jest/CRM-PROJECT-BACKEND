@@ -1,3 +1,22 @@
+import 'express';
+
+declare global {
+  namespace Express {
+    interface Request {
+      superAdminId?: string;
+      token?: string;
+      
+      user?: {
+        id: string;
+        orgId: string;
+        role: string;
+        isActive: boolean;
+        name: string;
+      };
+    }
+  }
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -115,3 +134,4 @@ export interface DashboardStats {
   topOrganizations: any[];
   userDistribution: any[];
 }
+

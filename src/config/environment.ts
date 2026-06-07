@@ -11,7 +11,6 @@ export const config = {
     jwtSecret: process.env.JWT_SECRET || '',
   },
 
-  // App
   app: {
     port: parseInt(process.env.PORT || '5000', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
