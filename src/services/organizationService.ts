@@ -1,10 +1,7 @@
 import { supabaseAdmin } from '../utils/supabase';
 import { logAuditEvent } from './auditService';
 
-/**
- * Pause an organization's subscription
- * Prevents logins for all users in the org
- */
+
 export const pauseOrganization = async (
   orgId: string,
   superAdminId: string,

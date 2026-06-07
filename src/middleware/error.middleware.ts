@@ -12,24 +12,23 @@ export class AppError extends Error {
 }
 
 export const errorHandler = (
-  err: Error | AppError,
+  err: AppError,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   console.error('Error:', err);
 
-  if (err instanceof AppError) {
+  if (err) {
     return res.status(err.statusCode).json({
       success: false,
-      error: err.message,
+      error: `${err.message}`,
     });
   }
 
-  // Default error
   return res.status(500).json({
     success: false,
-    error: 'Internal server error',
+    error: 'Internal Server Error',
   });
 };
 

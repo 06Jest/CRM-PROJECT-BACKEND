@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { verifyToken} from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import {
   sendEmailHandler,
   sendInviteHandler,
   sendWeeklySummaryHandler,
   verifySmtpHandler,
   sendPasswordResetHandler,
-} from '../controllers/email.controller';
+} from '../controllers/email.controller'; 
 
 const router = Router();
 router.use(verifyToken);

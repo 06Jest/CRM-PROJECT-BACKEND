@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import type { SendEmailRequest } from '../types';
-import e from 'express';
 
 const createTransporter = () => nodemailer.createTransport({
   host: process.env.SMTP_HOST,
