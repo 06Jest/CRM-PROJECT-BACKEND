@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { updateContactFromDB, addContactToDB, addContactFromLeadsToDB, getContactsFromDB, deleteContactFromDB } from "../services/contactsService";
+import { updateLeadFromDB, addLeadToDB, getLeadsFromDB, deleteLeadFromDB } from "../services/leadsService";
 import { AppError } from "../middleware/error.middleware";
 
-export const getContacts = async (
+export const getLeads = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -14,11 +14,11 @@ export const getContacts = async (
       throw new AppError(400, 'orgId is required');
     }
 
-    const contacts = await getContactsFromDB(orgId);
+    const leads = await getLeadsFromDB(orgId);
     return res.status(200).json({
       success: true,
-      message: 'Contacts fetch successful',
-      data: contacts, 
+      message: 'Leads fetch successful',
+      data: leads, 
       
     });
     
@@ -27,7 +27,7 @@ export const getContacts = async (
   }
 }
 
-export const addContact = async (
+export const addLead = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -36,7 +36,7 @@ export const addContact = async (
     const orgId = req.user?.orgId;
     const name = req.user?.name;
     const userId = req.user?.id;
-    const contact = req.body;
+    const lead = req.body;
 
     if (!orgId || !name || !userId) {
       throw new AppError(
@@ -45,10 +45,10 @@ export const addContact = async (
       );
     }
 
-    const data = await addContactToDB(orgId, userId, name, contact);
+    const data = await addLeadToDB(orgId, userId, name, lead);
     return res.status(200).json({
       success: true,
-      message: 'Add Contact successful',
+      message: 'Add Lead successful',
       data, 
     });
     
@@ -57,44 +57,14 @@ export const addContact = async (
   }
 }
 
-export const addContactFromLeads = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const orgId = req.user?.orgId;
-    const name = req.user?.name;
-    const userId = req.user?.id;
-    const contact = req.body;
-
-    if (!orgId || !name || !userId) {
-      throw new AppError(
-        401,
-        'Unauthorized user'
-      );
-    }
-
-    const data = await addContactFromLeadsToDB(orgId, userId, name, contact);
-    return res.status(200).json({
-      success: true,
-      message: 'Add Contact successful',
-      data, 
-    });
-    
-  } catch (err) {
-    next(err);
-  }
-}
-
-export const updateContact = async (
+export const updateLead = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const id = req.body.id;
-    const contact = req.body.contact;
+    const lead = req.body.lead;
     const userId = req.user?.id;
 
     if (!id) {
@@ -103,7 +73,6 @@ export const updateContact = async (
         'Contact required'
       );
     }
-
     if (!userId) {
       throw new AppError(
         401,
@@ -111,10 +80,10 @@ export const updateContact = async (
       );
     }
 
-    const data = await updateContactFromDB(id, userId, contact);
+    const data = await updateLeadFromDB(id, userId, lead);
     return res.status(200).json({
       success: true,
-      message: 'Update Contact successful',
+      message: 'Update Lead successful',
       data, 
     });
     
@@ -123,7 +92,7 @@ export const updateContact = async (
   }
 }
 
-export const deleteContact = async (
+export const deleteLead = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -135,7 +104,7 @@ export const deleteContact = async (
     if (!id) {
       throw new AppError(
         401,
-        'Contact required'
+        'Lead required'
       );
     }
     if (!userId) {
@@ -145,10 +114,10 @@ export const deleteContact = async (
       );
     }
 
-    const data = await deleteContactFromDB(id, userId);
+    const data = await deleteLeadFromDB(id, userId);
     return res.status(200).json({
       success: true,
-      message: 'Delete Contact successful',
+      message: 'Delete Lead successful',
       data, 
     });
     

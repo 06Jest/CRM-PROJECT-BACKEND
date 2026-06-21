@@ -1,4 +1,15 @@
-export type ContactSource = 
+export type LeadsStatus =
+  | "Lead"
+  | "Contacted"
+  | "Qualified"
+  | "Opportunity"
+  | "Customer"
+  | "Inactive"
+  | "Lost"
+  | "Churned";
+
+
+export type LeadSource = 
   | "Website"
   | "Referral"
   | "Facebook"
@@ -22,22 +33,13 @@ export type ContactSource =
   | "Family"
   | "Other";
 
-export type ContactStatus =
-  | "Contacted"
-  | "Qualified"
-  | "Opportunity"
-  | "Customer"
-  | "Inactive"
-  | "Lost"
-  | "Churned";
-
-
 export type Gender = "Male" | "Female" | "Prefer not to say";
 export type Priority = "Highest" | "High" | "Low";
 
-export interface Contact {
+export interface Lead {
   id: string;
-  lead_id?:string;
+  title: string;
+  source: LeadSource;
   first_name: string;
   last_name: string;
   suffix?: string;
@@ -45,11 +47,10 @@ export interface Contact {
   birth_date?: string | null;
   email: string;
   phone: string;
-  source: ContactSource;
   company_name?: string;
-  position?: string;  
+  position?: string;
   department?: string;
-  status: ContactStatus;
+  status: LeadsStatus;
   priority: Priority;
   notes?: string;
   owner_id: string;

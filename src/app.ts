@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import contactRoutes from './routes/contacts.routes';
+import leadsRoutes from './routes/leads.routes'
+import dealsRoutes from './routes/deals.routes';
 import aiRoutes from './routes/ai.routes';
 import emailRoutes from './routes/email.routes';
 import smsRoutes from './routes/sms.routes';
@@ -32,7 +34,9 @@ app.use(express.json({ limit: '10mb'}));
 app.use(morgan('dev'));
 
 app.use(express.urlencoded({ extended: true }));
+app.use('/api/leads', leadsRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api/deals', dealsRoutes);
 
 app.use('/health', healthRoutes);
 app.use('/api/admin', adminRoutes);
