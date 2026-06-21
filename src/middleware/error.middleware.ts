@@ -26,7 +26,7 @@ export const errorHandler = (
     });
   }
 
-  return res.status(500).json({
+  return res.status(500).json({ 
     success: false,
     error: 'Internal Server Error',
   });
