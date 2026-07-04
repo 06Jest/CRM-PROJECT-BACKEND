@@ -12,7 +12,6 @@ export interface Deal {
   stage: DealStage;
   notes?: string;
   owner_id: string;         
-  owner_name: string;
   org_id: string; 
   value: number;
   created_at: string;

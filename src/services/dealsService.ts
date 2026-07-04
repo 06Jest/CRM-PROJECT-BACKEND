@@ -17,11 +17,9 @@ export const getDealsFromDB = async (orgId: string ): Promise<Deal[]> => {
 export const addDealToDB = async (
   orgId: string,
   userId: string,
-  userName: string,
   deal: Omit<Deal, 
         'id' | 
         'created_at' |
-        'owner_name' |
         'deleted_at' |
         'deleted_by' |
         'close_date' |
@@ -34,7 +32,6 @@ export const addDealToDB = async (
         ...deal,
         org_id: orgId,
         owner_id: userId,
-        owner_name: userName,
         updated_by: userId,
       }])
       .select()
@@ -55,7 +52,6 @@ export const updateDealFromDB = async (
   'contact_id' |
   'owner_id' | 
   'org_id' | 
-  'owner_name' |
   'deleted_at' |
   'deleted_by' |
   'close_date' |
@@ -66,7 +62,7 @@ export const updateDealFromDB = async (
       .from('deals')
       .update([{
         ...deal,
-        updated_by: userId
+        updated_by: userId  
       }])
       .eq('id', id)
       .select()
@@ -88,7 +84,6 @@ export const closeDealFromDB = async (
   'contact_id' |
   'owner_id' | 
   'org_id' | 
-  'owner_name' |
   'deleted_at' |
   'deleted_by' 
   >
