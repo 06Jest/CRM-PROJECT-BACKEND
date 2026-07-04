@@ -34,18 +34,17 @@ export const addDeal = async (
 ) => {
   try {
     const orgId = req.user?.orgId;
-    const name = req.user?.name;
     const userId = req.user?.id;
     const deal = req.body;
 
-    if (!orgId || !name || !userId) {
+    if (!orgId || !userId) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await addDealToDB(orgId, userId, name, deal);
+    const data = await addDealToDB(orgId, userId,  deal);
     return res.status(200).json({
       success: true,
       message: 'Add Deal successful',
