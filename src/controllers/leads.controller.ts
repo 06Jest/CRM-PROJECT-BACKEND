@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { updateLeadFromDB, addLeadToDB, getLeadsFromDB, deleteLeadFromDB } from "../services/leadsService";
 import { AppError } from "../middleware/error.middleware";
+import { getProfileByIdFromDB } from '../services/profiles.service'
 
 export const getLeads = async (
   req: Request,
@@ -34,18 +35,17 @@ export const addLead = async (
 ) => {
   try {
     const orgId = req.user?.orgId;
-    const name = req.user?.name;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
     const lead = req.body;
 
-    if (!orgId || !name || !userId) {
+    if (!orgId || !userId) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await addLeadToDB(orgId, userId, name, lead);
+    const data = await addLeadToDB(orgId, userId, lead);
     return res.status(200).json({
       success: true,
       message: 'Add Lead successful',
@@ -65,7 +65,8 @@ export const updateLead = async (
   try {
     const id = req.body.id;
     const lead = req.body.lead;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
+    const orgId = req.user?.orgId;
 
     if (!id) {
       throw new AppError(
@@ -73,14 +74,14 @@ export const updateLead = async (
         'Contact required'
       );
     }
-    if (!userId) {
+    if (!userId || !orgId ) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await updateLeadFromDB(id, userId, lead);
+    const data = await updateLeadFromDB(id, orgId, userId, lead);
     return res.status(200).json({
       success: true,
       message: 'Update Lead successful',
@@ -99,7 +100,8 @@ export const deleteLead = async (
 ) => {
   try {
     const { id } = req.body;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
+    const orgId = req.user?.orgId;
 
     if (!id) {
       throw new AppError(
@@ -107,14 +109,14 @@ export const deleteLead = async (
         'Lead required'
       );
     }
-    if (!userId) {
+    if (!userId || !orgId) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await deleteLeadFromDB(id, userId);
+    const data = await deleteLeadFromDB(id, orgId, userId);
     return res.status(200).json({
       success: true,
       message: 'Delete Lead successful',

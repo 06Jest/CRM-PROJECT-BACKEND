@@ -34,7 +34,7 @@ export const addDeal = async (
 ) => {
   try {
     const orgId = req.user?.orgId;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
     const deal = req.body;
 
     if (!orgId || !userId) {
@@ -64,7 +64,7 @@ export const updateDeal = async (
   try {
     const id = req.body.id;
     const deal = req.body.deal;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
 
     if (!id) {
       throw new AppError(
@@ -100,7 +100,7 @@ export const closeDeal = async (
     const id = req.body.id;
     const deal = req.body.deal;
     const outcome = req.body.deal.stage;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
 
     if (!id) {
       throw new AppError(
@@ -141,7 +141,7 @@ export const deleteDeal = async (
 ) => {
   try {
     const { id } = req.body;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
 
     if (!id) {
       throw new AppError(

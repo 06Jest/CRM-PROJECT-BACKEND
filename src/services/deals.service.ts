@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../utils/supabase';
+import { supabaseAdmin } from '../config/supabase';
 import type { Deal } from '../types/deal';
 
 export const getDealsFromDB = async (orgId: string ): Promise<Deal[]> => {

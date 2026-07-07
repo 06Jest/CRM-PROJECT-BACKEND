@@ -1,72 +1,28 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin} from '../utils/supabase';
+import { supabaseAdmin} from '../config/supabase';
+import { AppError } from './error.middleware';
+import { verifyAccessToken } from '../services/jwt.service';
 
-interface SuperAdminSession {
-  super_admin_id: string;
-  expires_at: string;
-} 
 
-export const verifyToken = async (
+export const verifyToken = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const authHeader = req.headers.authorization;
-   
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        error: 'Missing authorization token',
-      });
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      throw new AppError(401, "Missing authorization token");
     }
 
-    const token = authHeader.substring(7);
+    const token = authHeader.slice(7);
 
-    req.token = token;
-
-
-    const response = await supabaseAdmin
-      .rpc('verify_super_admin_session', {
-        p_token: token,
-      })
-      .single();
-
-    const session = response.data as SuperAdminSession | null;;
-    const error = response.error;
-
-    if (error || !session) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid or expired session',
-      });
-    }
-
-
-    if (
-      new Date(session.expires_at) <
-      new Date()
-    ) {
-      return res.status(401).json({
-        success: false,
-        error: 'Session expired',
-      });
-    }
-
-    req.superAdminId =
-      session.super_admin_id;
+    req.user = verifyAccessToken(token);
 
     next();
   } catch (err) {
-    console.error(
-      'Session verification error:',
-      err
-    );
-
-    return res.status(401).json({
-      success: false,
-      error: 'Unauthorized',
-    });
+    next(err);
   }
 };
 
@@ -164,7 +120,7 @@ export const authenticateUser = async (
     const { data: profile, error} 
     = await supabaseAdmin
       .from('profiles')
-      .select(`id, name, org_id, role, is_active`)
+      .select(`id, name, org_id, role, status`)
       .eq('id', userId)
       .single();
 
@@ -177,14 +133,14 @@ export const authenticateUser = async (
       });
     }
     
-    if ( !profile.is_active) {
+    if ( profile.status !== 'active') {
       return res.status(403).json({
         success: false,
         error: 'Account deactivated',
       });
     }
 
-    if (profile.role === 'super_admin') {
+    if (!profile.role) {
       return res.status(403).json({
         success: false ,
         error: `Unauthorized role`,
@@ -192,11 +148,9 @@ export const authenticateUser = async (
     }
 
      req.user = {
-      id: profile.id,
-      name: profile.name,
-      orgId: profile.org_id,
+      sub: profile.id,
       role: profile.role,
-      isActive: profile.is_active,
+      orgId: profile.org_id
     };
     
     next();

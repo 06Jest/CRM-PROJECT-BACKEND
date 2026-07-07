@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../utils/supabase';
+import { supabaseAdmin } from '../config/supabase';
 import type { Lead } from '../types/lead';
 
 export const getLeadsFromDB = async (orgId: string ): Promise<Lead[]> => {
@@ -18,7 +18,6 @@ export const getLeadsFromDB = async (orgId: string ): Promise<Lead[]> => {
 export const addLeadToDB = async (
   orgId: string,
   userId: string,
-  userName: string,
   lead: Omit<Lead, 
         'id' | 
         'created_at' | 
@@ -32,7 +31,6 @@ export const addLeadToDB = async (
         ...lead,
         org_id: orgId,
         owner_id: userId,
-        owner_name: userName,
         updated_by: userId,
       }])
       .select()
@@ -46,6 +44,7 @@ export const addLeadToDB = async (
 
 export const updateLeadFromDB = async (
   id: string,
+  orgId: string,
   userId: string,
   lead: Omit<Lead, 
   'id' | 
@@ -64,6 +63,7 @@ export const updateLeadFromDB = async (
         updated_by: userId
       }])
       .eq('id', id)
+      .eq('org_id', orgId)
       .select()
       .single()
 
@@ -75,6 +75,7 @@ export const updateLeadFromDB = async (
 
 export const deleteLeadFromDB = async (
   id: string,
+  orgId: string,
   userId: string
 ) : Promise<string> => {
   const { error } = await supabaseAdmin
@@ -84,6 +85,7 @@ export const deleteLeadFromDB = async (
         deleted_by: userId,
       })
       .eq('id', id)
+      .eq('org_id', orgId)
 
     if (error) {
       throw new Error(error.message);
