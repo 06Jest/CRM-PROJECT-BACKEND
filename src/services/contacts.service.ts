@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../utils/supabase';
+import { supabaseAdmin } from '../config/supabase';
 import type { Contact } from '../types/contact';
 
 export const getContactsFromDB = async (orgId: string ): Promise<Contact[]> => {
@@ -18,7 +18,6 @@ export const getContactsFromDB = async (orgId: string ): Promise<Contact[]> => {
 export const addContactToDB = async (
   orgId: string,
   userId: string,
-  userName: string,
   contact: Omit<Contact, 'id' | 'lead_id' | 'created_at'>
 ) : Promise<Contact> => {
   const { data, error } = await supabaseAdmin
@@ -27,7 +26,6 @@ export const addContactToDB = async (
         ...contact,
         org_id: orgId,
         owner_id: userId,
-        owner_name: userName
       }])
       .select()
       .single()
@@ -41,7 +39,6 @@ export const addContactToDB = async (
 export const addContactFromLeadsToDB = async (
   orgId: string,
   userId: string,
-  userName: string,
   contact: Omit<Contact, 
       'id' | 
       'created_at' | 
@@ -57,7 +54,6 @@ export const addContactFromLeadsToDB = async (
         ...contact,
         org_id: orgId,
         owner_id: userId,
-        owner_name: userName,
         updated_by: userId,
         status: 'Contacted'
       }])
@@ -72,6 +68,7 @@ export const addContactFromLeadsToDB = async (
 
 export const updateContactFromDB = async (
   id: string,
+  orgId: string,
   userId: string,
   contact: Omit<Contact, 
       'id' | 
@@ -79,7 +76,6 @@ export const updateContactFromDB = async (
       'created_at' | 
       'owner_id' | 
       'org_id' | 
-      'owner_name' |
       'deleted_at' |
       'deleted_by' 
   >
@@ -91,6 +87,7 @@ export const updateContactFromDB = async (
         updated_by: userId
       }])
       .eq('id', id)
+      .eq('org_id', orgId)
       .select()
       .single()
 
@@ -102,6 +99,7 @@ export const updateContactFromDB = async (
 
 export const deleteContactFromDB = async (
   id: string,
+  orgId: string,
   userId: string
 ) : Promise<string> => {
   const { error } = await supabaseAdmin
@@ -111,6 +109,7 @@ export const deleteContactFromDB = async (
         deleted_by: userId,
       })
       .eq('id', id)
+      .eq('org_id', orgId)
 
     if (error) {
       throw new Error(error.message);

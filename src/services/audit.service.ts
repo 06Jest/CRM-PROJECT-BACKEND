@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../utils/supabase';
+import { supabaseAdmin} from '../config/supabase';
 
 interface AuditEvent {
   event_type: string;

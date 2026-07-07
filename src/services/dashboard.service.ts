@@ -1,18 +1,18 @@
-import { supabaseAdmin } from '../utils/supabase';
+import { supabase } from '../config/supabase';
 import type { DashboardStats } from '../types';
 
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   try {
 
-    const { data: orgs, error: orgsError } = await supabaseAdmin
+    const { data: orgs, error: orgsError } = await supabase
       .from('organizations')
       .select('*');
 
     if (orgsError) throw orgsError;
 
 
-    const { data: profiles, error: profilesError } = await supabaseAdmin
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
       .neq('role', 'super_admin');
@@ -22,24 +22,24 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     const admins = profiles?.filter(p => p.role === 'admin') || [];
     const agents = profiles?.filter(p => p.role === 'agent') || [];
 
-    const { count: messageCount } = await supabaseAdmin
+    const { count: messageCount } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true });
 
-    const { count: contactCount } = await supabaseAdmin
+    const { count: contactCount } = await supabase
       .from('contacts')
       .select('*', { count: 'exact', head: true });
 
-    const { count: dealCount } = await supabaseAdmin
+    const { count: dealCount } = await supabase
       .from('deals')
       .select('*', { count: 'exact', head: true });
 
-    const { count: activityCount } = await supabaseAdmin
+    const { count: activityCount } = await supabase
       .from('activities')
       .select('*', { count: 'exact', head: true });
 
     // Get recent logins
-    const { data: recentLogins } = await supabaseAdmin
+    const { data: recentLogins } = await supabase
       .from('super_admin_sessions')
       .select('*, super_admin:super_admin_id(name, email)')
       .order('created_at', { ascending: false })
@@ -51,7 +51,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     let weeklyRevenue = 0;
 
     for (const org of orgs || []) {
-      const { data: invoices } = await supabaseAdmin
+      const { data: invoices } = await supabase
         .from('stripe_invoices')
         .select('amount_paid, created')
         .eq('org_id', org.id);

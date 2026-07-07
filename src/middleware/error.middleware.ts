@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { config } from "../config/environment";
 
 
 export class AppError extends Error {
@@ -12,17 +13,24 @@ export class AppError extends Error {
 }
 
 export const errorHandler = (
-  err: AppError,
-  req: Request,
+  err: unknown,
+  _req: Request,
   res: Response,
   next: NextFunction
 ) => {
   console.error('Error:', err);
 
-  if (err) {
+  if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       success: false,
-      error: `${err.message}`,
+      error: err.message,
+    });
+  }
+
+  if (config.APP.nodeEnv === "development") {
+    return res.status(500).json({
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown Error",
     });
   }
 

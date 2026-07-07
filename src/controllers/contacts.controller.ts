@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { updateContactFromDB, addContactToDB, addContactFromLeadsToDB, getContactsFromDB, deleteContactFromDB } from "../services/contactsService";
 import { AppError } from "../middleware/error.middleware";
+import { getProfileByIdFromDB } from "../services/profiles.service";
 
 export const getContacts = async (
   req: Request,
@@ -34,18 +35,18 @@ export const addContact = async (
 ) => {
   try {
     const orgId = req.user?.orgId;
-    const name = req.user?.name;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
     const contact = req.body;
+    
 
-    if (!orgId || !name || !userId) {
+    if (!orgId || !userId) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await addContactToDB(orgId, userId, name, contact);
+    const data = await addContactToDB(orgId, userId, contact);
     return res.status(200).json({
       success: true,
       message: 'Add Contact successful',
@@ -64,19 +65,18 @@ export const addContactFromLeads = async (
 ) => {
   try {
     const orgId = req.user?.orgId;
-    const name = req.user?.name;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
     const contact = req.body;
 
-    if (!orgId || !name || !userId) {
+    if (!orgId || !userId) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await addContactFromLeadsToDB(orgId, userId, name, contact);
-    return res.status(200).json({
+    const data = await addContactFromLeadsToDB(orgId, userId, contact);
+    return res.status(201).json({
       success: true,
       message: 'Add Contact successful',
       data, 
@@ -95,7 +95,8 @@ export const updateContact = async (
   try {
     const id = req.body.id;
     const contact = req.body.contact;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
+    const orgId = req.user?.orgId;
 
     if (!id) {
       throw new AppError(
@@ -104,14 +105,14 @@ export const updateContact = async (
       );
     }
 
-    if (!userId) {
+    if (!userId || !orgId) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await updateContactFromDB(id, userId, contact);
+    const data = await updateContactFromDB(id, orgId, userId, contact);
     return res.status(200).json({
       success: true,
       message: 'Update Contact successful',
@@ -130,7 +131,8 @@ export const deleteContact = async (
 ) => {
   try {
     const { id } = req.body;
-    const userId = req.user?.id;
+    const userId = req.user?.sub;
+    const orgId = req.user?.orgId;
 
     if (!id) {
       throw new AppError(
@@ -138,15 +140,15 @@ export const deleteContact = async (
         'Contact required'
       );
     }
-    if (!userId) {
+    if (!userId || !orgId) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await deleteContactFromDB(id, userId);
-    return res.status(200).json({
+    const data = await deleteContactFromDB(id, orgId, userId);
+    return res.status(204).json({
       success: true,
       message: 'Delete Contact successful',
       data, 
