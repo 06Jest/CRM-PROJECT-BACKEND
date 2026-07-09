@@ -8,7 +8,18 @@ export const config = {
     url: process.env.SUPABASE_URL || '',
     anonKey: process.env.SUPABASE_ANON_KEY || '',
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+
+    TABLE: {
+      profile: process.env.TABLE_PROFILES,
+      organizations: process.env.TABLE_ORGANIZATIONS,
+      leads: process.env.TABLE_LEADS,
+      contacts: process.env.TABLE_CONTACTS,
+      deals: process.env.TABLE_DEALS,
+      customers: process.env.TABLE_CUSTOMERS,
+      refresh_tokens: process.env.TABLE_REFRESH_TOKENS,
+    }
   },
+
 
   APP: {
     port: Number(process.env.PORT || '5000'),

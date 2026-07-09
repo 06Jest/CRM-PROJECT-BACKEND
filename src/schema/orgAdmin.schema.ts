@@ -3,16 +3,17 @@ import {
   emailSchema,
   firstNameSchema,
   lastNameSchema,
-  IDSchema,
   phoneSchema,
   profileStatusSchema,
   roleSchema,
   avatarSchema,
  } from "./global.schema";
 
+import { uuidSchema } from "./global.schema";
+
 export const addProfileSchema = z.object({
 
-  id: IDSchema.optional,
+  id: uuidSchema.optional,
 
   email: emailSchema,
     
@@ -26,7 +27,7 @@ export const addProfileSchema = z.object({
 
   position: z.string().max(50).optional,
 
-  org_id: IDSchema,
+  org_id: uuidSchema,
 });
 
 export const updateProfileSchema = z.object({
@@ -41,12 +42,10 @@ export const updateProfileSchema = z.object({
 
   position: z.string().max(50).optional,
 
-  org_id: IDSchema,
+  org_id: uuidSchema,
 });
 
-
-
-export const statusSchema = z.object({
+export const updateStatusSchema = z.object({
   status: profileStatusSchema,
 });
 
@@ -58,11 +57,6 @@ export const updateAvatarSchema = z.object({
   avatar_url: avatarSchema
 });
 
-export const uuidSchema = z.object({
-
-  id: IDSchema
-
-});
 
 
 

@@ -1,16 +1,20 @@
 import { supabaseAdmin } from '../config/supabase';
-import type { Contact } from '../types/contact';
+import type { AddContact, Contact, UpdateContact } from '../types/contact';
+import { AppError } from '../middleware/error.middleware';
+import { table } from '../config/tables';
+
+const tab = table.contacts;
 
 export const getContactsFromDB = async (orgId: string ): Promise<Contact[]> => {
     const { data, error } = await supabaseAdmin
-      .from('contacts')
+      .from(tab)
       .select('*')
       .eq('org_id', orgId)
       .is('deleted_at', null)
       .order('first_name', { ascending: true })
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to fetch Contacts: ${error.message}`);
     }
   return data ?? [];
 }
@@ -18,10 +22,10 @@ export const getContactsFromDB = async (orgId: string ): Promise<Contact[]> => {
 export const addContactToDB = async (
   orgId: string,
   userId: string,
-  contact: Omit<Contact, 'id' | 'lead_id' | 'created_at'>
+  contact: AddContact
 ) : Promise<Contact> => {
   const { data, error } = await supabaseAdmin
-      .from('contacts')
+      .from(tab)
       .insert([{
         ...contact,
         org_id: orgId,
@@ -31,7 +35,7 @@ export const addContactToDB = async (
       .single()
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to add Contact: ${error.message}`);
     }
   return data;
 }
@@ -39,17 +43,10 @@ export const addContactToDB = async (
 export const addContactFromLeadsToDB = async (
   orgId: string,
   userId: string,
-  contact: Omit<Contact, 
-      'id' | 
-      'created_at' | 
-      'status' |
-      'deleted_at' |
-      'deleted_by' |
-      'updated_by'
-      >
+  contact: AddContact
 ) : Promise<Contact> => {
   const { data, error } = await supabaseAdmin
-      .from('contacts')
+      .from(tab)
       .insert([{
         ...contact,
         org_id: orgId,
@@ -61,7 +58,7 @@ export const addContactFromLeadsToDB = async (
       .single()
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to add Contact: ${error.message}`);
     }
   return data;
 }
@@ -70,18 +67,10 @@ export const updateContactFromDB = async (
   id: string,
   orgId: string,
   userId: string,
-  contact: Omit<Contact, 
-      'id' | 
-      'lead_id'| 
-      'created_at' | 
-      'owner_id' | 
-      'org_id' | 
-      'deleted_at' |
-      'deleted_by' 
-  >
+  contact: UpdateContact
 ) : Promise<Contact> => {
   const { data, error } = await supabaseAdmin
-      .from('contacts')
+      .from(tab)
       .update([{
         ...contact,
         updated_by: userId
@@ -92,7 +81,7 @@ export const updateContactFromDB = async (
       .single()
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to update Contact: ${error.message}`);
     }
   return data;
 }
@@ -103,7 +92,7 @@ export const deleteContactFromDB = async (
   userId: string
 ) : Promise<string> => {
   const { error } = await supabaseAdmin
-      .from('contacts')
+      .from(tab)
       .update({
         deleted_at: new Date().toISOString(),
         deleted_by: userId,
@@ -112,7 +101,7 @@ export const deleteContactFromDB = async (
       .eq('org_id', orgId)
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to delete Contact: ${error.message}`);
     }
   return id;
 }

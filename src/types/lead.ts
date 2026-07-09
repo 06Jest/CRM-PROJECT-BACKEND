@@ -1,12 +1,8 @@
 export type LeadsStatus =
-  | "Lead"
+  | "New"
   | "Contacted"
   | "Qualified"
-  | "Opportunity"
-  | "Customer"
-  | "Inactive"
-  | "Lost"
-  | "Churned";
+  | "Closed";
 
 
 export type LeadSource = 
@@ -59,4 +55,39 @@ export interface Lead {
   deleted_at: string | null;
   deleted_by: string | null;
   updated_by: string | null;
+}
+
+export interface AddLead {
+  title: string;
+  source: LeadSource;
+  first_name: string;
+  last_name: string;
+  suffix?: string;
+  gender: Gender;
+  birth_date?: string | null;
+  email?: string;
+  phone?: string;
+  company_name?: string;
+  position?: string;
+  department?: string;
+  status: LeadsStatus;
+  priority: Priority;
+  notes?: string;
+}
+export interface UpdateLead {
+  title: string;
+  source: LeadSource;
+  first_name: string;
+  last_name: string;
+  suffix?: string;
+  gender: Gender;
+  birth_date?: string | null;
+  email?: string;
+  phone?: string;
+  company_name?: string;
+  position?: string;
+  department?: string;
+  status: LeadsStatus;
+  priority: Priority;
+  notes?: string;
 }

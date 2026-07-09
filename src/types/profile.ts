@@ -59,6 +59,7 @@ export interface AddAdminProfileDTO {
   email: string;
   first_name: string;
   last_name: string;
+  display_name: string;
   org_id: string;
 }
 

@@ -10,8 +10,8 @@ import {
   updateAgentStatus,
   updateAvatar,
 } from '../controllers/admin.controller';
-import { validateParams, validateBody } from '../middleware/validate';
-import { addProfileSchema, statusSchema, updateAvatarSchema, updateProfileSchema, updateRoleSchema, uuidSchema } from '../schema/orgAdmin.schema';
+import { validateBody } from '../middleware/validate';
+import { addProfileSchema, updateStatusSchema, updateAvatarSchema, updateProfileSchema, updateRoleSchema} from '../schema/orgAdmin.schema';
 
 
 
@@ -23,12 +23,12 @@ router.get('/members', getAllMembers);
 
 router.post('/agents', validateBody(addProfileSchema), addAgent);
 
-router.patch('/agents/:id/status', validateBody(statusSchema), updateAgentStatus);
+router.patch('/agents/:id/status', validateBody(updateStatusSchema), updateAgentStatus);
 router.patch('/agents/:id/promote', validateBody(updateRoleSchema), promoteAgent);
-router.patch('/admins/:id/demote', validateParams(uuidSchema), demoteAdmin);
-router.patch('/admins/:id/profile', validateParams(uuidSchema), validateBody(updateProfileSchema),  updateAdminProfile);
-router.patch('/admins/:id/avatar', validateParams(uuidSchema), validateBody(updateAvatarSchema),  updateAvatar);
+router.patch('/admins/:id/demote', validateBody(updateRoleSchema), demoteAdmin);
+router.patch('/admins/:id/profile',  validateBody(updateProfileSchema),  updateAdminProfile);
+router.patch('/admins/:id/avatar', validateBody(updateAvatarSchema),  updateAvatar);
 
-router.delete('/agents/:id',validateParams(uuidSchema), deleteAgent);
+router.delete('/agents/:id', deleteAgent);
 
 export default router;

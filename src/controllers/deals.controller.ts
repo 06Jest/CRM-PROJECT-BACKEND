@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { updateDealFromDB, closeDealFromDB, addDealToDB, getDealsFromDB, deleteDealFromDB } from "../services/dealsService";
+import { updateDealFromDB, closeDealFromDB, addDealToDB, getDealsFromDB, deleteDealFromDB } from "../services/deals.service";
 import { AppError } from "../middleware/error.middleware";
+import { uuidSchema } from "../schema/global.schema";
 
 export const getDeals = async (
   req: Request,
@@ -62,9 +63,10 @@ export const updateDeal = async (
   next: NextFunction
 ) => {
   try {
-    const id = req.body.id;
+    const id = uuidSchema.parse(req.params.id);
     const deal = req.body.deal;
     const userId = req.user?.sub;
+    const orgId = req.user?.orgId
 
     if (!id) {
       throw new AppError(
@@ -72,14 +74,14 @@ export const updateDeal = async (
         'Contact required'
       );
     }
-    if (!userId) {
+    if (!userId || !orgId) {
       throw new AppError(
         401,
         'Unauthorized user'
       );
     }
 
-    const data = await updateDealFromDB(id, userId, deal);
+    const data = await updateDealFromDB(id, userId, deal, orgId);
     return res.status(200).json({
       success: true,
       message: 'Update Deal successful',
@@ -97,18 +99,18 @@ export const closeDeal = async (
   next: NextFunction
 ) => {
   try {
-    const id = req.body.id;
-    const deal = req.body.deal;
+    const id = uuidSchema.parse(req.params.id);
     const outcome = req.body.deal.stage;
     const userId = req.user?.sub;
+    const orgId =  req.user?.orgId;
 
     if (!id) {
       throw new AppError(
         401,
-        'Contact required'
+        'Deal required'
       );
     }
-    if (!userId) {
+    if (!userId || !orgId) {
       throw new AppError(
         401,
         'Unauthorized user'
@@ -121,7 +123,7 @@ export const closeDeal = async (
       );
     }
 
-    const data = await closeDealFromDB(id, outcome, userId, deal);
+    const data = await closeDealFromDB(id, outcome, userId, orgId);
     return res.status(200).json({
       success: true,
       message: 'Update Deal successful',
@@ -140,7 +142,7 @@ export const deleteDeal = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.body;
+    const id = uuidSchema.parse(req.params.id);
     const userId = req.user?.sub;
 
     if (!id) {

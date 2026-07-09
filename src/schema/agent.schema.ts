@@ -1,14 +1,11 @@
 import { z } from "zod";
 import { 
-  IDSchema,
   firstNameSchema,
   lastNameSchema,
   phoneSchema,
+  uuidSchema,
  } from "./global.schema";
 
-export const uuidSchema = z.object({
-  id: IDSchema
-});
 
 export const updateProfileSchema = z.object({
 
@@ -22,6 +19,6 @@ export const updateProfileSchema = z.object({
 
   position: z.string().max(50).optional,
 
-  org_id: IDSchema,
+  org_id: uuidSchema,
 });
 

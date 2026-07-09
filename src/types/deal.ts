@@ -22,3 +22,18 @@ export interface Deal {
   closed_by?: string;       
 }
 
+export interface AddDeal {
+  contact_id: string;
+  title: string;
+  stage: DealStage;
+  notes?: string;
+  value: number;      
+}
+
+export interface UpdateDeal {
+  title?: string;
+  stage?: DealStage;
+  notes?: string;
+  value?: number;      
+}
+

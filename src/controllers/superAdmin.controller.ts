@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { getDashboardStats } from '../services/dashboardService';
+import { getDashboardStats } from '../services/dashboard.service';
 import { 
   getAllSubscribersFromDB,
   updateProfileStatusFromDB,

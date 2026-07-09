@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { updateContactFromDB, addContactToDB, addContactFromLeadsToDB, getContactsFromDB, deleteContactFromDB } from "../services/contactsService";
+import { updateContactFromDB, addContactToDB, addContactFromLeadsToDB, getContactsFromDB, deleteContactFromDB } from "../services/contacts.service";
 import { AppError } from "../middleware/error.middleware";
 import { getProfileByIdFromDB } from "../services/profiles.service";
+import { uuidSchema } from "../schema/global.schema";
 
 export const getContacts = async (
   req: Request,
@@ -93,7 +94,7 @@ export const updateContact = async (
   next: NextFunction
 ) => {
   try {
-    const id = req.body.id;
+    const id = uuidSchema.parse(req.params.id);
     const contact = req.body.contact;
     const userId = req.user?.sub;
     const orgId = req.user?.orgId;
@@ -130,7 +131,7 @@ export const deleteContact = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.body;
+    const id = uuidSchema.parse(req.params.id);
     const userId = req.user?.sub;
     const orgId = req.user?.orgId;
 

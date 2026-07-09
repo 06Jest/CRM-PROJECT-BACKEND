@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { updateLeadFromDB, addLeadToDB, getLeadsFromDB, deleteLeadFromDB } from "../services/leadsService";
+import { updateLeadFromDB, addLeadToDB, getLeadsFromDB, deleteLeadFromDB } from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
-import { getProfileByIdFromDB } from '../services/profiles.service'
+import { uuidSchema } from "../schema/global.schema";
 
 export const getLeads = async (
   req: Request,
@@ -63,7 +63,7 @@ export const updateLead = async (
   next: NextFunction
 ) => {
   try {
-    const id = req.body.id;
+    const id = uuidSchema.parse(req.params.id);
     const lead = req.body.lead;
     const userId = req.user?.sub;
     const orgId = req.user?.orgId;
@@ -99,7 +99,7 @@ export const deleteLead = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.body;
+    const id = uuidSchema.parse(req.params.id);
     const userId = req.user?.sub;
     const orgId = req.user?.orgId;
 

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { supabaseAdmin} from '../config/supabase';
 import { AppError } from './error.middleware';
 import { verifyAccessToken } from '../services/jwt.service';
+import { Jwt } from 'jsonwebtoken';
 
 
 export const verifyToken = (
@@ -94,34 +95,23 @@ export const authenticateUser = async (
 ) => {
   
   try {
-    const authHead = req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
-    if (!authHead?.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        error: 'Missing authorization token'
-      });
-    }
-    const token = authHead.split(' ')[1];
-    
+    const token = authHeader?.slice(7);
 
-    const { data: authData, error: authError }
-    = await supabaseAdmin.auth.getUser(token);
+    req.user = verifyAccessToken(token!);
 
-    if (authError || !authData.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid or expired token',
-      });
-    }
+    console.log(req.user);
 
-    const userId = authData.user.id;
+    const userId = req.user.sub;
+    const orgId = req.user.orgId;
 
     const { data: profile, error} 
     = await supabaseAdmin
       .from('profiles')
       .select(`id, name, org_id, role, status`)
       .eq('id', userId)
+      .eq('org_id', orgId)
       .single();
 
 
@@ -130,6 +120,14 @@ export const authenticateUser = async (
         success: false,
         error:
           'Org admin or member access required'
+      });
+    }
+
+    if ( profile.role !== 'agent' || 'admin' || 'super_admin'  ) {
+      return res.status(403).json({
+        success: false,
+        error:
+          'Role does not exist'
       });
     }
     
@@ -146,12 +144,6 @@ export const authenticateUser = async (
         error: `Unauthorized role`,
       });
     }
-
-     req.user = {
-      sub: profile.id,
-      role: profile.role,
-      orgId: profile.org_id
-    };
     
     next();
 
