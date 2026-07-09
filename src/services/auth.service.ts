@@ -2,23 +2,23 @@ import { createSupabaseClient, supabaseAdmin } from "../config/supabase";
 import type { 
   SignUpDTO, 
   SignInDTO,
-  ChangePasswordDTO
+  ChangePasswordDTO,
 } from '../types/auth';
 import { AppError } from '../middleware/error.middleware';
-import { createAccessToken } from "../services/jwt.service";
+import { createAccessToken } from "./jwt.service";
 import {
-  issueRefreshToken,
   rotateRefreshToken,
   revokeRefreshToken,
   revokeAllForProfile,
-} from "../services/refresh.service";
+} from "./refresh.service";
 import { RequestMeta, TokenPair } from '../types/auth'
+import { Profile } from "../types/profile";
 
 
 export const signUpWithAuth = async (dto: SignUpDTO) => {
   const db = createSupabaseClient();
 
-  const { data, error } =
+  const { error } =
     await db.auth.signUp({
       email: dto.email.trim().toLowerCase(),
       password: dto.password,
@@ -26,32 +26,44 @@ export const signUpWithAuth = async (dto: SignUpDTO) => {
         data: {
           first_name: dto.first_name,
           last_name: dto.last_name,
-          organization_name: dto.org_name
+          org_name: dto.org_name
         }
       }
     });
   if (error) {
-    throw new AppError(400, error.message);
+    throw new AppError(400, `Failed to create account: ${error.message}`);
   }
-  return data;
 }
 
 export const signInWithAuth = async (
   dto: SignInDTO
 ) => {
   const db = createSupabaseClient();
+  
 
     const { data, error } = await db.auth.signInWithPassword({
       email: dto.email.trim().toLowerCase(),
       password: dto.password,
-    })
+    });
 
     if (error) {
-      throw new AppError(400,error.message);
+      throw new AppError(400, `Failed to log in: ${error.message}`);
     }
     
   return data ;
 }
+
+export const createToken =  (
+  profile: Profile
+): string => {
+  const accessToken =  createAccessToken({
+    sub: profile.id,
+    role: profile.role,
+    orgId: profile.org_id,
+  });
+  return accessToken ;
+}
+
 
 export const refresh = async (
   rawRefreshToken: string,
@@ -62,31 +74,39 @@ export const refresh = async (
     meta
   );
 
-  const { data: profileRow, error } = await supabaseAdmin
+  const { data,  error } = await supabaseAdmin
     .from("profiles")
     .select("id, org_id, role")
     .eq("id", profileId)
     .maybeSingle();
 
-  if (error || !profileRow) {
-    throw new AppError(401,"Account no longer exists");
+  if (error) {
+    throw new AppError(400, `Failed to refresh: ${error.message}`);
+  }
+  if (!data) {
+    throw new AppError(400, `Failed to fetch data for access token.`);
   }
 
   const accessToken = createAccessToken({
-    sub: profileRow.id,
-    role: profileRow.role,
-    orgId: profileRow.org_id,
+    sub: data.id,
+    role: data.role,
+    orgId: data.org_id,
   });
   return { accessToken, refreshToken: newRefreshToken };
 }
 
 export const requestPasswordReset = async (email: string): Promise<void> => {
   const db = createSupabaseClient();
-  await db.auth.resetPasswordForEmail(email);
+  const {error} = await db.auth.resetPasswordForEmail(email);
+
+  if (error) {
+    throw new AppError(400, `Failed to request reset password: ${error.message}`);
+  }
 }
 
 export const changePasswordFromAuth = async (user: ChangePasswordDTO): Promise<void> => {
   const db = createSupabaseClient();
+
   const { error: verifyError } = await db.auth.signInWithPassword({
     email: user.email,
     password: user.current_password,
@@ -96,23 +116,20 @@ export const changePasswordFromAuth = async (user: ChangePasswordDTO): Promise<v
     throw new AppError(401, "Current password is incorrect");
   }
 
-  const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+  const { error} = await supabaseAdmin.auth.admin.updateUserById(
     user.id,
     { password: user.new_password }
   );
 
-  if (updateError) {
-    throw new AppError(500, `Failed to update password: ${updateError.message}`);
+  if (error) {
+    throw new AppError(500, `Failed to update password: ${error.message}`);
   }
   await revokeAllForProfile(user.id);
 }
 
 
 export const signOutFromAuth = async (rawRefreshToken: string): Promise<void> => {
-  try {
-    await revokeRefreshToken(rawRefreshToken);
-  } catch {
-  }
+   await revokeRefreshToken(rawRefreshToken);
 }
 
 export const signOutAllSessions = async (profileId: string): Promise<void> => {

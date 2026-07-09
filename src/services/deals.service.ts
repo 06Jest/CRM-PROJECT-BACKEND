@@ -1,15 +1,19 @@
 import { supabaseAdmin } from '../config/supabase';
-import type { Deal } from '../types/deal';
+import type { AddDeal, Deal, UpdateDeal } from '../types/deal';
+import { AppError } from '../middleware/error.middleware';
+import { table } from '../config/tables';
+
+const tab = table.deals;
 
 export const getDealsFromDB = async (orgId: string ): Promise<Deal[]> => {
     const { data, error } = await supabaseAdmin
-      .from('deals')
+      .from(tab)
       .select('*')
       .eq('org_id', orgId)
       .is('deleted_at', null)
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to fetch Deal: ${error.message}`);
     }
   return data ?? [];
 }
@@ -17,17 +21,10 @@ export const getDealsFromDB = async (orgId: string ): Promise<Deal[]> => {
 export const addDealToDB = async (
   orgId: string,
   userId: string,
-  deal: Omit<Deal, 
-        'id' | 
-        'created_at' |
-        'deleted_at' |
-        'deleted_by' |
-        'close_date' |
-        'closed_by'
-        >
+  deal: AddDeal
 ) : Promise<Deal> => {
   const { data, error } = await supabaseAdmin
-      .from('deals')
+      .from(tab)
       .insert([{
         ...deal,
         org_id: orgId,
@@ -38,7 +35,7 @@ export const addDealToDB = async (
       .single()
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to add Deal: ${error.message}`);
     }
   return data;
 }
@@ -46,30 +43,22 @@ export const addDealToDB = async (
 export const updateDealFromDB = async (
   id: string,
   userId: string,
-  deal: Omit<Deal, 
-  'id' | 
-  'created_at' |
-  'contact_id' |
-  'owner_id' | 
-  'org_id' | 
-  'deleted_at' |
-  'deleted_by' |
-  'close_date' |
-  'closed_by'
-  >
+  deal: UpdateDeal,
+  orgId: string
 ) : Promise<Deal> => {
   const { data, error } = await supabaseAdmin
-      .from('deals')
+      .from(tab)
       .update([{
         ...deal,
         updated_by: userId  
       }])
       .eq('id', id)
+      .eq('org_id', orgId)
       .select()
       .single()
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to update Deal: ${error.message}`);
     }
   return data;
 }
@@ -78,31 +67,23 @@ export const closeDealFromDB = async (
   id: string,
   outcome: 'Closed Won' | 'Closed Lost',
   userId: string,
-  deal: Omit<Deal, 
-  'id' | 
-  'created_at' |
-  'contact_id' |
-  'owner_id' | 
-  'org_id' | 
-  'deleted_at' |
-  'deleted_by' 
-  >
+  orgId: string
 ) : Promise<Deal> => {
   const { data, error } = await supabaseAdmin
-      .from('deals')
+      .from(tab)
       .update([{
-        ...deal,
         stage: outcome,
         updated_by: userId,
         close_date: new Date().toISOString(),
         closed_by: userId,
       }])
       .eq('id', id)
+      .eq('org_id', orgId)
       .select()
       .single()
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to close Deal: ${error.message}`);
     }
   return data;
 }
@@ -112,7 +93,7 @@ export const deleteDealFromDB = async (
   userId: string
 ) : Promise<string> => {
   const { error } = await supabaseAdmin
-      .from('deals')
+      .from(tab)
       .update({
         deleted_at: new Date().toISOString(),
         deleted_by: userId,
@@ -120,7 +101,7 @@ export const deleteDealFromDB = async (
       .eq('id', id)
 
     if (error) {
-      throw new Error(error.message);
+      throw new AppError(500, `Failed to delete Deal: ${error.message}`);
     }
   return id;
 }

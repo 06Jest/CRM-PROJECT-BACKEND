@@ -1,11 +1,13 @@
 import { NextFunction, Request, Response } from 'express';
-import { RequestMeta } from '../types/auth';
+import { RequestMeta, TokenPair } from '../types/auth';
 import { CreateOrgDTO } from '../types/organization';
 import { 
   changePasswordFromAuth,
   signUpWithAuth, 
   signInWithAuth, 
-  signOutFromAuth
+  signOutFromAuth,
+  createToken,
+  refresh
 } from './../services/auth.service'
 import { 
   isProfileExistFromDB,
@@ -13,11 +15,12 @@ import {
   getProfileByIdFromDB,
  } from '../services/profiles.service';
 import { createOrganization } from '../services/organization.service';
-import { createAccessToken } from './../services/jwt.service';
 import { issueRefreshToken } from './../services/refresh.service';
 import { AppError } from '../middleware/error.middleware';
-import { supabaseAdmin } from '../config/supabase';
 import { signInSchema } from '../schema/auth.schema';
+import { setAuthCookies } from '../services/cookies.service';
+import { CookieOptions } from 'express';
+import { AddAdminProfileDTO } from '../types/profile';
 
 function metaFromRequest(req: Request): RequestMeta {
   return {
@@ -26,19 +29,44 @@ function metaFromRequest(req: Request): RequestMeta {
   };
 }
 
+export const getCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try{
+    const userId = req.user?.sub;
+    const orgId = req.user?.orgId;
+
+    if (!userId || !orgId) {
+      throw new AppError(400, "User required")
+    }
+
+    const profile = getProfileByIdFromDB(userId, orgId)
+
+    await signUpWithAuth(req.body);
+
+    res.status(201).json({
+      success: true,
+      profile,
+    });
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const adminSignUp = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try{
-    const result = await signUpWithAuth(req.body);
+    await signUpWithAuth(req.body);
 
     res.status(201).json({
       success: true,
       message:
         "Registration successful. Please verify your email.",
-      data: result,
     });
   } catch (err) {
     next(err)
@@ -53,14 +81,34 @@ export const adminSignIn = async (
   try {
     const meta = metaFromRequest(req);
 
-    const auth = await signInWithAuth(req.body);
+    const cred = req.body;
+
+    if (!cred.email) {
+      throw new AppError(400, "Email is required");
+    }
+
+    if (!cred.password) {
+      throw new AppError(400, "Password is required");
+    }
+
+    const auth = await signInWithAuth(cred);
+
+    if (!auth) {
+      throw new AppError(401, "hotdog!");
+    }
+
+    if (!auth.user) {
+      throw new AppError(401, "Invalid credentials");
+    }
     const userId = auth.user.id;
-    const email = auth.user.email;
+    const userEmail = auth.user.email;
     const user = auth.user.user_metadata;
 
+    console.error("userId");
+
     const profileExist = await isProfileExistFromDB(userId);
-    
-    if (!email) {
+
+    if (!userEmail) {
       throw new AppError(400, "Email is required");
     }
 
@@ -68,7 +116,7 @@ export const adminSignIn = async (
       throw new AppError(400, "Incomplete registration metadata.");
     }
 
-    let profile;
+    let profile;    
 
     if (!profileExist) {
       const orgDTO: CreateOrgDTO = {
@@ -79,14 +127,16 @@ export const adminSignIn = async (
 
       const newOrg = await createOrganization(orgDTO);
 
-      profile = await addAdminProfileToDB({
+      const userDetails: AddAdminProfileDTO = {
         id: userId,
-        email,
+        email: userEmail,
         first_name: user.first_name,
         last_name: user.last_name,
         display_name: `${user.first_name} ${user.last_name}`,
         org_id: newOrg.id,
-      });
+      }
+
+      profile = await addAdminProfileToDB(userDetails);
     } else {
       profile = await getProfileByIdFromDB(
         profileExist.id,
@@ -94,17 +144,15 @@ export const adminSignIn = async (
       );
     }
 
-    const accessToken = createAccessToken({
-      sub: profile.id,
-      role: profile.role,
-      orgId: profile.org_id,
-    });
+    const accessToken = createToken(profile);
 
     const refreshToken = await issueRefreshToken(profile.id, meta);
 
+    setAuthCookies(res, accessToken, refreshToken);
+
     return res.status(200).json({
       success: true,
-      tokens : { accessToken, refreshToken },
+      message: "Login Successful",
       profile,
     });
   } catch (err) {
@@ -136,17 +184,14 @@ export const agentSignIn = async (
 
     const profile = await getProfileByIdFromDB(profileExist.id, profileExist.org_id)
 
-    const accessToken = createAccessToken({
-      sub: profile.id,
-      role: profile.role,
-      orgId: profile.org_id,
-    });
+    const accessToken = createToken(profile);
 
     const refreshToken = await issueRefreshToken(profile.id, meta);
 
+    setAuthCookies(res, accessToken, refreshToken);
+
      return res.status(200).json({
       success: true,
-      tokens : { accessToken, refreshToken },
       profile,
     });
   } catch (err) {
@@ -169,13 +214,9 @@ export const changePassword = async (
       return;
     }
 
-    const { data: profileRow, error } = await supabaseAdmin
-      .from("profiles")
-      .select("email")
-      .eq("id", req.user.sub)
-      .maybeSingle<{ email: string | null }>();
+    const data = await getProfileByIdFromDB(req.user.sub, req.user.orgId!);
 
-    if (error || !profileRow?.email) {
+    if (!data?.email) {
       res.status(500).json({ error: "Could not resolve account email" });
       return;
     }
@@ -183,7 +224,7 @@ export const changePassword = async (
   
     await changePasswordFromAuth({
       id: req.user.sub,
-      email: profileRow.email,
+      email: data.email,
       current_password,
       new_password,
     });
@@ -192,6 +233,34 @@ export const changePassword = async (
     next(err)
   }
 }
+
+export const refreshToken = async (
+  req: Request, 
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const meta = metaFromRequest(req);
+
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+      res.status(401).json({
+        error: "Refresh token is missing",
+      });
+      return;
+    }
+
+    const tokens: TokenPair =  await refresh(refreshToken ,meta);
+
+    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    res.status(204).send();
+  } catch (err) {
+    next(err)
+  }
+}
+
 
 export const signOut = async (
   req: Request, 

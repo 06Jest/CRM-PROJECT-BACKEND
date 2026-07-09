@@ -5,6 +5,7 @@ import {
   getDisplayProfileFromDB,
 } from '../services/profiles.service';
 import { AppError } from '../middleware/error.middleware';
+import { uuidSchema } from '../schema/global.schema';
 
 
 export const getMemberProfile = async (
@@ -13,7 +14,7 @@ export const getMemberProfile = async (
   next: NextFunction
 ) => {
   try{
-    const id = req.body;
+    const id = uuidSchema.parse(req.params.id);
     const orgId = req.user?.orgId;
 
     if (!orgId) {
@@ -35,7 +36,7 @@ export const getMemberName = async (
   next: NextFunction
 ) => {
   try{
-    const id = req.body;
+    const id = uuidSchema.parse(req.params.id);
     const orgId = req.user?.orgId;
 
     if (!orgId) {

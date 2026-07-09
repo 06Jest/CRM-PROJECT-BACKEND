@@ -9,7 +9,7 @@ import {
   updateProfileFromDB
  } from '../services/profiles.service';
 import { AppError } from '../middleware/error.middleware';
-import { uuidSchema } from '../schema/orgAdmin.schema';
+import { uuidSchema } from '../schema/global.schema';
 
 
 export const getAllMembers = async (
@@ -75,7 +75,7 @@ export const updateAgentStatus = async (
   try{
     const status  = req.body;
     const orgId = req.user?.orgId;
-    const { id } = uuidSchema.parse(req.params);
+    const id  = uuidSchema.parse(req.params.id);
     const userRole = req.user?.role;
 
     if (!orgId) {
@@ -107,7 +107,7 @@ export const updateAvatar = async (
   try{
     const avatar_url  = req.body;
     const orgId = req.user?.orgId;
-    const { id } = uuidSchema.parse(req.params);
+    const id  = uuidSchema.parse(req.params.id);
     const userRole = req.user?.role;
 
     if (!orgId) {
@@ -162,7 +162,7 @@ export const promoteAgent = async (
 ) => {
   try{
     const userId = req.user?.sub;
-    const { id } = uuidSchema.parse(req.params);
+    const id  = uuidSchema.parse(req.params.id);
     const orgId = req.user?.orgId;
     const userRole = req.user?.role;
     const role = req.body;
@@ -198,7 +198,7 @@ export const demoteAdmin = async (
 ) => {
   try{
     const userId = req.user?.sub;
-    const { id } = uuidSchema.parse(req.params);
+    const id  = uuidSchema.parse(req.params.id);
     const orgId = req.user?.orgId;
     const userRole = req.user?.role;
     const role = req.body;

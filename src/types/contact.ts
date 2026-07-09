@@ -59,3 +59,38 @@ export interface Contact {
   deleted_by: string | null;
   updated_by: string | null;
 }
+
+export interface AddContact {
+  lead_id?:string;
+  first_name: string;
+  last_name: string;
+  suffix?: string;
+  gender?: Gender;
+  birth_date?: string | null;
+  email?: string;
+  phone?: string;
+  source?: ContactSource;
+  company_name?: string;
+  position?: string;  
+  department?: string;
+  status: ContactStatus;
+  priority: Priority;
+  notes?: string;
+}
+
+export interface UpdateContact {
+  first_name?: string;
+  last_name?: string;
+  suffix?: string;
+  gender?: Gender;
+  birth_date?: string | null;
+  email?: string;
+  phone?: string;
+  source?: ContactSource;
+  company_name?: string;
+  position?: string;  
+  department?: string;
+  status: ContactStatus;
+  priority: Priority;
+  notes?: string;
+}

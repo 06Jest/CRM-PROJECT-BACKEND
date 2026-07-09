@@ -2,6 +2,8 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "../config/environment";
 import type { AccessTokenPayload } from "../types/auth";
+import { uuidSchema } from "../schema/global.schema";
+import { uuid } from "zod";
 
 
 export function createAccessToken(payload: AccessTokenPayload): string {
@@ -13,7 +15,7 @@ export function createAccessToken(payload: AccessTokenPayload): string {
 export class InvalidAccessTokenError extends Error {
   constructor(message = "Invalid or expired access token") {
     super(message);
-    this.name = "InvalidAccessTokenError";
+    this.name = "Invalid: Access Token Error";
   }
 }
 
@@ -25,15 +27,15 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
     if (
       typeof decoded.sub !== "string" ||
       typeof decoded.role !== "string" ||
-      !("orgId" in decoded)
+      (decoded.orgId !== undefined && typeof decoded.orgId !== "string")
     ) {
       throw new InvalidAccessTokenError("Malformed token payload");
     }
 
     return {
       sub: decoded.sub,
-      role: decoded.role as AccessTokenPayload["role"],
-      orgId: (decoded.orgId as string | null) ?? null,
+      role: decoded.role,
+      orgId: decoded.orgId,
     };
   } catch {
     throw new InvalidAccessTokenError();

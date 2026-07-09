@@ -2,8 +2,9 @@ import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase";
 import { config } from "../config/environment";
 import { RequestMeta } from "../types/auth";
+import { table } from '../config/tables';
 
-const TABLE = "refresh_tokens";
+const tab = table.refresh;
 
 export class RefreshTokenError extends Error {
   constructor(message: string) {
@@ -42,16 +43,19 @@ export async function issueRefreshToken(
 ): Promise<string> {
   const rawToken = generateRawToken();
   const tokenHash = hashToken(rawToken);
+
   const expiresAt = new Date(
     Date.now() + Number(config.JWT.refresh.expire) * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  const { error } = await supabaseAdmin.from(TABLE).insert({
-    profile_id: profileId,
-    token_hash: tokenHash,
-    expires_at: expiresAt,
-    ip_address: meta.ipAddress ?? null,
-    user_agent: meta.userAgent ?? null,
+  const { error } = await supabaseAdmin
+    .from(tab)
+    .insert({
+      profile_id: profileId,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      ip_address: meta.ipAddress ?? null,
+      user_agent: meta.userAgent ?? null,
   });
 
   if (error) {
@@ -68,7 +72,7 @@ export async function rotateRefreshToken(
   const incomingHash = hashToken(incomingRawToken);
 
   const { data: row, error } = await supabaseAdmin
-    .from(TABLE)
+    .from(tab)
     .select("id, profile_id, token_hash, expires_at, revoked_at, replaced_by_id")
     .eq("token_hash", incomingHash)
     .maybeSingle<StoredTokenRow>();
@@ -98,7 +102,7 @@ export async function rotateRefreshToken(
     throw new RefreshTokenReuseError();
   }
 
-  // Normal path: valid, unused token. Rotate it.
+
   const newRawToken = generateRawToken();
   const newHash = hashToken(newRawToken);
   const newExpiresAt = new Date(
@@ -106,7 +110,7 @@ export async function rotateRefreshToken(
   ).toISOString();
 
   const { data: newRow, error: insertError } = await supabaseAdmin
-    .from('refresh_tokens')
+    .from(tab)
     .insert({
       profile_id: row.profile_id,
       token_hash: newHash,
@@ -139,7 +143,7 @@ export async function rotateRefreshToken(
 export async function revokeRefreshToken(rawToken: string): Promise<void> {
   const tokenHash = hashToken(rawToken);
   const { error } = await supabaseAdmin
-    .from('refresh_tokens')
+    .from(tab)
     .update({ revoked_at: new Date().toISOString() })
     .eq("token_hash", tokenHash)
     .is("revoked_at", null);
@@ -151,7 +155,7 @@ export async function revokeRefreshToken(rawToken: string): Promise<void> {
 
 export async function revokeAllForProfile(profileId: string): Promise<void> {
   const { error } = await supabaseAdmin
-    .from(TABLE)
+    .from(tab)
     .update({ revoked_at: new Date().toISOString() })
     .eq("profile_id", profileId)
     .is("revoked_at", null);

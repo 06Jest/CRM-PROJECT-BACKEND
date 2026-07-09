@@ -16,12 +16,16 @@ import {
   contactStatusSchema,
   prioritySchema,
   uuidSchema,
+  titleSchema,
  } from "./global.schema";
 
 
-export const addContactSchema = z.object({
 
-  lead_id: uuidSchema.optional,
+export const addLeadSchema = z.object({
+
+  title: titleSchema,
+
+  source: sourceSchema,
 
   first_name: firstNameSchema,
 
@@ -37,8 +41,6 @@ export const addContactSchema = z.object({
 
   phone: phoneSchema.optional,
 
-  source: sourceSchema.optional,
-
   company_name: companyNameSchema.optional,
 
   position: positionSchema.optional,
@@ -52,7 +54,11 @@ export const addContactSchema = z.object({
   priority: prioritySchema,
 });
 
-export const updateContactSchema = z.object({
+export const updateLeadSchema = z.object({
+
+  title: titleSchema.optional,
+
+  source: sourceSchema.optional,
 
   first_name: firstNameSchema.optional,
 
@@ -68,21 +74,17 @@ export const updateContactSchema = z.object({
 
   phone: phoneSchema.optional,
 
-  source: sourceSchema.optional,
-
   company_name: companyNameSchema.optional,
 
   position: positionSchema.optional,
 
   department: departmentSchema.optional,
 
-  display_name:  displayNameSchema.optional,
-
   notes: notesSchema.optional,
 
-  status: contactStatusSchema,
+  status: contactStatusSchema.optional,
 
-  priority: prioritySchema,
+  priority: prioritySchema.optional,
 });
 
 
