@@ -6,8 +6,8 @@ import {
   signUpWithAuth, 
   signInWithAuth, 
   signOutFromAuth,
-  createToken,
-  refresh
+  // refresh,
+  newRefresh
 } from './../services/auth.service'
 import { 
   isProfileExistFromDB,
@@ -15,11 +15,10 @@ import {
   getProfileByIdFromDB,
  } from '../services/profiles.service';
 import { createOrganization } from '../services/organization.service';
-import { issueRefreshToken } from './../services/refresh.service';
+import { createAccessToken, issueRefreshToken} from './../services/jwt.service';
 import { AppError } from '../middleware/error.middleware';
 import { signInSchema } from '../schema/auth.schema';
-import { setAuthCookies } from '../services/cookies.service';
-import { CookieOptions } from 'express';
+import { setAuthCookies, setNewAccessCookie } from '../services/cookies.service';
 import { AddAdminProfileDTO } from '../types/profile';
 
 function metaFromRequest(req: Request): RequestMeta {
@@ -42,9 +41,7 @@ export const getCurrentUser = async (
       throw new AppError(400, "User required")
     }
 
-    const profile = getProfileByIdFromDB(userId, orgId)
-
-    await signUpWithAuth(req.body);
+    const profile = await getProfileByIdFromDB(userId, orgId)
 
     res.status(201).json({
       success: true,
@@ -80,7 +77,7 @@ export const adminSignIn = async (
 ) => {
   try {
     const meta = metaFromRequest(req);
-
+    
     const cred = req.body;
 
     if (!cred.email) {
@@ -94,7 +91,7 @@ export const adminSignIn = async (
     const auth = await signInWithAuth(cred);
 
     if (!auth) {
-      throw new AppError(401, "hotdog!");
+      throw new AppError(401, "User Required");
     }
 
     if (!auth.user) {
@@ -103,8 +100,6 @@ export const adminSignIn = async (
     const userId = auth.user.id;
     const userEmail = auth.user.email;
     const user = auth.user.user_metadata;
-
-    console.error("userId");
 
     const profileExist = await isProfileExistFromDB(userId);
 
@@ -144,9 +139,9 @@ export const adminSignIn = async (
       );
     }
 
-    const accessToken = createToken(profile);
+    const accessToken = createAccessToken(profile);
 
-    const refreshToken = await issueRefreshToken(profile.id, meta);
+    const refreshToken = await issueRefreshToken(profile.id, profile.org_id, meta);
 
     setAuthCookies(res, accessToken, refreshToken);
 
@@ -184,9 +179,9 @@ export const agentSignIn = async (
 
     const profile = await getProfileByIdFromDB(profileExist.id, profileExist.org_id)
 
-    const accessToken = createToken(profile);
+    const accessToken = createAccessToken(profile);
 
-    const refreshToken = await issueRefreshToken(profile.id, meta);
+    const refreshToken = await issueRefreshToken(profile.id, profile.org_id, meta);
 
     setAuthCookies(res, accessToken, refreshToken);
 
@@ -251,7 +246,7 @@ export const refreshToken = async (
       return;
     }
 
-    const tokens: TokenPair =  await refresh(refreshToken ,meta);
+    const tokens: TokenPair =  await newRefresh(refreshToken , meta);
 
     setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
 
@@ -263,20 +258,36 @@ export const refreshToken = async (
 
 
 export const signOut = async (
-  req: Request, 
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { refreshToken } = req.body as { refreshToken?: string };
+    const { refreshToken } = req.cookies;
 
     if (refreshToken) {
       await signOutFromAuth(refreshToken);
     }
 
-    res.status(204).send();
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
 
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/auth/me/refresh",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
   } catch (err) {
-    next(err)
+    next(err);
   }
-}
+};

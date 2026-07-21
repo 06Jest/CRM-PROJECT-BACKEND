@@ -9,15 +9,15 @@ import {
 
 export const updateProfileSchema = z.object({
 
-  first_name: firstNameSchema.optional,
+  first_name: firstNameSchema.optional(),
 
-  last_name: lastNameSchema.optional,
+  last_name: lastNameSchema.optional(),
 
-  display_name:  z.string().max(100).optional,
+  display_name:  z.string().max(100).optional(),
 
-  phone: phoneSchema.optional,
+  phone: phoneSchema.optional(),
 
-  position: z.string().max(50).optional,
+  position: z.string().max(50).optional(),
 
   org_id: uuidSchema,
 });

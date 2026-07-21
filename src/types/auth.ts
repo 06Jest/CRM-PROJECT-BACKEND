@@ -1,4 +1,4 @@
-import { Role } from "./profile";
+import { Roles } from "./global";
 
 export interface SignUpDTO {
   email: string;
@@ -24,7 +24,7 @@ export interface UpdatePasswordDTO {
 
 export interface AccessTokenPayload {
   sub: string;
-  role: Role;
+  role: Roles;
   orgId: string | null;
 }
 
@@ -36,7 +36,7 @@ export interface RequestMeta {
 export interface AuthenticatedProfile {
   id: string;
   orgId: string | null;
-  role: Role;
+  role: Roles;
   email: string | null;
   employeeId: string | null;
 }

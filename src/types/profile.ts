@@ -1,14 +1,14 @@
-export type Role =
-| 'super_admin'
-| 'admin'
-| 'agent';
+import { Roles } from "./global";
 
-export type ProfileStatus =
-| 'pending'
-| 'inactive'
-| 'active'
-| 'banned'
-| 'deleted';
+export const PROFILE_STATUSES = [
+  "pending",
+  "inactive",
+  "active",
+  "banned",
+  "deleted",
+] as const;
+
+export type ProfileStatus = (typeof PROFILE_STATUSES)[number];
 
 export interface Profile {
   id: string;
@@ -17,7 +17,7 @@ export interface Profile {
   last_name: string;
   email: string;
   phone?: string;
-  role: Role;
+  role: Roles;
   org_id: string;
   employee_id?: string;  
   position?: string; 
@@ -38,9 +38,9 @@ export interface DisplayProfile {
   avatar_url?: string;
 }
 
-export interface ProfileName {
-  first_name: string;
-  last_name: string;
+export interface ProfileIDName {
+  id: string;
+  display_name: string;
 }
 
 export interface AddProfileDTO {

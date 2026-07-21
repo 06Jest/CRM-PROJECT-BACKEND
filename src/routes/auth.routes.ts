@@ -6,18 +6,19 @@ import { signUpSchema, signInSchema, changePasswordSchema } from '../schema/auth
 
 const router = Router();
 
-router.post('/orgadmin-signup',validateBody(signUpSchema), adminSignUp);
-router.post('/orgadmin-signin',validateBody(signInSchema), adminSignIn);
-router.post('/orgagent-signin',validateBody(signInSchema),  agentSignIn);
+router.post('/signup',validateBody(signUpSchema), adminSignUp);
+router.post('/admin-signin',validateBody(signInSchema), adminSignIn);
+router.post('/agent-signin',validateBody(signInSchema), agentSignIn);
+router.patch('/refresh', refreshToken);
 
 
 
 router.use(verifyToken);
 router.use(authenticateUser);
+router.get('/me', getCurrentUser);
 
-router.post('/me', getCurrentUser);
 router.patch('/me/change-password',validateBody(changePasswordSchema),changePassword);
-router.patch('/me/refresh/', refreshToken);
+
 
 router.delete('/signout', signOut);
 

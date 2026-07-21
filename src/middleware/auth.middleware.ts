@@ -2,8 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { supabaseAdmin} from '../config/supabase';
 import { AppError } from './error.middleware';
 import { verifyAccessToken } from '../services/jwt.service';
-import { Jwt } from 'jsonwebtoken';
+import { table } from '../config/tables';
 
+const tab = table.profile;
 
 export const verifyToken = (
   req: Request,
@@ -11,13 +12,11 @@ export const verifyToken = (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.accessToken;
 
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!token) {
       throw new AppError(401, "Missing authorization token");
     }
-
-    const token = authHeader.slice(7);
 
     req.user = verifyAccessToken(token);
 
@@ -27,67 +26,6 @@ export const verifyToken = (
   }
 };
 
-
-
-
-export const superAdminOnly = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    if (!req.superAdminId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Not authenticated',
-      });
-    }
-
-    const response =
-      await supabaseAdmin
-        .from('profiles')
-        .select('role, is_active')
-        .eq('id', req.superAdminId)
-        .single();
-
-    const profile = response.data;
-    const error = response.error;
-
-    if (
-      error ||
-      !profile ||
-      profile.role !== 'super_admin'
-    ) {
-      return res.status(403).json({
-        success: false,
-        error:
-          'Super admin access required',
-      });
-    }
-
-    if (!profile.is_active) {
-      return res.status(403).json({
-        success: false,
-        error: 'Account deactivated',
-      });
-    }
-
-    next();
-  } catch (err) {
-    console.error(
-      'Super admin check error:',
-      err
-    );
-
-    return res.status(403).json({
-      success: false,
-      error: 'Forbidden',
-    });
-  }
-};
-
-
-
 export const authenticateUser = async (
   req: Request,
   res: Response,
@@ -95,35 +33,33 @@ export const authenticateUser = async (
 ) => {
   
   try {
-    const authHeader = req.headers.authorization;
 
-    const token = authHeader?.slice(7);
+    const token = req.cookies.accessToken;
+    
 
-    req.user = verifyAccessToken(token!);
-
-    console.log(req.user);
+    req.user = verifyAccessToken(token);
 
     const userId = req.user.sub;
     const orgId = req.user.orgId;
 
+
     const { data: profile, error} 
     = await supabaseAdmin
-      .from('profiles')
-      .select(`id, name, org_id, role, status`)
+      .from(tab)
+      .select('*')
       .eq('id', userId)
-      .eq('org_id', orgId)
       .single();
-
+    
 
     if ( error || !profile ) {
       return res.status(403).json({
         success: false,
         error:
-          'Org admin or member access required'
+          `Org admin or member access required`
       });
     }
 
-    if ( profile.role !== 'agent' || 'admin' || 'super_admin'  ) {
+    if ( profile.role !=='admin' && profile.role !=='agent') {
       return res.status(403).json({
         success: false,
         error:
@@ -148,11 +84,6 @@ export const authenticateUser = async (
     next();
 
   } catch (err) {
-    console.error('Authentication error', err);
-
-    return res.status(500).json({
-      success: false,
-      error: 'Authentication denied'
-    });
+    next(err);
   }
 };
