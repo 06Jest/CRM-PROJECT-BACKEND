@@ -1,54 +1,43 @@
-export type LeadsStatus =
-  | "New"
-  | "Contacted"
-  | "Qualified"
-  | "Closed";
+import type { Gender, PreferredTime, Priority, Source, Suffix } from "./global";
+
+export const LEAD_STATUSES = [
+  "New",
+  "Contacted",
+  "Qualified",
+  "Closed",
+] as const;
+
+export type LeadStatus = typeof LEAD_STATUSES[number];
 
 
-export type LeadSource = 
-  | "Website"
-  | "Referral"
-  | "Facebook"
-  | "Instagram"
-  | "LinkedIn"
-  | "Google Search"
-  | "Google Ads"
-  | "Email Campaign"
-  | "Cold Call"
-  | "Trade Show"
-  | "Webinar"
-  | "Partner"
-  | "Walk-in"
-  | "WhatsApp"
-  | "Messenger"
-  | "Personal Network"
-  | "Direct Conversation"
-  | "Networking Event"
-  | "Conference"
-  | "Friend"
-  | "Family"
-  | "Other";
-
-export type Gender = "Male" | "Female" | "Prefer not to say";
-export type Priority = "Highest" | "High" | "Low";
 
 export interface Lead {
   id: string;
   title: string;
-  source: LeadSource;
+  source: Source;
   first_name: string;
   last_name: string;
-  suffix?: string;
+  suffix?: Suffix;
   gender: Gender;
   birth_date?: string | null;
   email: string;
   phone: string;
   company_name?: string;
-  position?: string;
+  industry?: string;
+  position?: string;  
   department?: string;
-  status: LeadsStatus;
+  website?: string;
   priority: Priority;
   notes?: string;
+  preferred_contact_time: PreferredTime;
+  linkedin?: string;
+  facebook?: string;
+  instagram?: string;
+  tiktok?: string;
+  x?: string;
+  whatsapp?: string;
+  telegram?: string;
+  viber?: string;
   owner_id: string;
   org_id: string;            
   created_at: string;
@@ -57,37 +46,67 @@ export interface Lead {
   updated_by: string | null;
 }
 
+export interface LeadListItem extends Lead{
+
+  owner: {
+      id: string;
+      first_name: string;
+      last_name: string;
+  };
+}
+
+
 export interface AddLead {
   title: string;
-  source: LeadSource;
+  source: Source;
   first_name: string;
   last_name: string;
-  suffix?: string;
+  suffix?: Suffix;
   gender: Gender;
   birth_date?: string | null;
   email?: string;
   phone?: string;
   company_name?: string;
-  position?: string;
+  industry?: string;
+  position?: string;  
   department?: string;
-  status: LeadsStatus;
+  website?: string;
   priority: Priority;
   notes?: string;
+  preferred_contact_time: PreferredTime;
+  linkedin?: string;
+  facebook?: string;
+  instagram?: string;
+  tiktok?: string;
+  x?: string;
+  whatsapp?: string;
+  telegram?: string;
+  viber?: string;
 }
 export interface UpdateLead {
   title: string;
-  source: LeadSource;
+  source: Source;
   first_name: string;
   last_name: string;
-  suffix?: string;
+  suffix?: Suffix;
   gender: Gender;
   birth_date?: string | null;
   email?: string;
   phone?: string;
   company_name?: string;
-  position?: string;
+  industry?: string;
+  position?: string;  
   department?: string;
-  status: LeadsStatus;
+  website?: string;
   priority: Priority;
   notes?: string;
+  preferred_contact_time: PreferredTime;
+  linkedin?: string;
+  facebook?: string;
+  instagram?: string;
+  tiktok?: string;
+  x?: string;
+  whatsapp?: string;
+  telegram?: string;
+  viber?: string;
 }

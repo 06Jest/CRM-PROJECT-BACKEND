@@ -1,122 +1,32 @@
 import { z } from "zod";
+import { GENDERS, PREFERRED_CONTACT_TIMES, PRIORITIES, ROLES, SOURCES, SUFFIXES } from "../types/global";
+import { CONTACT_STATUSES } from "../types/contact";
+import { LEAD_STATUSES } from "../types/lead";
+import { DEAL_STAGES } from "../types/deal";
+import { PROFILE_STATUSES } from "../types/profile";
+import { CUSTOMER_STATUSES } from "../types/customer";
 
-export const sourceSchema = z.enum([
-  "Website",
-  "Referral",
-  "Facebook",
-  "Instagram",
-  "LinkedIn",
-  "Google Search",
-  "Google Ads",
-  "Email Campaign",
-  "Cold Call",
-  "Trade Show",
-  "Webinar",
-  "Partner",
-  "Walk-in",
-  "WhatsApp",
-  "Messenger",
-  "Personal Network",
-  "Direct Conversation",
-  "Networking Event",
-  "Conference",
-  "Friend",
-  "Family",
-  "Other",
-]);
-export const CONTACT_STATUSES = [
-  "Lead",
-  "Contacted",
-  "Qualified",
-  "Opportunity",
-  "Customer",
-  "Inactive",
-  "Lost",
-  "Churned",
-] as const;
-
-export type ContactStatus = typeof CONTACT_STATUSES[number];
+export const sourceSchema = z.enum(SOURCES);
 
 export const contactStatusSchema = z.enum(CONTACT_STATUSES);
 
-export const LEAD_STATUSES = [
-  "New",
-  "Contacted",
-  "Qualified",
-  "Closed",
-] as const;
-
-export type LeadStatus = typeof LEAD_STATUSES[number];
-
 export const leadStatusSchema = z.enum(LEAD_STATUSES);
 
-export const DEAL_STAGES = [
-  "Prospecting",
-  "Proposal",
-  "Negotiation",
-  "Closed Won",
-  "Closed Lost",
-] as const;
-
-export type DealStage = typeof DEAL_STAGES[number];
+export const CustomerStatusSchema = z.enum(CUSTOMER_STATUSES);
 
 export const dealStageSchema = z.enum(DEAL_STAGES);
 
-export const PROFILE_STATUSES = [
-  "pending",
-  "inactive",
-  "active",
-  "banned",
-  "deleted",
-] as const;
+export const profileStatusSchema = z.enum(PROFILE_STATUSES);
 
-export const profileStatusSchema = z.enum([
-  "pending",
-  "inactive",
-  "active",
-  "banned",
-  "deleted",
-]);
+export const roleSchema = z.enum(ROLES);
 
-export type ProfileStatus = z.infer<typeof profileStatusSchema>;
+export const genderSchema = z.enum(GENDERS);
 
-export const roleSchema = z.enum([
-  "super_admin", 
-  "admin",
-  "agent",
-]);
+export const prioritySchema = z.enum(PRIORITIES);
 
-export type Role = z.infer<typeof roleSchema>;
+export const suffixSchema = z.enum(SUFFIXES);
 
-export const genderSchema = z.enum([
-  "Male",
-  "Female", 
-  "Prefer not to say"
-]);
-
-export type Gender = z.infer<typeof genderSchema>;
-
-export const prioritySchema = z.enum([
-  "Highest",
-  "High",
-  "Low"
-]);
-
-export type Priority = z.infer<typeof prioritySchema>;
-
-export const suffixSchema = z.enum([
-  "Jr.",
-  "Sr.",
-  "II",
-  "III",
-  "IV",
-  "V",
-  "VI",
-  "VII",
-  "VIII",
-  "IX",
-  "X",
-]);
+export const preferedTimeSchema = z.enum(PREFERRED_CONTACT_TIMES);
 
 export const passwordSchema = z
   .string()
@@ -128,22 +38,35 @@ export const passwordSchema = z
   .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
 
 export const emailSchema = z
-  .email("Invalid email address");
+  .email("Invalid email address")
+  .trim();
 
 export const firstNameSchema = z
   .string()
-  .min(1, "First name is required")
-  .max(50);
+  .trim()
+  .min(2, "Please provide a valid First Name.")
+  .max(50)
+  .refine(
+    (value) => !/(.)\1{3,}/.test(value),
+    "A character cannot be repeated 4 or more times consecutively."
+  );
 
 export const lastNameSchema = z
   .string()
-  .min(1, "Last name is required")
-  .max(50);
+  .trim()
+  .min(2, "Please provide a valid Last Name.")
+  .max(50)
+  .refine(
+    (value) => !/(.)\1{3,}/.test(value),
+    "A character cannot be repeated 4 or more times consecutively."
+  );
 
 export const orgNameSchema = z
   .string()
-  .min(1, "Organization name is required")
+  .trim()
+  .min(3, "Please provide a valid Organization Name.")
   .max(100)
+  
 
 export const uuidSchema = z
   .uuid("Invalid ID");
@@ -163,34 +86,91 @@ export const birthdateSchema = z
     {
       message: "Birthdate cannot be in the future.",
     }
-  );
+  ).nullable();
 
 export const companyNameSchema = z
   .string()
+  .trim()
+  .max(100);
+
+export const industrySchema = z
+  .string()
+  .trim()
   .max(100);
 
 export const positionSchema = z
   .string()
-  .max(50);
+  .trim()
+  .max(50)
+  .refine(
+    (value) => !/(.)\1{3,}/.test(value),
+    "A character cannot be repeated 4 or more times consecutively."
+  );
 
 export const departmentSchema = z
   .string()
-  .max(50);
+  .trim()
+  .max(50)
+  .refine(
+    (value) => !/(.)\1{3,}/.test(value),
+    "A character cannot be repeated 4 or more times consecutively."
+  );
+
+export const websiteSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) =>
+      value === "" ||
+      /^https?:\/\/.+/i.test(value),
+    {
+      message: "Website must start with http:// or https://",
+    }
+  );
 
 
 export const notesSchema = z
   .string()
+  .trim()
   .max(2000);
 
 export const displayNameSchema = z
   .string()
+  .trim()
   .max(100);
 
 export const titleSchema = z
   .string()
-  .max(150);
+  .trim()
+  .max(150)
+  .refine(
+    (value) => !/(.)\1{3,}/.test(value),
+    "A character cannot be repeated 4 or more times consecutively."
+  );
 
 export const valueSchema = z
   .number()
   .nonnegative("Deal value cannot be negative.")
   .max(999_999_999.99, "Value is too large.");
+
+export const socialUsernameSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) =>
+      value === "" || /^[A-Za-z0-9._-]{2,100}$/.test(value),
+    {
+      message: "Invalid username.",
+    }
+  ).transform((value) => (value === "" ? null : value));;
+
+ export const messagingNumberSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) =>
+      value === "" || /^\+?[0-9]{7,15}$/.test(value),
+    {
+      message: "Invalid phone number.",
+    }
+  ).transform((value) => (value === "" ? null : value));;

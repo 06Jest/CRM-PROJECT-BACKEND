@@ -10,9 +10,11 @@ import {
   rotateRefreshToken,
   revokeRefreshToken,
   revokeAllForProfile,
-} from "./refresh.service";
+} from "./jwt.service";
 import { RequestMeta, TokenPair } from '../types/auth'
-import { Profile } from "../types/profile";
+import { getProfileByIdFromDB } from "./profiles.service";
+
+
 
 
 export const signUpWithAuth = async (dto: SignUpDTO) => {
@@ -53,47 +55,26 @@ export const signInWithAuth = async (
   return data ;
 }
 
-export const createToken =  (
-  profile: Profile
-): string => {
-  const accessToken =  createAccessToken({
-    sub: profile.id,
-    role: profile.role,
-    orgId: profile.org_id,
-  });
-  return accessToken ;
-}
 
-
-export const refresh = async (
+export const newRefresh = async (
   rawRefreshToken: string,
-  meta: RequestMeta = {}
+  meta: RequestMeta
 ): Promise<TokenPair> => {
-  const { profileId, rawRefreshToken: newRefreshToken } = await rotateRefreshToken(
+
+
+  const { newRawToken, orgId,  profileId } = await rotateRefreshToken(
     rawRefreshToken,
-    meta
+    meta,
   );
 
-  const { data,  error } = await supabaseAdmin
-    .from("profiles")
-    .select("id, org_id, role")
-    .eq("id", profileId)
-    .maybeSingle();
+  const profile = await getProfileByIdFromDB(profileId, orgId)
 
-  if (error) {
-    throw new AppError(400, `Failed to refresh: ${error.message}`);
-  }
-  if (!data) {
-    throw new AppError(400, `Failed to fetch data for access token.`);
-  }
+  const accessToken = createAccessToken(profile);
 
-  const accessToken = createAccessToken({
-    sub: data.id,
-    role: data.role,
-    orgId: data.org_id,
-  });
-  return { accessToken, refreshToken: newRefreshToken };
+  return { accessToken, refreshToken: newRawToken };
 }
+
+
 
 export const requestPasswordReset = async (email: string): Promise<void> => {
   const db = createSupabaseClient();
@@ -129,7 +110,7 @@ export const changePasswordFromAuth = async (user: ChangePasswordDTO): Promise<v
 
 
 export const signOutFromAuth = async (rawRefreshToken: string): Promise<void> => {
-   await revokeRefreshToken(rawRefreshToken);
+  await revokeRefreshToken(rawRefreshToken);
 }
 
 export const signOutAllSessions = async (profileId: string): Promise<void> => {

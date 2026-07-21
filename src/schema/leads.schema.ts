@@ -17,6 +17,12 @@ import {
   prioritySchema,
   uuidSchema,
   titleSchema,
+  leadStatusSchema,
+  industrySchema,
+  preferedTimeSchema,
+  socialUsernameSchema,
+  messagingNumberSchema,
+  websiteSchema,
  } from "./global.schema";
 
 
@@ -31,60 +37,106 @@ export const addLeadSchema = z.object({
 
   last_name: lastNameSchema,
 
-  suffix: suffixSchema.optional,
+  suffix: suffixSchema.optional().nullable(),
 
-  gender: genderSchema.optional,
+  gender: genderSchema,
 
-  birth_date: birthdateSchema.optional,
+  birth_date: birthdateSchema.optional().nullable(),
 
-  email: emailSchema.optional,
+  email: emailSchema.nullable(),
 
-  phone: phoneSchema.optional,
+  phone: phoneSchema.nullable(),
+  
+  industry: industrySchema.optional(),
 
-  company_name: companyNameSchema.optional,
+  company_name: companyNameSchema.optional(),
 
-  position: positionSchema.optional,
+  position: positionSchema.optional(),
 
-  department: departmentSchema.optional,
+  department: departmentSchema.optional(),
 
-  notes: notesSchema.optional,
+  website: websiteSchema.optional().nullable(),
 
-  status: contactStatusSchema,
+  notes: notesSchema.optional(),
 
   priority: prioritySchema,
+
+  preferred_contact_time: preferedTimeSchema,
+
+  linkedin: socialUsernameSchema.nullable().optional(),
+
+  facebook: socialUsernameSchema.nullable().optional(),
+
+  instagram: socialUsernameSchema.nullable().optional(),
+
+  tiktok: socialUsernameSchema.nullable().optional(),
+
+  x: socialUsernameSchema.nullable().optional(),
+
+  telegram: socialUsernameSchema.nullable().optional(),
+
+  whatsapp: messagingNumberSchema.nullable().optional(),
+
+  viber: messagingNumberSchema.nullable().optional(),
 });
 
 export const updateLeadSchema = z.object({
 
-  title: titleSchema.optional,
+  title: titleSchema.optional(),
 
-  source: sourceSchema.optional,
+  source: sourceSchema.optional(),
 
-  first_name: firstNameSchema.optional,
+  first_name: firstNameSchema.optional(),
 
-  last_name: lastNameSchema.optional,
+  last_name: lastNameSchema.optional(),
 
-  suffix: suffixSchema.optional,
+  suffix: suffixSchema.nullable().optional(),
 
-  gender: genderSchema.optional,
+  gender: genderSchema,
 
-  birth_date: birthdateSchema.optional,
+  birth_date: birthdateSchema.nullable().optional(),
 
-  email: emailSchema.optional,
+  email: emailSchema.nullable(),
 
-  phone: phoneSchema.optional,
+  phone: phoneSchema.nullable (),
 
-  company_name: companyNameSchema.optional,
+  industry: industrySchema.optional(),
 
-  position: positionSchema.optional,
+  company_name: companyNameSchema.optional(),
 
-  department: departmentSchema.optional,
+  position: positionSchema.optional(),
 
-  notes: notesSchema.optional,
+  department: departmentSchema.optional(),
 
-  status: contactStatusSchema.optional,
+  website: websiteSchema.optional().nullable(),
 
-  priority: prioritySchema.optional,
+  notes: notesSchema.optional(),
+
+  priority: prioritySchema,
+
+  preferred_contact_time: preferedTimeSchema,
+
+  linkedin: socialUsernameSchema.nullable().optional(),
+
+  facebook: socialUsernameSchema.nullable().optional(),
+
+  instagram: socialUsernameSchema.nullable().optional(),
+
+  tiktok: socialUsernameSchema.nullable().optional(),
+
+  x: socialUsernameSchema.nullable().optional(),
+
+  telegram: socialUsernameSchema.nullable().optional(),
+
+  whatsapp: messagingNumberSchema.nullable().optional(),
+
+  viber: messagingNumberSchema.nullable().optional(),
+});
+
+export const updateLeadStatusSchema = z.object({
+
+  status: leadStatusSchema
+
 });
 
 

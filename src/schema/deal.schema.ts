@@ -9,7 +9,7 @@ export const addDealSchema = z.object({
 
   stage: dealStageSchema,
 
-  notes: notesSchema.optional,
+  notes: notesSchema.optional(),
 
   value: valueSchema
 
@@ -17,24 +17,29 @@ export const addDealSchema = z.object({
 
 export const updateDealSchema = z.object({
 
-  title: titleSchema.optional,
+  title: titleSchema.optional(),
 
-  stage: dealStageSchema.optional,
+  notes: notesSchema.optional(),
 
-  notes: notesSchema.optional,
-
-  value: valueSchema.optional
+  value: valueSchema.optional()
 
 });
 
+export const updateDealStageSchema = z.object({
+
+  stage: dealStageSchema
+
+});
+
+
 export const closeDealSchema = z.object({
 
-  title: titleSchema.optional,
+  title: titleSchema.optional(),
 
-  stage: dealStageSchema.optional,
+  stage: dealStageSchema.optional(),
 
-  notes: notesSchema.optional,
+  notes: notesSchema.optional(),
 
-  value: valueSchema.optional
+  value: valueSchema.optional()
 
 });

@@ -19,6 +19,20 @@ export const setAuthCookies = (
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     maxAge: 15 * 24 * 60 * 60 * 1000, 
-    path: "/auth/refresh",
+    path: "/api/auth/refresh",
+  });
+};
+
+export const setNewAccessCookie = (
+  res: Response,
+  accessToken: string
+) :void => {
+
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000, 
+    path: "/",
   });
 };

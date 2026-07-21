@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import type { StringValue } from "ms";
 
 dotenv.config();
 
@@ -10,7 +11,7 @@ export const config = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
 
     TABLE: {
-      profile: process.env.TABLE_PROFILES,
+      profile: process.env.TABLE_PROFILES ,
       organizations: process.env.TABLE_ORGANIZATIONS,
       leads: process.env.TABLE_LEADS,
       contacts: process.env.TABLE_CONTACTS,
@@ -29,12 +30,12 @@ export const config = {
   JWT: {
     access: {
       secret: process.env.JWT_ACCESS_SECRET,
-      expire: Number(process.env.JWT_ACCESS_EXPIRES) || '15',
+      expire: (process.env.JWT_ACCESS_EXPIRES ?? '15m') as StringValue,
     },
     refresh: {
       secret: process.env.JWT_REFRESH_SECRET,
-      expire: Number(process.env.JWT_REFRESH_EXPIRES_DAYS) || '30',
-      reuse: Number(process.env.JWT_REFRESH_REUSE_SECONDS) || '10',
+      expire: Number(process.env.JWT_REFRESH_EXPIRES_DAYS) || 30,
+      reuse: Number(process.env.JWT_REFRESH_REUSE_SECONDS) || 10,
     }
   }
 };

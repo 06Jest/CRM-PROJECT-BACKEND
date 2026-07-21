@@ -2,14 +2,14 @@ import {  supabaseAdmin } from '../config/supabase';
 import { AppError } from '../middleware/error.middleware';
 import type { 
   Profile,
-  Role,
   AddProfileDTO, 
   UpdateProfileDTO,
   ProfileStatus,
-  ProfileName,
   DisplayProfile,
-  AddAdminProfileDTO
+  AddAdminProfileDTO,
+  ProfileIDName
  } from '../types/profile';
+ import type { Roles } from '../types/global'
 
  import { table } from '../config/tables';
  
@@ -134,7 +134,7 @@ export const isProfileExistFromDB = async ( userId: string ):
     .select('id, org_id')
     .eq('id', userId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw new AppError(500, `Failed to fetch profile: ${error.message}`);
@@ -159,16 +159,13 @@ export const getProfileByIdFromDB = async ( userId: string, orgId: string ):
   return data;
 }
 
-export const getProfileNameFromDB = async ( userId: string, orgId: string ): 
-  Promise<ProfileName> => {
+export const getAllMembersIDNamesFromDB = async ( orgId: string ): 
+  Promise<ProfileIDName[]> => {
   const { data, error } = await supabaseAdmin
     .from(tab)
-    .select('first_name, last_name')
-    .eq('id', userId)
+    .select('id, display_name')
     .eq('org_id', orgId)
-    .eq('status', 'active')
     .is('deleted_at', null)
-    .single()
 
   if (error) {
     throw new AppError(500, `Failed to fetch profile: ${error.message}`);
@@ -274,8 +271,8 @@ export const updateProfileStatusFromDB = async (
 export const updateRoleFromDB = async (
   userId: string,
   orgId: string,
-  role: Role
-) : Promise<Role> => {
+  role: Roles
+) : Promise<Roles> => {
   const { data, error } = await supabaseAdmin
       .from(tab)
       .update({role: role})

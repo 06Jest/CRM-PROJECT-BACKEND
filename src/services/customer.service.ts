@@ -1,31 +1,32 @@
 import { supabaseAdmin } from '../config/supabase';
-import type { AddDeal, Deal, DealListItem, DealStage, UpdateDeal } from '../types/deal';
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
+import { Customer, CustomerListItem, CustomerStatus } from '../types/customer';
 
-const tab = table.deals;
-const fkey = 'deals_owner_id_fkey';
+const tab = table.customers;
+const fkey = 'fk_customer_owner';
 const selectAllWithOwner = `*, owner:profiles!${fkey} (
         id,
         first_name,
         last_name )`
-
 const all = selectAllWithOwner;
 
-export const getDealsFromDB = async (orgId: string ): Promise<Deal[]> => {
+
+export const getCustomersFromDB = async (orgId: string ): Promise<Customer[]> => {
     const { data, error } = await supabaseAdmin
       .from(tab)
       .select('*')
       .eq('org_id', orgId)
       .is('deleted_at', null)
+      .order('first_name', { ascending: true })
 
     if (error) {
-      throw new AppError(500, `Failed to fetch Deal: ${error.message}`);
+      throw new AppError(500, `Failed to fetch Customers: ${error.message}`);
     }
   return data ?? [];
 }
 
-export const getDealsListsFromDB = async (orgId: string ): Promise<DealListItem[]> => {
+export const getCustomersListsFromDB = async (orgId: string ): Promise<CustomerListItem[]> => {
     const { data, error } = await supabaseAdmin
       .from(tab)
       .select(all)
@@ -33,12 +34,12 @@ export const getDealsListsFromDB = async (orgId: string ): Promise<DealListItem[
       .is('deleted_at', null)
 
     if (error) {
-      throw new AppError(500, `Failed to fetch Deal: ${error.message}`);
+      throw new AppError(500, `Failed to fetch Customers: ${error.message}`);
     }
-  return data as DealListItem[];
+  return data as CustomerListItem[];
 }
 
-export const getDealsByIDFromDB = async (id: string, orgId: string ): Promise<DealListItem> => {
+export const getCustomerByIDFromDB = async (id: string, orgId: string ): Promise<CustomerListItem> => {
     const { data, error } = await supabaseAdmin
       .from(tab)
       .select(all)
@@ -48,66 +49,44 @@ export const getDealsByIDFromDB = async (id: string, orgId: string ): Promise<De
       .single()
 
     if (error) {
-      throw new AppError(500, `Failed to fetch Deal: ${error.message}`);
+      throw new AppError(500, `Failed to fetch Customer: ${error.message}`);
     }
-  return data as DealListItem;
+  return data as CustomerListItem;
 }
 
-export const addDealToDB = async (
+export const addCustomerToDB = async (
   orgId: string,
   userId: string,
-  deal: AddDeal
-) : Promise<DealListItem> => {
+  contactId: string
+) : Promise<CustomerListItem> => {
   const { data, error } = await supabaseAdmin
       .from(tab)
-      .insert([{
-        ...deal,
+      .insert({
+        contact_id: contactId,
+        status: 'Active',
         org_id: orgId,
         owner_id: userId,
-        updated_by: userId,
-      }])
+      })
       .select(all)
       .single()
 
     if (error) {
-      throw new AppError(500, `Failed to add Deal: ${error.message}`);
+      throw new AppError(500, `Failed to add Customer: ${error.message}`);
     }
-  return data as DealListItem;
+  return data as CustomerListItem;
 }
 
-export const updateDealFromDB = async (
-  id: string,
-  userId: string,
-  deal: UpdateDeal,
-  orgId: string
-) : Promise<DealListItem> => {
-  const { data, error } = await supabaseAdmin
-      .from(tab)
-      .update([{
-        ...deal,
-        updated_by: userId  
-      }])
-      .eq('id', id)
-      .eq('org_id', orgId)
-      .select(all)
-      .single()
 
-    if (error) {
-      throw new AppError(500, `Failed to update Deal: ${error.message}`);
-    }
-  return data as DealListItem;
-}
-
-export const updateDealStageFromDB = async (
+export const updateCustomerNotesFromDB = async (
   id: string,
   orgId: string,
   userId: string,
-  stage: DealStage
-) : Promise<DealListItem> => {
+  notes: string
+) : Promise<CustomerListItem> => {
   const { data, error } = await supabaseAdmin
       .from(tab)
       .update({
-        stage: stage,
+        notes: notes,
         updated_by: userId
       })
       .eq('id', id)
@@ -116,38 +95,39 @@ export const updateDealStageFromDB = async (
       .single()
 
     if (error) {
-      throw new AppError(500, `Failed to update Deal Stage: ${error.message}`);
+      throw new AppError(500, `Failed to update Customer: ${error.message}`);
     }
-  return data as DealListItem;
+  return data as CustomerListItem;
 }
 
-export const closeDealFromDB = async (
+export const updateCustomerStatusFromDB = async (
   id: string,
-  outcome: 'Closed Won' | 'Closed Lost',
+  orgId: string,
   userId: string,
-  orgId: string
-) : Promise<DealListItem> => {
+  status: CustomerStatus
+) : Promise<CustomerListItem> => {
   const { data, error } = await supabaseAdmin
       .from(tab)
-      .update([{
-        stage: outcome,
-        updated_by: userId,
-        close_date: new Date().toISOString(),
-        closed_by: userId,
-      }])
+      .update({
+        status: status,
+        updated_by: userId
+      })
       .eq('id', id)
       .eq('org_id', orgId)
       .select(all)
       .single()
 
     if (error) {
-      throw new AppError(500, `Failed to close Deal: ${error.message}`);
+      throw new AppError(500, `Failed to update Customer Status: ${error.message}`);
     }
-  return data;
+  return data as CustomerListItem;
 }
 
-export const deleteDealFromDB = async (
+
+
+export const deleteCustomerFromDB = async (
   id: string,
+  orgId: string,
   userId: string
 ) : Promise<string> => {
   const { error } = await supabaseAdmin
@@ -157,14 +137,35 @@ export const deleteDealFromDB = async (
         deleted_by: userId,
       })
       .eq('id', id)
+      .eq('org_id', orgId)
 
     if (error) {
-      throw new AppError(500, `Failed to delete Deal: ${error.message}`);
+      throw new AppError(500, `Failed to delete Customer: ${error.message}`);
     }
   return id;
 }
 
-export const deleteAllDealsByContactIDFromDB = async (
+export const deleteBulkCustomersFromDB = async (
+  ids: string[],
+  orgId: string,
+  userId: string
+) : Promise<string[]> => {
+  const { error } = await supabaseAdmin
+      .from(tab)
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: userId,
+      })
+      .in('id', ids)
+      .eq('org_id', orgId)
+
+    if (error) {
+      throw new AppError(500, `Failed to delete Customers: ${error.message}`);
+    }
+  return ids;
+}
+
+export const deleteCustomerByContactIDFromDB = async (
   id: string,
   orgId: string,
   userId: string
@@ -184,7 +185,7 @@ export const deleteAllDealsByContactIDFromDB = async (
   return id;
 }
 
-export const deleteAllDealsByBulkContactsFromDB = async (
+export const deleteBulkCustomersByBulkContactIDsFromDB = async (
   ids: string[],
   orgId: string,
   userId: string
