@@ -10,6 +10,7 @@ import contactRoutes from './routes/contacts.routes';
 import leadsRoutes from './routes/leads.routes'
 import dealsRoutes from './routes/deals.routes';
 import customersRoutes from './routes/customers.routes'
+import notesRoutes from './routes/notes.routes';
 import aiRoutes from './routes/ai.routes';
 import emailRoutes from './routes/email.routes';
 import smsRoutes from './routes/sms.routes';
@@ -44,6 +45,8 @@ app.use('/api/leads', leadsRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/deals', dealsRoutes);
 app.use('/api/customers', customersRoutes);
+app.use('/api/notes', notesRoutes);
+app.use('/api/emails', emailRoutes);
 
 app.use('/health', healthRoutes);
 
@@ -51,7 +54,7 @@ app.use('/api/stripe/webhook', express.raw({ type: 'application/json'}));
 
 
 app.use('/api/ai', aiRoutes);;
-app.use('/api/email', emailRoutes);
+
 app.use('/api/sms', smsRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/analytics', analyticsRoutes);

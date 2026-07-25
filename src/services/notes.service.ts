@@ -1,0 +1,220 @@
+import { supabaseAdmin } from '../config/supabase';
+import { AppError } from '../middleware/error.middleware';
+import { table } from '../config/tables';
+
+import type {
+  Note,
+  NoteListItem,
+  AddNote,
+  UpdateNote,
+} from '../types/note';
+
+const tab = table.notes;
+const fkey = 'notes_author_id_fkey';
+
+const selectAllWithAuthor = `
+  *,
+  author:profiles!${fkey} (
+    id,
+    first_name,
+    last_name
+  )
+`;
+
+const all = selectAllWithAuthor;
+
+export const getPublicNotesFromDB = async (
+  orgId: string,
+): Promise<NoteListItem[]> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .select(all)
+    .eq('org_id', orgId)
+    .eq('visibility', 'public')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new AppError(500, `Failed to fetch Notes: ${error.message}`);
+  }
+  return data ?? [];
+};
+
+export const getPrivateNotesFromDB = async (
+  orgId: string,
+  userId: string
+): Promise<NoteListItem[]> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .select(all)
+    .eq('org_id', orgId)
+    .eq('author_id', userId)
+    .eq('visibility', 'private')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new AppError(500, `Failed to fetch Notes: ${error.message}`);
+  }
+  return data ?? [];
+};
+
+export const getNotesFromDB = async (
+  orgId: string,
+  userId: string
+): Promise<NoteListItem[]> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .select(all)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .or(
+      `visibility.eq.public,and(visibility.eq.private,author_id.eq.${userId})`
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new AppError(500, `Failed to fetch Notes: ${error.message}`);
+  }
+
+  return data ?? [];
+};
+
+export const getNoteByIDFromDB = async (
+  id: string,
+  orgId: string
+): Promise<NoteListItem> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .select(all)
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .single();
+
+  if (error) {
+    throw new AppError(500, `Failed to fetch Note: ${error.message}`);
+  }
+
+  return data;
+};
+
+export const addNoteToDB = async (
+  orgId: string,
+  userId: string,
+  note: AddNote
+): Promise<NoteListItem> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .insert([
+      {
+        ...note,
+        org_id: orgId,
+        author_id: userId,
+        updated_by: userId,
+      },
+    ])
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(500, `Failed to add Note: ${error.message}`);
+  }
+
+  return data;
+};
+
+export const updateNoteFromDB = async (
+  id: string,
+  orgId: string,
+  userId: string,
+  note: UpdateNote
+): Promise<NoteListItem> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .update({
+      ...note,
+      updated_by: userId,
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .eq('author_id', userId)
+    .is('deleted_at', null)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(500, `Failed to update Note: ${error.message}`);
+  }
+
+  return data;
+};
+
+export const isPineedNoteFromDB = async (
+  id: string,
+  orgId: string,
+  userId: string,
+  pinned: boolean
+): Promise<NoteListItem> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .update({
+      pinned: pinned,
+      updated_by: userId,
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .eq('author_id', userId)
+    .is('deleted_at', null)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(500, `Failed to update Note: ${error.message}`);
+  }
+
+  return data;
+};
+
+export const deletePrivateNoteFromDB = async (
+  id: string,
+  orgId: string,
+  userId: string
+): Promise<string> => {
+  const { error } = await supabaseAdmin
+    .from(tab)
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: userId,
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .eq('author_id', userId);
+
+  if (error) {
+    throw new AppError(500, `Failed to delete Note: ${error.message}`);
+  }
+
+  return id;
+};
+
+export const deleteNoteFromDB = async (
+  id: string,
+  orgId: string,
+  userId: string
+): Promise<string> => {
+  const { error } = await supabaseAdmin
+    .from(tab)
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: userId,
+    })
+    .eq('id', id)
+    .eq('org_id', orgId);
+
+  if (error) {
+    throw new AppError(500, `Failed to delete Note: ${error.message}`);
+  }
+
+  return id;
+};

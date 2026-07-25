@@ -1,97 +1,373 @@
-import { Request, Response } from "express";
-import { 
+import { Request, Response, NextFunction } from "express";
+
+import { AppError } from "../middleware/error.middleware";
+import { uuidSchema } from "../schema/global.schema";
+
+import {
+  getEmails,
+  createDraft,
+  updateDraft,
   sendEmail,
-  sendAgentInviteEmail,
-  sendWeeklySummaryEmail,
-  verifySmtpConnection,
-  sendPasswordResetEmail
- } from "../services/email.service";
+  getLeadEmails,
+  getContactEmails,
+  getCustomerEmails,
+  deleteEmail,
+} from "../services/email.service";
+import { getEmailById } from "../repository/email.repository";
 
-export const sendEmailHandler = async (req: Request, res: Response): Promise<void> => {
+export const getAllEmails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
   try {
-    const { to, subject, body, isHtml } = req.body;
-    if (!to || !subject || !body) {
-      res.status(400).json({
-        success: false,
-        error: 'to, subject, and body are required'
-      });
-      return;
+
+    const orgId = req.user?.orgId;
+
+
+    if (!orgId) {
+      throw new AppError(401, "Unauthorized user");
     }
-    await sendEmail({ to, subject, body, isHtml });
-    res.json({
+
+
+    const data = await getEmails(orgId);
+
+
+    return res.status(200).json({
       success: true,
-      message: 'Email sent successfully'
+      message: "Emails fetch successful",
+      data,
     });
-  } catch (err: any) {
-    console.error('[EMAIL] Send failed:', err.message);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+
+
+  } catch(err) {
+    next(err);
   }
+
 };
 
-export const sendInviteHandler = async (
+export const getEmailByID = async (
   req: Request,
-  res: Response
-): Promise<void> => {
+  res: Response,
+  next: NextFunction
+) => {
+
   try {
-    const { to, agentName, employeeId, tempPassword, adminName, orgName } = req.body;
-    if (!to || !agentName || !employeeId || !tempPassword) {
-      res.status(400).json({ success: false, error: 'Missing required fields' });
-      return;
+
+    const id = uuidSchema.parse(req.params.id);
+
+    const orgId = req.user?.orgId;
+
+
+    if(!orgId){
+      throw new AppError(401,"Unauthorized user");
     }
-    await sendAgentInviteEmail(
-      to, agentName, employeeId, tempPassword,
-      adminName || 'Admin', orgName || 'uniThread'
+
+
+    const data = await getEmailById(
+      id,
+      orgId
     );
-    res.json({ success: true, message: 'Invite email sent' });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });;
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Email fetch successful",
+      data,
+    });
+
+
+  } catch(err){
+    next(err);
   }
+
 };
 
-export const sendWeeklySummaryHandler = async (
+export const addEmailDraft = async (
   req: Request,
-  res: Response
-): Promise<void> => {
+  res: Response,
+  next: NextFunction
+) => {
+
   try {
-    const { to, recipientName, stats } = req.body;
-    if (!to || !stats) {
-      res.status(400).json({ success: false, error: 'to and stats are required' });
-      return;
+
+    const orgId = req.user?.orgId;
+    const userId = req.user?.sub;
+
+
+    if(!orgId || !userId){
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
-    await sendWeeklySummaryEmail(to, recipientName || 'there', stats);
-    res.json({ success: true, message: 'Weekly summary sent' });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+
+
+    const data = await createDraft(
+      orgId,
+      userId,
+      req.body
+    );
+
+
+    return res.status(201).json({
+      success:true,
+      message:"Email draft created successfully",
+      data,
+    });
+
+
+  } catch(err){
+    next(err);
   }
+
 };
 
-export const verifySmtpHandler = async (
-  _req: Request,
-  res: Response
-): Promise<void> => {
-  const ok = await verifySmtpConnection();
-  res.json({
-    success: ok,
-    message: ok ? 'SMTP connected successfully' : 'SMTP connection failed',
-  });
-};
-
-export const sendPasswordResetHandler = async (
+export const updateEmailDraft = async (
   req: Request,
-  res: Response
-): Promise<void> => {
+  res: Response,
+  next: NextFunction
+) => {
+
   try {
-    const { to, resetUrl, recipientName } = req.body;
-    if (!to || !resetUrl) {
-      res.status(400).json({ success: false, error: 'to and resetUrl required' });
-      return;
+
+    const id = uuidSchema.parse(req.params.id);
+
+    const orgId = req.user?.orgId;
+
+
+    if(!orgId){
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
-    await sendPasswordResetEmail(to, resetUrl, recipientName);
-    res.json({ success: true, message: 'Password reset email sent' });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+
+
+    const data = await updateDraft(
+      id,
+      orgId,
+      req.body
+    );
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Email draft updated successfully",
+      data,
+    });
+
+
+  } catch(err){
+    next(err);
   }
+
 };
+
+export const sendEmailController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
+  try {
+
+    const id = uuidSchema.parse(req.params.id);
+
+    const orgId = req.user?.orgId;
+
+
+    if(!orgId){
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+
+    const data = await sendEmail(
+      id,
+      orgId
+    );
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Email sent successfully",
+      data,
+    });
+
+
+  } catch(err){
+    next(err);
+  }
+
+};
+
+export const getLeadEmailHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
+  try {
+
+    const leadId = uuidSchema.parse(
+      req.params.leadId
+    );
+
+    const orgId = req.user?.orgId;
+
+
+    if(!orgId){
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+
+    const data = await getLeadEmails(
+      orgId,
+      leadId
+    );
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Lead email history fetch successful",
+      data,
+    });
+
+
+  } catch(err){
+    next(err);
+  }
+
+};
+
+export const getContactEmailHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
+  try {
+
+    const contactId = uuidSchema.parse(
+      req.params.contactId
+    );
+
+    const orgId = req.user?.orgId;
+
+
+    if(!orgId){
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+
+    const data = await getContactEmails(
+      orgId,
+      contactId
+    );
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Contact email history fetch successful",
+      data,
+    });
+
+
+  } catch(err){
+    next(err);
+  }
+
+};
+
+export const getCustomerEmailHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
+  try {
+
+    const customerId = uuidSchema.parse(
+      req.params.customerId
+    );
+
+    const orgId = req.user?.orgId;
+
+
+    if(!orgId){
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+
+    const data = await getCustomerEmails(
+      orgId,
+      customerId
+    );
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Customer email history fetch successful",
+      data,
+    });
+
+
+  } catch(err){
+    next(err);
+  }
+
+};
+
+export const removeEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
+  try {
+
+    const id = uuidSchema.parse(req.params.id);
+
+    const orgId = req.user?.orgId;
+
+
+    if(!orgId){
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+
+    const data = await deleteEmail(
+      id,
+      orgId
+    );
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Email deleted successfully",
+      data,
+    });
+
+
+  } catch(err){
+    next(err);
+  }
+
+};
+
