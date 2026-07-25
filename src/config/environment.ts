@@ -11,13 +11,15 @@ export const config = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
 
     TABLE: {
+      refresh_tokens: process.env.TABLE_REFRESH_TOKENS,
       profile: process.env.TABLE_PROFILES ,
       organizations: process.env.TABLE_ORGANIZATIONS,
       leads: process.env.TABLE_LEADS,
       contacts: process.env.TABLE_CONTACTS,
       deals: process.env.TABLE_DEALS,
       customers: process.env.TABLE_CUSTOMERS,
-      refresh_tokens: process.env.TABLE_REFRESH_TOKENS,
+      notes: process.env.TABLE_NOTES,
+      emails: process.env.TABLE_EMAILS,
     }
   },
 
@@ -37,6 +39,12 @@ export const config = {
       expire: Number(process.env.JWT_REFRESH_EXPIRES_DAYS) || 30,
       reuse: Number(process.env.JWT_REFRESH_REUSE_SECONDS) || 10,
     }
+  },
+
+  EMAIL: {
+      resend: {
+        key: process.env.RESEND_API_KEY,
+      } 
   }
 };
 
@@ -49,7 +57,8 @@ const requiredEnvVars = [
   'JWT_ACCESS_EXPIRES',
   'JWT_REFRESH_SECRET',
   'JWT_REFRESH_EXPIRES_DAYS',
-  'JWT_REFRESH_REUSE_SECONDS'
+  'JWT_REFRESH_REUSE_SECONDS',
+  'RESEND_API_KEY'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(

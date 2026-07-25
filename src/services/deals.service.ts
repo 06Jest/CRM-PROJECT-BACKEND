@@ -123,7 +123,7 @@ export const updateDealStageFromDB = async (
 
 export const closeDealFromDB = async (
   id: string,
-  outcome: 'Closed Won' | 'Closed Lost',
+  outcome: 'Closed Won' | 'Closed Lost',  
   userId: string,
   orgId: string
 ) : Promise<DealListItem> => {

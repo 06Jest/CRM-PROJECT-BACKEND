@@ -5,6 +5,8 @@ import { LEAD_STATUSES } from "../types/lead";
 import { DEAL_STAGES } from "../types/deal";
 import { PROFILE_STATUSES } from "../types/profile";
 import { CUSTOMER_STATUSES } from "../types/customer";
+import { NOTE_TARGET_TYPES, NOTE_VISIBILITIES } from "../types/note";
+import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../types/email";
 
 export const sourceSchema = z.enum(SOURCES);
 
@@ -26,7 +28,16 @@ export const prioritySchema = z.enum(PRIORITIES);
 
 export const suffixSchema = z.enum(SUFFIXES);
 
+export const noteVisibilitySchema = z.enum(NOTE_VISIBILITIES);
+
+export const noteTargetTypeSchema = z.enum(NOTE_TARGET_TYPES);
+
 export const preferedTimeSchema = z.enum(PREFERRED_CONTACT_TIMES);
+
+export const emailStatusSchema = z.enum(EMAIL_STATUSES);
+
+
+export const emailProviderSchema = z.enum(EMAIL_PROVIDERS);
 
 export const passwordSchema = z
   .string()
@@ -174,3 +185,39 @@ export const socialUsernameSchema = z
       message: "Invalid phone number.",
     }
   ).transform((value) => (value === "" ? null : value));;
+
+  export const noteContentSchema = z
+  .string()
+  .trim()
+  .min(1, "Note cannot be empty.")
+  .max(5000, "Note cannot exceed 5000 characters.");
+
+  export const emailSubjectSchema = z
+  .string()
+  .trim()
+  .min(1, "Subject is required.")
+  .max(200, "Subject is too long.");
+
+
+export const emailBodySchema = z
+  .string()
+  .trim()
+  .min(1, "Email body cannot be empty.")
+  .max(50000, "Email body is too long.");
+
+
+export const previewTextSchema = z
+  .string()
+  .trim()
+  .max(300);
+
+
+export const senderNameSchema = z
+  .string()
+  .trim()
+  .max(100);
+
+
+export const senderEmailSchema = z
+  .email("Invalid sender email.")
+  .trim();
