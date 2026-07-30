@@ -55,7 +55,7 @@ export const addAgent = async (
     if (userRole === 'agent') {
       throw new AppError(401, "Unauthorized user")
     }
-
+    
     const result = await addAgentProfileToDB(orgId, profile);
     res.status(201).json({
       success: true,
@@ -88,8 +88,9 @@ export const updateAgentStatus = async (
     if (userRole === 'agent') {
       throw new AppError(403, "Unauthorized user")
     }
-
+    
     const result = await updateProfileStatusFromDB(id, orgId, status);
+    
     res.status(200).json({
       success: true,
       data: result,

@@ -20,7 +20,13 @@ export const config = {
       customers: process.env.TABLE_CUSTOMERS,
       notes: process.env.TABLE_NOTES,
       emails: process.env.TABLE_EMAILS,
-    }
+      tasks: process.env.TABLE_TASKS,
+      chats: {
+        conversations: process.env.TABLE_CHATS_CONVERSATIONS,
+        members: process.env.TABLE_CHATS_MEMBERS,
+        messages: process.env.TABLE_CHATS_MESSAGES,
+      },
+    },
   },
 
 

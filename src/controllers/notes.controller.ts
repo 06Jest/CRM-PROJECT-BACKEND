@@ -156,8 +156,6 @@ export const updateNote = async (
 
     const check = await getNoteByIDFromDB(id, orgId);
 
-    if (!check) throw new AppError(401, "Note not existed");
-
     if (check.author_id !== userId) throw new AppError(401, "Only Author can edit this note");
 
     const data = await updateNoteFromDB(id, orgId, userId, note);

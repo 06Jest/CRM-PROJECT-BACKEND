@@ -9,7 +9,6 @@ import {
   firstNameSchema,
   genderSchema,
   lastNameSchema,
-  notesSchema,
   phoneSchema,
   positionSchema,
   suffixSchema,
@@ -21,6 +20,7 @@ import {
   industrySchema,
   preferedTimeSchema,
   websiteSchema,
+  longTextSchema,
  } from "./global.schema";
 
 
@@ -54,7 +54,7 @@ export const addContactSchema = z.object({
 
   website: websiteSchema.optional(),
 
-  notes: notesSchema.optional(),
+  notes: longTextSchema.optional(),
 
   status: contactStatusSchema,
 
@@ -105,7 +105,7 @@ export const updateContactSchema = z.object({
 
   display_name:  displayNameSchema.optional(),
 
-  notes: notesSchema.optional(),
+  notes: longTextSchema.optional(),
 
   status: contactStatusSchema,
 

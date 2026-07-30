@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { 
-  notesSchema,
   uuidSchema,
   CustomerStatusSchema,
+  longTextSchema,
  } from "./global.schema";
 
 
@@ -14,7 +14,7 @@ export const addCustomerSchema = z.object({
 
 export const updateCustomerNotesSchema = z.object({
 
-  notes: notesSchema.optional(),
+  notes: longTextSchema.optional(),
 
 });
 

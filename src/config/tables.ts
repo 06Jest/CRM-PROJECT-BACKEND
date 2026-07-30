@@ -10,4 +10,10 @@ export const table = {
   customers: config.SUPABASE.TABLE.customers || 'customers',
   notes: config.SUPABASE.TABLE.notes || 'notes',
   emails: config.SUPABASE.TABLE.emails || 'emails',
+  tasks: config.SUPABASE.TABLE.tasks || 'tasks',
+  chat: {
+    conversations: config.SUPABASE.TABLE.chats.conversations || 'conversations',
+    members: config.SUPABASE.TABLE.chats.members || 'conversation_members',
+    messages: config.SUPABASE.TABLE.chats.messages || 'messages',
+  }
 };
