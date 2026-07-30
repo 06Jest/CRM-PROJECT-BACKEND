@@ -2,10 +2,10 @@ import { boolean, z } from "zod";
 
 import {
   uuidSchema,
-  noteContentSchema,
   noteTargetTypeSchema,
   noteVisibilitySchema,
   titleSchema,
+  longTextSchema,
 } from "./global.schema";
 
 export const addNoteSchema = z.object({
@@ -15,7 +15,7 @@ export const addNoteSchema = z.object({
 
   title: titleSchema.optional(),
 
-  content: noteContentSchema,
+  content: longTextSchema,
 
   visibility: noteVisibilitySchema.optional(),
 });
@@ -27,7 +27,7 @@ export const updateNoteSchema = z.object({
 
   title: titleSchema.optional(),
 
-  content: noteContentSchema.optional(),
+  content: longTextSchema.optional(),
 
   visibility: noteVisibilitySchema.optional(),
 });

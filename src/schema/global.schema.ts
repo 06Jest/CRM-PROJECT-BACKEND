@@ -7,6 +7,8 @@ import { PROFILE_STATUSES } from "../types/profile";
 import { CUSTOMER_STATUSES } from "../types/customer";
 import { NOTE_TARGET_TYPES, NOTE_VISIBILITIES } from "../types/note";
 import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../types/email";
+import { TASK_PRIORITIES, TASK_STATUSES, TASK_TARGET_TYPES, TASK_TYPES, TASK_VISIBILITIES } from "../types/task";
+import { CHAT_TARGET_TYPES, CONVERSATION_TYPES } from "../types/chat";
 
 export const sourceSchema = z.enum(SOURCES);
 
@@ -36,8 +38,21 @@ export const preferedTimeSchema = z.enum(PREFERRED_CONTACT_TIMES);
 
 export const emailStatusSchema = z.enum(EMAIL_STATUSES);
 
+export const taskStatusSchema = z.enum(TASK_STATUSES);
+
+export const taskPrioritySchema = z.enum(TASK_PRIORITIES);
+
+export const taskTargetTypeSchema = z.enum(TASK_TARGET_TYPES);
 
 export const emailProviderSchema = z.enum(EMAIL_PROVIDERS);
+
+export const taskVisibilitySchema = z.enum(TASK_VISIBILITIES);
+
+export const taskTypesSchema = z.enum(TASK_TYPES);
+
+export const conversationTypeSchema = z.enum(CONVERSATION_TYPES);
+
+export const chatTargetTypeSchema = z.enum(CHAT_TARGET_TYPES);
 
 export const passwordSchema = z
   .string()
@@ -140,10 +155,11 @@ export const websiteSchema = z
   );
 
 
-export const notesSchema = z
+export const longTextSchema = z
   .string()
   .trim()
-  .max(2000);
+  .min(1, "Text cannot be empty.")
+  .max(5000, "Text cannot exceed 5000 characters.");
 
 export const displayNameSchema = z
   .string()
@@ -186,11 +202,6 @@ export const socialUsernameSchema = z
     }
   ).transform((value) => (value === "" ? null : value));;
 
-  export const noteContentSchema = z
-  .string()
-  .trim()
-  .min(1, "Note cannot be empty.")
-  .max(5000, "Note cannot exceed 5000 characters.");
 
   export const emailSubjectSchema = z
   .string()

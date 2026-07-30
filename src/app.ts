@@ -13,6 +13,8 @@ import customersRoutes from './routes/customers.routes'
 import notesRoutes from './routes/notes.routes';
 import aiRoutes from './routes/ai.routes';
 import emailRoutes from './routes/email.routes';
+import tasksRoutes from './routes/tasks.routes';
+import chatsRoutes from './routes/chats.routes';
 import smsRoutes from './routes/sms.routes';
 
 import stripeRoutes from './routes/stripe.routes';
@@ -23,6 +25,7 @@ import healthRoutes from './routes/health';
 import cookieParser from 'cookie-parser';
 
 const app = express();
+
 
 app.use(helmet());
 
@@ -36,6 +39,8 @@ app.use(express.json({ limit: '10mb'}));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
+
+
 app.use('/api/auth', authRoutes);
 app.use('/api/org', orgRoutes);
 app.use('/api/orgadmin', orgAdminRoutes);
@@ -47,7 +52,8 @@ app.use('/api/deals', dealsRoutes);
 app.use('/api/customers', customersRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/emails', emailRoutes);
-
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/chat', chatsRoutes);
 app.use('/health', healthRoutes);
 
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json'}));

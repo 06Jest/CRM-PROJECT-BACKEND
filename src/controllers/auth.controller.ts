@@ -20,6 +20,7 @@ import { AppError } from '../middleware/error.middleware';
 import { signInSchema } from '../schema/auth.schema';
 import { setAuthCookies, setNewAccessCookie } from '../services/cookies.service';
 import { AddAdminProfileDTO } from '../types/profile';
+import { createNewConversationToDB } from '../services/chats/conversation.service';
 
 function metaFromRequest(req: Request): RequestMeta {
   return {
@@ -70,14 +71,102 @@ export const adminSignUp = async (
   }
 }
 
+// export const adminSignIn = async (
+//   req: Request, 
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const meta = metaFromRequest(req);
+    
+//     const cred = req.body;
+
+//     if (!cred.email) {
+//       throw new AppError(400, "Email is required");
+//     }
+
+//     if (!cred.password) {
+//       throw new AppError(400, "Password is required");
+//     }
+
+//     const auth = await signInWithAuth(cred);
+
+//     if (!auth) {
+//       throw new AppError(401, "User Required");
+//     }
+
+//     if (!auth.user) {
+//       throw new AppError(401, "Invalid credentials");
+//     }
+//     const userId = auth.user.id;
+//     const userEmail = auth.user.email;
+//     const user = auth.user.user_metadata;
+
+//     const profileExist = await isProfileExistFromDB(userId);
+
+//     if (!userEmail) {
+//       throw new AppError(400, "Email is required");
+//     }
+
+//     if (!user.first_name || !user.last_name || !user.org_name) {
+//       throw new AppError(400, "Incomplete registration metadata.");
+//     }
+
+//     let profile;    
+
+//     if (!profileExist) {
+//       const orgDTO: CreateOrgDTO = {
+//         name: user.org_name,
+//         admin_id: userId,
+//         subscription_plan: "Free",
+//       };
+
+//       const newOrg = await createOrganization(orgDTO);
+
+//       const userDetails: AddAdminProfileDTO = {
+//         id: userId,
+//         email: userEmail,
+//         first_name: user.first_name,
+//         last_name: user.last_name,
+//         display_name: `${user.first_name} ${user.last_name}`,
+//         org_id: newOrg.id,
+//       }
+      
+//       await Promise.all([
+//         createNewConversationToDB(newOrg.id, userId, "announcement"),
+//         createNewConversationToDB(newOrg.id, userId, "organization"),
+//       ]);
+
+//       profile = await addAdminProfileToDB(userDetails);
+//     } else {
+//       profile = await getProfileByIdFromDB(
+//         profileExist.id,
+//         profileExist.org_id
+//       );
+//     }
+
+//     const accessToken = createAccessToken(profile);
+
+//     const refreshToken = await issueRefreshToken(profile.id, profile.org_id, meta);
+
+//     setAuthCookies(res, accessToken, refreshToken);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Login Successful",
+//       profile,
+//     });
+//   } catch (err) {
+//     next(err)
+//   }
+// }
 export const adminSignIn = async (
-  req: Request, 
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const meta = metaFromRequest(req);
-    
     const cred = req.body;
 
     if (!cred.email) {
@@ -90,18 +179,13 @@ export const adminSignIn = async (
 
     const auth = await signInWithAuth(cred);
 
-    if (!auth) {
-      throw new AppError(401, "User Required");
-    }
-
-    if (!auth.user) {
+    if (!auth?.user) {
       throw new AppError(401, "Invalid credentials");
     }
+
     const userId = auth.user.id;
     const userEmail = auth.user.email;
     const user = auth.user.user_metadata;
-
-    const profileExist = await isProfileExistFromDB(userId);
 
     if (!userEmail) {
       throw new AppError(400, "Email is required");
@@ -111,37 +195,47 @@ export const adminSignIn = async (
       throw new AppError(400, "Incomplete registration metadata.");
     }
 
-    let profile;    
+    const existingProfile = await isProfileExistFromDB(userId);
 
-    if (!profileExist) {
-      const orgDTO: CreateOrgDTO = {
+    let profile;
+
+    if (!existingProfile) {
+      // 1. Create organization
+      const newOrg = await createOrganization({
         name: user.org_name,
         admin_id: userId,
         subscription_plan: "Free",
-      };
+      });
 
-      const newOrg = await createOrganization(orgDTO);
-
-      const userDetails: AddAdminProfileDTO = {
+      // 2. Create profile
+      profile = await addAdminProfileToDB({
         id: userId,
         email: userEmail,
         first_name: user.first_name,
         last_name: user.last_name,
         display_name: `${user.first_name} ${user.last_name}`,
         org_id: newOrg.id,
-      }
+      });
 
-      profile = await addAdminProfileToDB(userDetails);
+      // 3. Create default conversations
+      await Promise.all([
+        createNewConversationToDB(newOrg.id, userId, "announcement"),
+        createNewConversationToDB(newOrg.id, userId, "organization"),
+      ]);
     } else {
       profile = await getProfileByIdFromDB(
-        profileExist.id,
-        profileExist.org_id
+        existingProfile.id,
+        existingProfile.org_id
       );
     }
 
     const accessToken = createAccessToken(profile);
 
-    const refreshToken = await issueRefreshToken(profile.id, profile.org_id, meta);
+    const refreshToken = await issueRefreshToken(
+      profile.id,
+      profile.org_id,
+      meta
+    );
 
     setAuthCookies(res, accessToken, refreshToken);
 
@@ -151,9 +245,9 @@ export const adminSignIn = async (
       profile,
     });
   } catch (err) {
-    next(err)
+    next(err);
   }
-}
+};
 
 export const agentSignIn = async (
   req: Request, 

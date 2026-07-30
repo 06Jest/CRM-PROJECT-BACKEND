@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dealStageSchema, notesSchema, titleSchema, uuidSchema, valueSchema } from './global.schema';
+import { dealStageSchema,  longTextSchema,  titleSchema, uuidSchema, valueSchema } from './global.schema';
 
 export const addDealSchema = z.object({
 
@@ -9,7 +9,7 @@ export const addDealSchema = z.object({
 
   stage: dealStageSchema,
 
-  notes: notesSchema.optional(),
+  notes: longTextSchema.optional(),
 
   value: valueSchema
 
@@ -19,7 +19,7 @@ export const updateDealSchema = z.object({
 
   title: titleSchema.optional(),
 
-  notes: notesSchema.optional(),
+  notes: longTextSchema.optional(),
 
   value: valueSchema.optional()
 
@@ -38,7 +38,7 @@ export const closeDealSchema = z.object({
 
   stage: dealStageSchema.optional(),
 
-  notes: notesSchema.optional(),
+  notes: longTextSchema.optional(),
 
   value: valueSchema.optional()
 

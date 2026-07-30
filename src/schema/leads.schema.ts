@@ -4,18 +4,14 @@ import {
   companyNameSchema,
   sourceSchema,
   departmentSchema,
-  displayNameSchema,
   emailSchema,
   firstNameSchema,
   genderSchema,
   lastNameSchema,
-  notesSchema,
   phoneSchema,
   positionSchema,
   suffixSchema,
-  contactStatusSchema,
   prioritySchema,
-  uuidSchema,
   titleSchema,
   leadStatusSchema,
   industrySchema,
@@ -23,6 +19,7 @@ import {
   socialUsernameSchema,
   messagingNumberSchema,
   websiteSchema,
+  longTextSchema,
  } from "./global.schema";
 
 
@@ -57,7 +54,7 @@ export const addLeadSchema = z.object({
 
   website: websiteSchema.optional().nullable(),
 
-  notes: notesSchema.optional(),
+  notes: longTextSchema.optional(),
 
   priority: prioritySchema,
 
@@ -110,7 +107,7 @@ export const updateLeadSchema = z.object({
 
   website: websiteSchema.optional().nullable(),
 
-  notes: notesSchema.optional(),
+  notes: longTextSchema.optional(),
 
   priority: prioritySchema,
 
