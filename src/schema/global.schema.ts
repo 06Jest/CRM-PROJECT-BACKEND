@@ -9,6 +9,7 @@ import { NOTE_TARGET_TYPES, NOTE_VISIBILITIES } from "../types/note";
 import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../types/email";
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TARGET_TYPES, TASK_TYPES, TASK_VISIBILITIES } from "../types/task";
 import { CHAT_TARGET_TYPES, CONVERSATION_TYPES } from "../types/chat";
+import { CALL_STATUSES, CALL_OUTCOMES, CALL_TYPES } from "../types/calls";
 
 export const sourceSchema = z.enum(SOURCES);
 
@@ -53,6 +54,14 @@ export const taskTypesSchema = z.enum(TASK_TYPES);
 export const conversationTypeSchema = z.enum(CONVERSATION_TYPES);
 
 export const chatTargetTypeSchema = z.enum(CHAT_TARGET_TYPES);
+
+export const callStatusSchema = z.enum(CALL_STATUSES);
+
+export const callOutcomeSchema = z.enum(CALL_OUTCOMES);
+
+export const callTypesSchema = z.enum(CALL_TYPES);
+
+
 
 export const passwordSchema = z
   .string()
