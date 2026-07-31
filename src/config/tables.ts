@@ -15,5 +15,6 @@ export const table = {
     conversations: config.SUPABASE.TABLE.chats.conversations || 'conversations',
     members: config.SUPABASE.TABLE.chats.members || 'conversation_members',
     messages: config.SUPABASE.TABLE.chats.messages || 'messages',
-  }
+  },
+  calls: config.SUPABASE.TABLE.calls || 'calls',
 };

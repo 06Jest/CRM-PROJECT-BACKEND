@@ -26,6 +26,7 @@ export const config = {
         members: process.env.TABLE_CHATS_MEMBERS,
         messages: process.env.TABLE_CHATS_MESSAGES,
       },
+      calls:process.env.TABLE_CALLS,
     },
   },
 
