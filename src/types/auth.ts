@@ -1,3 +1,4 @@
+import { JwtPayload } from "jsonwebtoken";
 import { Roles } from "./global";
 
 export interface SignUpDTO {
@@ -22,11 +23,18 @@ export interface UpdatePasswordDTO {
   password: string;
 }
 
-export interface AccessTokenPayload {
+export interface AccessTokenPayload extends JwtPayload {
+  aud: string | string[];
+  iss: string;
   sub: string;
-  role: Roles;
-  orgId: string | null;
+  role: "authenticated";
+  email: string;
+  org_id: string;
+  user_metadata: {
+    role:  "admin" | "agent";
+  };
 }
+
 
 export interface RequestMeta {
   ipAddress?: string;

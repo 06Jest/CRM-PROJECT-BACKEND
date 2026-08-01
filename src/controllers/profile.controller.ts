@@ -8,13 +8,14 @@ export const getAllMembersIDNames = async (
   next: NextFunction
 ) => {
   try {
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
     if (!orgId) {
       throw new AppError(400, 'orgId is required');
     }
 
-    const leads = await getAllMembersIDNamesFromDB(orgId);
+    const leads = await getAllMembersIDNamesFromDB(orgId,accessToken );
     return res.status(200).json({
       success: true,
       message: 'Leads fetch successful',

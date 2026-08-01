@@ -1,11 +1,13 @@
-import { supabaseAdmin } from "../../config/supabase";
+import { createSupabaseUserClient } from "../../config/supabase";
 import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
 import { MemberData } from "../../types/chat";
 
 
 const memberTab = table.chat.members;
-const profileFkey =  'conversation_members_profile_id_fkey';
+
+const profileFkey = "conversation_members_profile_id_fkey";
+
 
 const mData = `
   conversation_id,
@@ -16,17 +18,25 @@ const mData = `
   )
 `;
 
+
+
 export const ensureConversationMember = async (
   conversationId: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<void> => {
 
-  const { data, error } = await supabaseAdmin
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(memberTab)
     .select("id")
     .eq("conversation_id", conversationId)
     .eq("profile_id", userId)
     .maybeSingle();
+
 
 
   if (error) {
@@ -37,6 +47,7 @@ export const ensureConversationMember = async (
   }
 
 
+
   if (!data) {
     throw new AppError(
       403,
@@ -45,15 +56,27 @@ export const ensureConversationMember = async (
   }
 };
 
+
+
+
+
+
 export const getMembershipsFromDB = async (
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<string[]> => {
 
+
+  const db = createSupabaseUserClient(accessToken);
+
+
   const { data, error } =
-    await supabaseAdmin
+    await db
       .from(memberTab)
       .select("conversation_id")
       .eq("profile_id", userId);
+
+
 
   if (error) {
     throw new AppError(
@@ -62,25 +85,42 @@ export const getMembershipsFromDB = async (
     );
   }
 
+
+
   return (data ?? []).map(
     (membership) => membership.conversation_id
   );
 };
 
+
+
+
+
+
 export const getMembersFromDB = async (
-  conversationIds: string[]
+  conversationIds: string[],
+  accessToken: string
 ): Promise<MemberData[]> => {
+
 
   if (conversationIds.length === 0) {
     return [];
   }
 
+
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+
   const { data, error } =
-    await supabaseAdmin
+    await db
       .from(memberTab)
       .select(mData)
       .in("conversation_id", conversationIds);
-  
+
+
+
   if (error) {
     throw new AppError(
       500,
@@ -88,16 +128,30 @@ export const getMembersFromDB = async (
     );
   }
 
+
+
   return data ?? [];
 };
+
+
+
+
+
+
 
 export const addMemberInConversationToDB = async (
   conversationId: string,
   userId: string,
-  otherUserId: string
+  otherUserId: string,
+  accessToken: string
 ): Promise<void> => {
 
-  const { error } = await supabaseAdmin
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+
+  const { error } = await db
     .from(memberTab)
     .insert([
       {
@@ -110,6 +164,8 @@ export const addMemberInConversationToDB = async (
       },
     ]);
 
+
+
   if (error) {
     throw new AppError(
       500,
@@ -118,22 +174,41 @@ export const addMemberInConversationToDB = async (
   }
 };
 
+
+
+
+
+
+
+
 export const markConversationAsReadFromDB = async (
   conversationId: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<void> => {
+
+
   await ensureConversationMember(
     conversationId,
-    userId
+    userId,
+    accessToken
   );
 
-  const { error } = await supabaseAdmin
+
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+
+  const { error } = await db
     .from(memberTab)
     .update({
       last_read_at: new Date().toISOString(),
     })
     .eq("conversation_id", conversationId)
     .eq("profile_id", userId);
+
+
 
   if (error) {
     throw new AppError(
@@ -143,25 +218,55 @@ export const markConversationAsReadFromDB = async (
   }
 };
 
+
+
+
+
+
+
+
+
 export const getMyReadStatesFromDB = async (
   conversationIds: string[],
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<Record<string, string | null>> => {
-  if (!conversationIds.length) return {};
 
-  const { data, error } = await supabaseAdmin
+
+  if (!conversationIds.length) {
+    return {};
+  }
+
+
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+
+  const { data, error } = await db
     .from(memberTab)
     .select("conversation_id, last_read_at")
     .eq("profile_id", userId)
     .in("conversation_id", conversationIds);
 
+
+
   if (error) {
-    throw new AppError(500, `Failed to fetch read states: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to fetch read states: ${error.message}`
+    );
   }
 
+
+
   const map: Record<string, string | null> = {};
+
+
   for (const row of data ?? []) {
     map[row.conversation_id] = row.last_read_at;
   }
+
+
   return map;
 };

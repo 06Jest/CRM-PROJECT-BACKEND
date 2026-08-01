@@ -1,89 +1,267 @@
-import { createClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
+import { createSupabaseUserClient } from "../config/supabase";
+import { table } from "../config/tables";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { AppError } from "../middleware/error.middleware";
 
-export interface SmsResult {
-  sid: string;
-  status: string;
-  to: string;
-  body: string;
-  simulated: true;
-}
+import type {
+  SmsListItem,
+  CreateSms,
+  SmsStatus,
+} from "../types/sms";
 
-export const sendSms = async (data: {
-  to: string;
-  body: string;
-  userId?: string;
-  contactName?: string;
-}): Promise<SmsResult> => {
-  const sid = `SM${uuidv4().replace(/-/g, '').toUpperCase().slice(0, 32)}`;
 
-  const { error } = await supabase
-    .from('sms_logs')
-    .insert([{
-      to_number: data.to,
-      body: data.body,
-      status: 'delivered',
-      sid,
-      contact_name: data.contactName,
-      user_id: data.userId,
-    }]);
+const tab = table.sms;
+
+
+const senderFKey = "sms_sender_id_fkey";
+const contactFKey = "sms_contact_id_fkey";
+const leadFKey = "sms_lead_id_fkey";
+
+
+const selectAll = `
+  *,
+  lead:leads!${leadFKey}(
+    id,
+    first_name,
+    last_name,
+    phone
+  ),
+  contact:contacts!${contactFKey}(
+    id,
+    first_name,
+    last_name,
+    phone
+  ),
+  sender:profiles!${senderFKey}(
+    id,
+    first_name,
+    last_name
+  )
+`;
+
+
+
+export const getSmsFromDB = async (
+  orgId: string,
+  accessToken: string
+): Promise<SmsListItem[]> => {
+
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .select(selectAll)
+    .eq("org_id", orgId)
+    .order("created_at", {
+      ascending: false,
+    });
+
 
   if (error) {
-    console.error('[SMS] Failed to log simulated SMS:', error.message);
+    throw new AppError(
+      500,
+      `Failed to fetch SMS: ${error.message}`
+    );
   }
 
-  await new Promise(resolve => 
-    setTimeout(resolve, Math.floor(Math.random() * 100) + 50)
-  );
 
-  console.log(`[SMS] Simulated SMS to ${data.to}: "${data.body.slice(0, 40)}...`)
+  return data ?? [];
 
-  return {
-    sid,
-    status: 'delivered',
-    to: data.to,
-    body: data.body,
-    simulated: true,
-  };
 };
-export const getSmsStatus = async (sid: string): Promise<string> => {
-  const { data } = await supabase
-    .from('sms_logs')
-    .select('status')
-    .eq('sid', sid)
+
+
+
+export const getSmsByIDFromDB = async (
+  id: string,
+  orgId: string,
+  accessToken: string
+): Promise<SmsListItem> => {
+
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .select(selectAll)
+    .eq("id", id)
+    .eq("org_id", orgId)
     .single();
 
-  return data?.status || 'delivered';
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch SMS: ${error.message}`
+    );
+  }
+
+
+  return data;
+
 };
 
-export const getSmsHistory = async (
-  contactName: string,
-  userId: string
-): Promise<any[]> => {
-  const { data } = await supabase
-    .from('sms_logs')
-    .select('*')
-    .eq('contact_name', contactName)
-    .eq('user_id', userId)
-    .order('sent_at', { ascending: false })
 
-  return data || [];
+
+export const getLeadSmsFromDB = async (
+  orgId: string,
+  leadId: string,
+  accessToken: string
+): Promise<SmsListItem[]> => {
+
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .select(selectAll)
+    .eq("org_id", orgId)
+    .eq("lead_id", leadId)
+    .order("created_at", {
+      ascending: false,
+    });
+
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch Lead SMS: ${error.message}`
+    );
+  }
+
+
+  return data ?? [];
+
 };
 
-export const validatePhoneNumber = (phone: string): boolean => {
-  const cleaned = phone.replace(/\D/g, '');
-  return cleaned.length >= 7 &&  cleaned.length <= 15;
+
+
+export const getContactSmsFromDB = async (
+  orgId: string,
+  contactId: string,
+  accessToken: string
+): Promise<SmsListItem[]> => {
+
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .select(selectAll)
+    .eq("org_id", orgId)
+    .eq("contact_id", contactId)
+    .order("created_at", {
+      ascending: false,
+    });
+
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch Contact SMS: ${error.message}`
+    );
+  }
+
+
+  return data ?? [];
+
 };
 
-export const formatPhoneNumber = (phone: string): string => {
-  const cleaned = phone.replace(/\D/g, '');
-  if (phone.startsWith('+')) return phone;
-  if (cleaned.length === 10) return `+1${cleaned}`;
-  if (cleaned.length === 11 && cleaned.startsWith('1')) return `+${cleaned}`;
-  return phone; 
+
+
+export const getSmsByStatusFromDB = async (
+  orgId: string,
+  status: SmsStatus,
+  accessToken: string
+): Promise<SmsListItem[]> => {
+
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .select(selectAll)
+    .eq("org_id", orgId)
+    .eq("status", status)
+    .order("created_at", {
+      ascending: false,
+    });
+
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch SMS: ${error.message}`
+    );
+  }
+
+
+  return data ?? [];
+
+};
+
+
+
+export const addSmsToDB = async (
+  orgId: string,
+  userId: string,
+  sms: CreateSms,
+  accessToken: string
+): Promise<SmsListItem> => {
+
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .insert([
+      {
+        ...sms,
+        org_id: orgId,
+        sender_id: userId,
+        status: "sent",
+      },
+    ])
+    .select(selectAll)
+    .single();
+
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to create SMS: ${error.message}`
+    );
+  }
+
+
+  return data;
+
+};
+
+
+
+export const updateSmsStatusFromDB = async (
+  id: string,
+  orgId: string,
+  status: SmsStatus,
+  accessToken: string
+): Promise<SmsListItem> => {
+
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      status,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .select(selectAll)
+    .single();
+
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update SMS status: ${error.message}`
+    );
+  }
+
+
+  return data;
+
 };

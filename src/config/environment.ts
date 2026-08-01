@@ -8,6 +8,7 @@ export const config = {
   SUPABASE: {
     url: process.env.SUPABASE_URL || '',
     anonKey: process.env.SUPABASE_ANON_KEY || '',
+    jwtSecret: process.env.SUPABASE_JWT_SECRET || '',
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
 
     TABLE: {
@@ -18,6 +19,7 @@ export const config = {
       contacts: process.env.TABLE_CONTACTS,
       deals: process.env.TABLE_DEALS,
       customers: process.env.TABLE_CUSTOMERS,
+      activities: process.env.TABLE_ACTIVITIES,
       notes: process.env.TABLE_NOTES,
       emails: process.env.TABLE_EMAILS,
       tasks: process.env.TABLE_TASKS,
@@ -27,6 +29,7 @@ export const config = {
         messages: process.env.TABLE_CHATS_MESSAGES,
       },
       calls:process.env.TABLE_CALLS,
+      sms:process.env.TABLE_SMS,
     },
   },
 
@@ -59,6 +62,7 @@ export const config = {
 const requiredEnvVars = [
   'SUPABASE_URL',
   'SUPABASE_ANON_KEY',
+  'SUPABASE_JWT_SECRET',
   'SUPABASE_SERVICE_ROLE_KEY',
   'JWT_ACCESS_SECRET',
   'JWT_ACCESS_EXPIRES',

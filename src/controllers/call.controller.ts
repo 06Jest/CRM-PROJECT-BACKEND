@@ -17,6 +17,9 @@ import {
   deleteCallFromDB,
 } from "../services/calls.service";
 
+import { addActivityToDB } from "../services/activities.service";
+
+
 export const getCalls = async (
   req: Request,
   res: Response,
@@ -24,13 +27,20 @@ export const getCalls = async (
 ) => {
   try {
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!orgId) {
-      throw new AppError(401, "Unauthorized user");
+    if (!orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
 
-    const data = await getCallsFromDB(orgId);
+    const data = await getCallsFromDB(
+      orgId,
+      accessToken
+    );
 
     return res.status(200).json({
       success: true,
@@ -43,6 +53,8 @@ export const getCalls = async (
   }
 };
 
+
+
 export const getCallByID = async (
   req: Request,
   res: Response,
@@ -50,18 +62,28 @@ export const getCallByID = async (
 ) => {
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!orgId) {
-      throw new AppError(401, "Unauthorized user");
+
+    if (!orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
+
 
     const data = await getCallByIDFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
+
 
     return res.status(200).json({
       success: true,
@@ -69,10 +91,13 @@ export const getCallByID = async (
       data,
     });
 
+
   } catch (err) {
     next(err);
   }
 };
+
+
 
 export const getLeadCalls = async (
   req: Request,
@@ -81,18 +106,28 @@ export const getLeadCalls = async (
 ) => {
   try {
 
-    const leadId = uuidSchema.parse(req.params.leadId);
+    const leadId = uuidSchema.parse(
+      req.params.leadId
+    );
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!orgId) {
-      throw new AppError(401, "Unauthorized user");
+
+    if (!orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
+
 
     const data = await getLeadCallsFromDB(
       orgId,
-      leadId
+      leadId,
+      accessToken
     );
+
 
     return res.status(200).json({
       success: true,
@@ -100,10 +135,13 @@ export const getLeadCalls = async (
       data,
     });
 
+
   } catch (err) {
     next(err);
   }
 };
+
+
 
 export const getContactCalls = async (
   req: Request,
@@ -112,18 +150,28 @@ export const getContactCalls = async (
 ) => {
   try {
 
-    const contactId = uuidSchema.parse(req.params.contactId);
+    const contactId = uuidSchema.parse(
+      req.params.contactId
+    );
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!orgId) {
-      throw new AppError(401, "Unauthorized user");
+
+    if (!orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
+
 
     const data = await getContactCallsFromDB(
       orgId,
-      contactId
+      contactId,
+      accessToken
     );
+
 
     return res.status(200).json({
       success: true,
@@ -131,10 +179,13 @@ export const getContactCalls = async (
       data,
     });
 
+
   } catch (err) {
     next(err);
   }
 };
+
+
 
 export const addCall = async (
   req: Request,
@@ -143,27 +194,33 @@ export const addCall = async (
 ) => {
   try {
 
-    const orgId = req.user?.orgId;
-
+    const orgId = req.user?.org_id;
     const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
 
-    const call = req.body;
 
-    if (!orgId || !userId) {
-      throw new AppError(401, "Unauthorized user");
+    if (!orgId || !userId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
+
 
     const data = await addCallToDB(
       orgId,
       userId,
-      call
+      req.body,
+      accessToken
     );
+
 
     return res.status(201).json({
       success: true,
       message: "Add Call successful",
       data,
     });
+
 
   } catch (err) {
     next(err);
@@ -177,44 +234,52 @@ export const updateCall = async (
 ) => {
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    const call = req.body;
 
-    if (!orgId) {
-      throw new AppError(401, "Unauthorized user");
+    if (!orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
+
 
     const check = await getCallByIDFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
 
-    if (
-      check.status === "completed"
-    ) {
+
+    if (check.status === "completed") {
       throw new AppError(
         400,
         "Completed calls cannot be updated"
       );
     }
 
-    if (
-      check.status === "cancelled"
-    ) {
+
+    if (check.status === "cancelled") {
       throw new AppError(
         400,
         "Cancelled calls cannot be updated"
       );
     }
 
+
     const data = await updateCallFromDB(
       id,
       orgId,
-      call
+      req.body,
+      accessToken
     );
+
 
     return res.status(200).json({
       success: true,
@@ -222,10 +287,13 @@ export const updateCall = async (
       data,
     });
 
+
   } catch (err) {
     next(err);
   }
 };
+
+
 
 export const startCall = async (
   req: Request,
@@ -234,18 +302,28 @@ export const startCall = async (
 ) => {
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!orgId) {
-      throw new AppError(401, "Unauthorized user");
+
+    if (!orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
+
 
     const check = await getCallByIDFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
+
 
     if (check.status === "active") {
       throw new AppError(
@@ -254,12 +332,14 @@ export const startCall = async (
       );
     }
 
+
     if (check.status === "completed") {
       throw new AppError(
         400,
         "Completed calls cannot be started"
       );
     }
+
 
     if (check.status === "cancelled") {
       throw new AppError(
@@ -268,10 +348,13 @@ export const startCall = async (
       );
     }
 
+
     const data = await startCallFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
+
 
     return res.status(200).json({
       success: true,
@@ -279,10 +362,13 @@ export const startCall = async (
       data,
     });
 
+
   } catch (err) {
     next(err);
   }
 };
+
+
 
 export const endCall = async (
   req: Request,
@@ -291,24 +377,31 @@ export const endCall = async (
 ) => {
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
 
-    const callData = req.body;
 
-    if (!orgId) {
-      throw new AppError(401, "Unauthorized user");
+    if (!orgId || !userId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
 
 
-    const check = await getCallByIDFromDB(
+    const existing = await getCallByIDFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
 
 
-    if (check.status !== "active") {
+    if (existing.status !== "active") {
       throw new AppError(
         400,
         "Only active calls can be completed"
@@ -319,7 +412,32 @@ export const endCall = async (
     const data = await endCallFromDB(
       id,
       orgId,
-      callData
+      req.body,
+      accessToken
+    );
+
+
+    const targetName =
+      existing.lead
+        ? `${existing.lead.first_name} ${existing.lead.last_name}`
+        : existing.contact
+          ? `${existing.contact.first_name} ${existing.contact.last_name}`
+          : "Unknown";
+
+
+    await addActivityToDB(
+      orgId,
+      userId,
+      {
+        lead_id: existing.lead_id,
+        contact_id: existing.contact_id,
+        type: "call",
+        action: "completed",
+        title: "Call completed",
+        target_name: targetName,
+        description: `Completed call: ${existing.subject}`,
+      },
+      accessToken
     );
 
 
@@ -335,6 +453,8 @@ export const endCall = async (
   }
 };
 
+
+
 export const cancelCall = async (
   req: Request,
   res: Response,
@@ -342,12 +462,15 @@ export const cancelCall = async (
 ) => {
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId) {
+    if (!orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -357,7 +480,8 @@ export const cancelCall = async (
 
     const check = await getCallByIDFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
 
 
@@ -379,7 +503,8 @@ export const cancelCall = async (
 
     const data = await cancelCallFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
 
 
@@ -395,6 +520,8 @@ export const cancelCall = async (
   }
 };
 
+
+
 export const deleteCall = async (
   req: Request,
   res: Response,
@@ -402,12 +529,15 @@ export const deleteCall = async (
 ) => {
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId) {
+    if (!orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -417,7 +547,8 @@ export const deleteCall = async (
 
     const data = await deleteCallFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
 
 
@@ -432,4 +563,3 @@ export const deleteCall = async (
     next(err);
   }
 };
-

@@ -4,10 +4,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import authRoutes from './routes/auth.routes';
 import orgRoutes from './routes/profiles.routes';
-import orgAdminRoutes from './routes/org.admin.routes';
-import orgAgentRoutes from './routes/org.agents.routes';
+// import orgAdminRoutes from './routes/org.admin.routes';
+import orgMembersRoutes from './routes/members.routes';
 import contactRoutes from './routes/contacts.routes';
-import leadsRoutes from './routes/leads.routes'
+import leadsRoutes from './routes/leads.routes';
 import dealsRoutes from './routes/deals.routes';
 import customersRoutes from './routes/customers.routes'
 import notesRoutes from './routes/notes.routes';
@@ -17,11 +17,13 @@ import tasksRoutes from './routes/tasks.routes';
 import chatsRoutes from './routes/chats.routes';
 import callsRoutes from './routes/calls.routes';
 import smsRoutes from './routes/sms.routes';
+import dashboardRoutes from './routes/dashboard.routes';
+import activitiesRoutes from './routes/activities.routes'
 
 import stripeRoutes from './routes/stripe.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import analyticsRoutes from './routes/analytics.routes';
-import agentsRoutes from './routes/org.agents.routes';
+import agentsRoutes from './routes/members.routes';
 import healthRoutes from './routes/health';
 import cookieParser from 'cookie-parser';
 
@@ -44,18 +46,19 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/org', orgRoutes);
-app.use('/api/orgadmin', orgAdminRoutes);
-app.use('/api/orgagent', orgAgentRoutes);
-
+// app.use('/api/orgadmin', orgAdminRoutes);
+app.use('/api/org/members', orgMembersRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/deals', dealsRoutes);
 app.use('/api/customers', customersRoutes);
+app.use('/api/activities', activitiesRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/chat', chatsRoutes);
-app.use('/api/calls', callsRoutes);
+app.use('/api/calls', callsRoutes); 
 app.use('/health', healthRoutes);
 
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json'}));

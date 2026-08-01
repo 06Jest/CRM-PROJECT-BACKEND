@@ -12,7 +12,7 @@ import {
   getEmailByID,
   addEmailDraft,
   updateEmailDraft,
-  sendEmailController,
+  sendEmail,
   getLeadEmailHistory,
   getContactEmailHistory,
   getCustomerEmailHistory,
@@ -23,28 +23,24 @@ import {
   createEmailDraftSchema,
   updateEmailDraftSchema,
 } from "../schema/email.schema";
+import { createLimiter, deleteLimiter, emailLimiter, readLimiter, updateLimiter, } from '../middleware/rate.limit.middleware';
 
 const router = Router();
 
 router.use(verifyToken);
 router.use(authenticateUser);
 
-router.get("/show-emails", getAllEmails);
+router.get("/show-emails",readLimiter, getAllEmails);
+router.get("/show-email/:id",readLimiter, getEmailByID);
+router.get("/lead/:leadId/emails",readLimiter, getLeadEmailHistory);
+router.get("/contact/:contactId/emails",readLimiter, getContactEmailHistory);
+router.get("/customer/:customerId/emails",readLimiter, getCustomerEmailHistory);
 
-router.get("/show-email/:id", getEmailByID);
+router.post("/add-email-draft",createLimiter, validateBody(createEmailDraftSchema), addEmailDraft);
+router.post("/send-email/:id",emailLimiter, sendEmail);
 
-router.post("/add-email-draft", validateBody(createEmailDraftSchema), addEmailDraft);
+router.patch("/update-email/:id",updateLimiter, validateBody(updateEmailDraftSchema), updateEmailDraft);
 
-router.patch("/update-email/:id", validateBody(updateEmailDraftSchema), updateEmailDraft);
-
-router.post("/send-email/:id", sendEmailController);
-
-router.get("/lead/:leadId/emails", getLeadEmailHistory);
-
-router.get("/contact/:contactId/emails", getContactEmailHistory);
-
-router.get("/customer/:customerId/emails", getCustomerEmailHistory);
-
-router.delete("/delete-email/:id", removeEmail);
+router.delete("/delete-email/:id",deleteLimiter, removeEmail);
 
 export default router;
