@@ -26,82 +26,29 @@ import {
   endCallSchema,
 } from "../schema/calls.schema";
 
-
 const router = Router();
-
 
 router.use(verifyToken);
 router.use(authenticateUser);
 
+router.get("/show-calls", getCalls);
 
+router.get("/show-call/:id", getCallByID);
 
-router.get(
-  "/show-calls",
-  getCalls
-);
+router.get("/show-lead-calls/:leadId", getLeadCalls);
 
+router.get("/show-contact-calls/:contactId", getContactCalls);
 
-router.get(
-  "/show-call/:id",
-  getCallByID
-);
+router.post("/add-call", validateBody(addCallSchema), addCall);
 
+router.patch("/update-call/:id", validateBody(updateCallSchema), updateCall);
 
-router.get(
-  "/show-lead-calls/:leadId",
-  getLeadCalls
-);
+router.patch("/start-call/:id", startCall);
 
+router.patch("/end-call/:id", validateBody(endCallSchema), endCall);
 
-router.get(
-  "/show-contact-calls/:contactId",
-  getContactCalls
-);
+router.patch("/cancel-call/:id", cancelCall);
 
+router.delete("/delete-call/:id", deleteCall);
 
-
-router.post(
-  "/add-call",
-  validateBody(addCallSchema),
-  addCall
-);
-
-
-
-router.patch(
-  "/update-call/:id",
-  validateBody(updateCallSchema),
-  updateCall
-);
-
-
-
-router.patch(
-  "/start-call/:id",
-  startCall
-);
-
-
-
-router.patch(
-  "/end-call/:id",
-  validateBody(endCallSchema),
-  endCall
-);
-
-
-
-router.patch(
-  "/cancel-call/:id",
-  cancelCall
-);
-
-
-
-router.delete(
-  "/delete-call/:id",
-  deleteCall
-);
-
-
-export default router;
+export default router;  

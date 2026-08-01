@@ -10,6 +10,8 @@ import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../types/email";
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TARGET_TYPES, TASK_TYPES, TASK_VISIBILITIES } from "../types/task";
 import { CHAT_TARGET_TYPES, CONVERSATION_TYPES } from "../types/chat";
 import { CALL_STATUSES, CALL_OUTCOMES, CALL_TYPES } from "../types/calls";
+import { SMS_STATUSES } from "../types/sms";
+import { ACTIVITY_ACTIONS, ACTIVITY_TYPES, MANUAL_ACTIVITY_ACTIONS, MANUAL_ACTIVITY_TYPES } from "../types/activity";
 
 export const sourceSchema = z.enum(SOURCES);
 
@@ -61,7 +63,15 @@ export const callOutcomeSchema = z.enum(CALL_OUTCOMES);
 
 export const callTypesSchema = z.enum(CALL_TYPES);
 
+export const smsStatusSchema = z.enum(SMS_STATUSES);
 
+export const activityActionsSchema =z.enum(ACTIVITY_ACTIONS);
+
+export const activityTypesSchema =z.enum(ACTIVITY_TYPES);
+
+export const manualActivityActionsSchema = z.enum(MANUAL_ACTIVITY_ACTIONS);
+
+export const manualActivityTypesSchema =z.enum(MANUAL_ACTIVITY_TYPES);
 
 export const passwordSchema = z
   .string()

@@ -15,6 +15,7 @@ export interface Lead {
   id: string;
   title: string;
   source: Source;
+  status: LeadStatus;
   first_name: string;
   last_name: string;
   suffix?: Suffix;

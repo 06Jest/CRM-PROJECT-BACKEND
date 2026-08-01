@@ -1,14 +1,14 @@
-import { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin} from '../config/supabase';
-import { AppError } from './error.middleware';
-import { verifyAccessToken } from '../services/jwt.service';
-import { table } from '../config/tables';
+import { Request, Response, NextFunction } from "express";
+import { createSupabaseUserClient } from "../config/supabase";
+import { AppError } from "./error.middleware";
+import { verifyAccessToken } from "../services/jwt.service";
+import { table } from "../config/tables";
 
 const tab = table.profile;
 
 export const verifyToken = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
@@ -28,61 +28,45 @@ export const verifyToken = (
 
 export const authenticateUser = async (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
-  
   try {
+    const accessToken = req.cookies.accessToken;
 
-    const token = req.cookies.accessToken;
-    
+    if (!accessToken) {
+      throw new AppError(401, "Missing authorization token");
+    }
 
-    req.user = verifyAccessToken(token);
+    if (!req.user) {
+      throw new AppError(401, "Unauthorized");
+    }
 
-    const userId = req.user.sub;
-    const orgId = req.user.orgId;
+    const db = createSupabaseUserClient(accessToken);
 
-
-    const { data: profile, error} 
-    = await supabaseAdmin
+    const { data: profile, error } = await db
       .from(tab)
-      .select('*')
-      .eq('id', userId)
+      .select("*")
+      .eq("id", req.user.sub)
       .single();
-    
 
-    if ( error || !profile ) {
-      return res.status(403).json({
-        success: false,
-        error:
-          `Org admin or member access required`
-      });
+    if (error || !profile) {
+      throw new AppError(403, "User not found");
     }
 
-    if ( profile.role !=='admin' && profile.role !=='agent') {
-      return res.status(403).json({
-        success: false,
-        error:
-          'Role does not exist'
-      });
-    }
-    
-    if ( profile.status !== 'active') {
-      return res.status(403).json({
-        success: false,
-        error: 'Account deactivated',
-      });
+    if (profile.org_id !== req.user.org_id) {
+      throw new AppError(403, "Organization mismatch");
     }
 
-    if (!profile.role) {
-      return res.status(403).json({
-        success: false ,
-        error: `Unauthorized role`,
-      });
+    if (profile.role !== req.user.user_metadata.role) {
+      throw new AppError(403, "Role mismatch");
     }
-    
+
+    if (profile.status !== "active") {
+      throw new AppError(403, "Account deactivated");
+    }
+
     next();
-
   } catch (err) {
     next(err);
   }

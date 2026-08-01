@@ -1,235 +1,357 @@
-import { NextFunction, Request, Response } from 'express';
-import { RequestMeta, TokenPair } from '../types/auth';
-import { CreateOrgDTO } from '../types/organization';
-import { 
+import { NextFunction, Request, Response } from "express";
+
+import {
   changePasswordFromAuth,
-  signUpWithAuth, 
-  signInWithAuth, 
+  signUpWithAuth,
+  signInWithAuth,
   signOutFromAuth,
-  // refresh,
-  newRefresh
-} from './../services/auth.service'
-import { 
+  newRefresh,
+} from "../services/auth.service";
+
+import {
   isProfileExistFromDB,
   addAdminProfileToDB,
   getProfileByIdFromDB,
- } from '../services/profiles.service';
-import { createOrganization } from '../services/organization.service';
-import { createAccessToken, issueRefreshToken} from './../services/jwt.service';
-import { AppError } from '../middleware/error.middleware';
-import { signInSchema } from '../schema/auth.schema';
-import { setAuthCookies, setNewAccessCookie } from '../services/cookies.service';
-import { AddAdminProfileDTO } from '../types/profile';
-import { createNewConversationToDB } from '../services/chats/conversation.service';
+  getProfileByIdForAuthFromDB,
+} from "../services/profiles.service";
 
-function metaFromRequest(req: Request): RequestMeta {
-  return {
-    ipAddress: req.ip,
-    userAgent: req.headers["user-agent"],
-  };
-}
+import { createOrganization } from "../services/organization.service";
+import {
+  createAccessToken,
+  issueRefreshToken,
+} from "../services/jwt.service";
+
+import { AppError } from "../middleware/error.middleware";
+import { signInSchema } from "../schema/auth.schema";
+import { setAuthCookies } from "../services/cookies.service";
+import { createNewConversationToDB } from "../services/chats/conversation.service";
+
+import type { RequestMeta, TokenPair } from "../types/auth";
+
+
+const metaFromRequest = (
+  req: Request
+): RequestMeta => ({
+  ipAddress: req.ip,
+  userAgent: req.headers["user-agent"],
+});
+
+
+
+const getAccessToken = (
+  req: Request
+): string => {
+
+  const accessToken = req.cookies?.accessToken;
+
+  if (!accessToken) {
+    throw new AppError(
+      401,
+      "Access token missing"
+    );
+  }
+
+  return accessToken;
+};
+
+
+
+const issueSession = async (
+  res: Response,
+  profile: any,
+  meta: RequestMeta
+) => {
+
+  const accessToken =
+    createAccessToken(profile);
+
+
+  const refreshToken =
+    await issueRefreshToken(
+      profile.id,
+      profile.org_id,
+      meta
+    );
+
+
+  setAuthCookies(
+    res,
+    accessToken,
+    refreshToken
+  );
+};
+
+
 
 export const getCurrentUser = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
-  try{
+): Promise<void> => {
+
+  try {
+
     const userId = req.user?.sub;
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+
+    const accessToken =
+      getAccessToken(req);
+
 
     if (!userId || !orgId) {
-      throw new AppError(400, "User required")
+      throw new AppError(
+        401,
+        "Unauthorized"
+      );
     }
 
-    const profile = await getProfileByIdFromDB(userId, orgId)
 
-    res.status(201).json({
-      success: true,
+    const profile =
+      await getProfileByIdFromDB(
+        userId,
+        orgId,
+        accessToken
+      );
+
+
+    res.status(200).json({
+      success:true,
       profile,
     });
-  } catch (err) {
-    next(err)
+
+
+  } catch(err) {
+    next(err);
   }
-}
+
+};
+
+
+
 
 export const adminSignUp = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
-  try{
-    await signUpWithAuth(req.body);
+): Promise<void> => {
+
+  try {
+
+    await signUpWithAuth(
+      req.body
+    );
+
 
     res.status(201).json({
-      success: true,
+      success:true,
       message:
         "Registration successful. Please verify your email.",
     });
-  } catch (err) {
-    next(err)
+
+
+  } catch(err) {
+    next(err);
   }
-}
 
-// export const adminSignIn = async (
-//   req: Request, 
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const meta = metaFromRequest(req);
-    
-//     const cred = req.body;
+};
 
-//     if (!cred.email) {
-//       throw new AppError(400, "Email is required");
-//     }
 
-//     if (!cred.password) {
-//       throw new AppError(400, "Password is required");
-//     }
 
-//     const auth = await signInWithAuth(cred);
 
-//     if (!auth) {
-//       throw new AppError(401, "User Required");
-//     }
-
-//     if (!auth.user) {
-//       throw new AppError(401, "Invalid credentials");
-//     }
-//     const userId = auth.user.id;
-//     const userEmail = auth.user.email;
-//     const user = auth.user.user_metadata;
-
-//     const profileExist = await isProfileExistFromDB(userId);
-
-//     if (!userEmail) {
-//       throw new AppError(400, "Email is required");
-//     }
-
-//     if (!user.first_name || !user.last_name || !user.org_name) {
-//       throw new AppError(400, "Incomplete registration metadata.");
-//     }
-
-//     let profile;    
-
-//     if (!profileExist) {
-//       const orgDTO: CreateOrgDTO = {
-//         name: user.org_name,
-//         admin_id: userId,
-//         subscription_plan: "Free",
-//       };
-
-//       const newOrg = await createOrganization(orgDTO);
-
-//       const userDetails: AddAdminProfileDTO = {
-//         id: userId,
-//         email: userEmail,
-//         first_name: user.first_name,
-//         last_name: user.last_name,
-//         display_name: `${user.first_name} ${user.last_name}`,
-//         org_id: newOrg.id,
-//       }
-      
-//       await Promise.all([
-//         createNewConversationToDB(newOrg.id, userId, "announcement"),
-//         createNewConversationToDB(newOrg.id, userId, "organization"),
-//       ]);
-
-//       profile = await addAdminProfileToDB(userDetails);
-//     } else {
-//       profile = await getProfileByIdFromDB(
-//         profileExist.id,
-//         profileExist.org_id
-//       );
-//     }
-
-//     const accessToken = createAccessToken(profile);
-
-//     const refreshToken = await issueRefreshToken(profile.id, profile.org_id, meta);
-
-//     setAuthCookies(res, accessToken, refreshToken);
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Login Successful",
-//       profile,
-//     });
-//   } catch (err) {
-//     next(err)
-//   }
-// }
 export const adminSignIn = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
+
   try {
-    const meta = metaFromRequest(req);
-    const cred = req.body;
 
-    if (!cred.email) {
-      throw new AppError(400, "Email is required");
-    }
+    const meta =
+      metaFromRequest(req);
 
-    if (!cred.password) {
-      throw new AppError(400, "Password is required");
-    }
 
-    const auth = await signInWithAuth(cred);
+    const credentials =
+      signInSchema.parse(req.body);
+
+
+
+    const auth =
+      await signInWithAuth(
+        credentials
+      );
+
 
     if (!auth?.user) {
-      throw new AppError(401, "Invalid credentials");
-    }
-
-    const userId = auth.user.id;
-    const userEmail = auth.user.email;
-    const user = auth.user.user_metadata;
-
-    if (!userEmail) {
-      throw new AppError(400, "Email is required");
-    }
-
-    if (!user.first_name || !user.last_name || !user.org_name) {
-      throw new AppError(400, "Incomplete registration metadata.");
-    }
-
-    const existingProfile = await isProfileExistFromDB(userId);
-
-    let profile;
-
-    if (!existingProfile) {
-      // 1. Create organization
-      const newOrg = await createOrganization({
-        name: user.org_name,
-        admin_id: userId,
-        subscription_plan: "Free",
-      });
-
-      // 2. Create profile
-      profile = await addAdminProfileToDB({
-        id: userId,
-        email: userEmail,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        display_name: `${user.first_name} ${user.last_name}`,
-        org_id: newOrg.id,
-      });
-
-      // 3. Create default conversations
-      await Promise.all([
-        createNewConversationToDB(newOrg.id, userId, "announcement"),
-        createNewConversationToDB(newOrg.id, userId, "organization"),
-      ]);
-    } else {
-      profile = await getProfileByIdFromDB(
-        existingProfile.id,
-        existingProfile.org_id
+      throw new AppError(
+        401,
+        "Invalid credentials"
       );
     }
 
+
+
+    const userId =
+      auth.user.id;
+
+
+    const userEmail =
+      auth.user.email;
+
+
+    const metadata =
+      auth.user.user_metadata;
+
+
+
+    if (!userEmail) {
+      throw new AppError(
+        400,
+        "Email is required"
+      );
+    }
+
+
+
+    if (
+      !metadata.first_name ||
+      !metadata.last_name ||
+      !metadata.org_name
+    ) {
+      throw new AppError(
+        400,
+        "Incomplete registration metadata"
+      );
+    }
+
+
+
+    const existingProfile =
+      await isProfileExistFromDB(
+        userId
+      );
+
+
+
+    let profile;
+
+
+
+    if (!existingProfile) {
+
+
+      const organization =
+        await createOrganization({
+          name: metadata.org_name,
+          admin_id: userId,
+          subscription_plan:"Free",
+        });
+
+
+
+      profile =
+        await addAdminProfileToDB({
+          id:userId,
+          email:userEmail,
+          first_name:metadata.first_name,
+          last_name:metadata.last_name,
+          display_name:
+            `${metadata.first_name} ${metadata.last_name}`,
+          org_id:organization.id,
+        });
+
+
+
+      await Promise.all([
+        createNewConversationToDB(
+          organization.id,
+          userId,
+          "announcement",
+        ),
+
+        createNewConversationToDB(
+          organization.id,
+          userId,
+          "organization"
+        ),
+      ]);
+
+
+
+    } else {
+
+
+      profile =
+        await getProfileByIdForAuthFromDB(
+          existingProfile.id,
+          existingProfile.org_id
+        );
+
+    }
+
+
+
+    await issueSession(
+      res,
+      profile,
+      meta
+    );
+
+
+
+    res.status(200).json({
+      success:true,
+      message:"Login Successful",
+      profile,
+    });
+
+
+  } catch(err) {
+    next(err);
+  }
+
+};
+
+export const agentSignIn = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const meta = metaFromRequest(req);
+
+    const credentials = signInSchema.parse(req.body);
+
+    const auth = await signInWithAuth(credentials);
+
+    if (!auth?.user) {
+      throw new AppError(
+        401,
+        "Invalid credentials"
+      );
+    }
+
+
+    const profileExist = await isProfileExistFromDB(
+      auth.user.id
+    );
+
+
+    if (!profileExist) {
+      throw new AppError(
+        403,
+        "Profile does not exist"
+      );
+    }
+
+
+    const profile = await getProfileByIdForAuthFromDB(
+      profileExist.id,
+      profileExist.org_id
+    );
+
+
     const accessToken = createAccessToken(profile);
+
 
     const refreshToken = await issueRefreshToken(
       profile.id,
@@ -237,151 +359,217 @@ export const adminSignIn = async (
       meta
     );
 
-    setAuthCookies(res, accessToken, refreshToken);
 
-    return res.status(200).json({
+    setAuthCookies(
+      res,
+      accessToken,
+      refreshToken
+    );
+
+
+    res.status(200).json({
       success: true,
-      message: "Login Successful",
+      message: "Login successful",
       profile,
     });
+
+
   } catch (err) {
     next(err);
   }
 };
 
-export const agentSignIn = async (
-  req: Request, 
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const meta = metaFromRequest(req);
-    const credentials = signInSchema.parse(req.body) 
-    const auth = await signInWithAuth(credentials);
-    const userId = auth.user.id;
-
-    const profileExist = await isProfileExistFromDB(userId);
-    
-    if (!auth) {
-      throw new AppError(400, "Account don't exist.");
-    }
 
 
-    if (!profileExist) {
-      throw new AppError(400, "Account don't exist.");
-    };
 
-    const profile = await getProfileByIdFromDB(profileExist.id, profileExist.org_id)
-
-    const accessToken = createAccessToken(profile);
-
-    const refreshToken = await issueRefreshToken(profile.id, profile.org_id, meta);
-
-    setAuthCookies(res, accessToken, refreshToken);
-
-     return res.status(200).json({
-      success: true,
-      profile,
-    });
-  } catch (err) {
-    next(err)
-  }
-}
 
 export const changePassword = async (
-  req: Request, 
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+
   try {
+
+    const user = req.user;
+    const accessToken = req.cookies?.accessToken;
+
+
+    if (!user || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized"
+      );
+    }
+
+
     const {
-      currentPassword: current_password,
-      newPassword: new_password } = req.body;
+      currentPassword,
+      newPassword,
+    } = req.body;
 
-    if (!req.user) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+
+
+    if (!currentPassword || !newPassword) {
+      throw new AppError(
+        400,
+        "Current password and new password are required"
+      );
     }
 
-    const data = await getProfileByIdFromDB(req.user.sub, req.user.orgId!);
 
-    if (!data?.email) {
-      res.status(500).json({ error: "Could not resolve account email" });
-      return;
+
+    const profile = await getProfileByIdFromDB(
+      user.sub,
+      user.orgId,
+      accessToken
+    );
+
+
+
+    if (!profile?.email) {
+      throw new AppError(
+        404,
+        "Profile email not found"
+      );
     }
 
-  
-    await changePasswordFromAuth({
-      id: req.user.sub,
-      email: data.email,
-      current_password,
-      new_password,
-    });
+
+
+    await changePasswordFromAuth(
+      {
+        id: user.sub,
+        email: profile.email,
+        current_password: currentPassword,
+        new_password: newPassword,
+      },
+      accessToken
+    );
+
+
+
     res.status(204).send();
-  } catch (err) {
-    next(err)
+
+
+  } catch(err) {
+    next(err);
   }
-}
+
+};
+
+
+
+
 
 export const refreshToken = async (
-  req: Request, 
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+
   try {
+
     const meta = metaFromRequest(req);
 
-    const { refreshToken } = req.cookies;
+    const refreshToken =
+      req.cookies?.refreshToken;
+
+
 
     if (!refreshToken) {
-      res.status(401).json({
-        error: "Refresh token is missing",
-      });
-      return;
+      throw new AppError(
+        401,
+        "Refresh token missing"
+      );
     }
 
-    const tokens: TokenPair =  await newRefresh(refreshToken , meta);
 
-    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    const tokens: TokenPair =
+      await newRefresh(
+        refreshToken,
+        meta
+      );
+
+
+
+    setAuthCookies(
+      res,
+      tokens.accessToken,
+      tokens.refreshToken
+    );
+
+
 
     res.status(204).send();
-  } catch (err) {
-    next(err)
+
+
+  } catch(err) {
+    next(err);
   }
-}
+
+};
+
+
+
 
 
 export const signOut = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
+
   try {
-    const { refreshToken } = req.cookies;
+
+    const refreshToken =
+      req.cookies?.refreshToken;
+
+
 
     if (refreshToken) {
-      await signOutFromAuth(refreshToken);
+      await signOutFromAuth(
+        refreshToken
+      );
     }
 
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
 
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/auth/me/refresh",
-    });
+
+    res.clearCookie(
+      "accessToken",
+      {
+        httpOnly: true,
+        secure:
+          process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+      }
+    );
+
+
+
+    res.clearCookie(
+      "refreshToken",
+      {
+        httpOnly: true,
+        secure:
+          process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/auth/me/refresh",
+      }
+    );
+
+
 
     res.status(200).json({
       success: true,
       message: "Logged out successfully",
     });
-  } catch (err) {
+
+
+
+  } catch(err) {
     next(err);
   }
+
 };

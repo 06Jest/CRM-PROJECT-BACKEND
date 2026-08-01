@@ -5,9 +5,7 @@ import { uuidSchema } from "../schema/global.schema";
 import {
   getUserConversationListItemsFromDB,
   findDirectConversationBetweenUsersFromDB,
-  createNewConversationToDB,
   createDirectConversationToDB,
-  getConversationsByIDsFromDB,
   getConversationByIDFromDB,
 } from "../services/chats/conversation.service";
 
@@ -21,7 +19,9 @@ import {
 import {
   markConversationAsReadFromDB,
 } from "../services/chats/conversationMember.service";
+
 import { getProfileByIdFromDB } from "../services/profiles.service";
+
 
 
 export const getUserConversations = async (
@@ -31,11 +31,12 @@ export const getUserConversations = async (
 ) => {
   try {
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
     const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId) {
+    if (!orgId || !userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -46,7 +47,8 @@ export const getUserConversations = async (
     const data =
       await getUserConversationListItemsFromDB(
         orgId,
-        userId
+        userId,
+        accessToken
       );
 
 
@@ -65,6 +67,7 @@ export const getUserConversations = async (
 
 
 
+
 export const getDirectConversation = async (
   req: Request,
   res: Response,
@@ -73,8 +76,10 @@ export const getDirectConversation = async (
 
   try {
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
     const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
+
 
     const otherUserId =
       uuidSchema.parse(
@@ -82,7 +87,7 @@ export const getDirectConversation = async (
       );
 
 
-    if (!orgId || !userId) {
+    if (!orgId || !userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -94,7 +99,8 @@ export const getDirectConversation = async (
       await findDirectConversationBetweenUsersFromDB(
         orgId,
         userId,
-        otherUserId
+        otherUserId,
+        accessToken
       );
 
 
@@ -113,6 +119,7 @@ export const getDirectConversation = async (
 
 
 
+
 export const createDirectConversation = async (
   req: Request,
   res: Response,
@@ -121,13 +128,15 @@ export const createDirectConversation = async (
 
   try {
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
     const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
+
 
     const { profile_id } = req.body;
 
 
-    if (!orgId || !userId) {
+    if (!orgId || !userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -139,7 +148,8 @@ export const createDirectConversation = async (
       await findDirectConversationBetweenUsersFromDB(
         orgId,
         userId,
-        profile_id
+        profile_id,
+        accessToken
       );
 
 
@@ -158,9 +168,9 @@ export const createDirectConversation = async (
       await createDirectConversationToDB(
         orgId,
         userId,
-        profile_id
+        profile_id,
+        accessToken
       );
-
 
 
     return res.status(201).json({
@@ -175,6 +185,7 @@ export const createDirectConversation = async (
   }
 
 };
+
 
 
 
@@ -194,8 +205,11 @@ export const getMessages = async (
     const userId =
       req.user?.sub;
 
+    const accessToken =
+      req.cookies.accessToken;
 
-    if (!userId) {
+
+    if (!userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -206,7 +220,8 @@ export const getMessages = async (
     const data =
       await getMessagesFromDB(
         conversationId,
-        userId
+        userId,
+        accessToken
       );
 
 
@@ -222,6 +237,7 @@ export const getMessages = async (
   }
 
 };
+
 
 
 
@@ -242,35 +258,53 @@ export const sendMessage = async (
       req.user?.sub;
 
     const orgId =
-    req.user?.orgId;
+      req.user?.org_id;
+
+    const accessToken =
+      req.cookies.accessToken;
 
 
-    if (!userId || !orgId) {
+    if (!userId || !orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
       );
     }
-    
-    const chat = await getConversationByIDFromDB(orgId, conversationId)
 
-    if(chat.type === 'announcement') {
-      const profile = await getProfileByIdFromDB(userId, orgId);
 
-      if (profile.role !== 'admin') {
+    const chat =
+      await getConversationByIDFromDB(
+        orgId,
+        conversationId,
+        accessToken
+      );
+
+
+    if(chat.type === "announcement") {
+
+      const profile =
+        await getProfileByIdFromDB(
+          userId,
+          orgId,
+          accessToken
+        );
+
+
+      if(profile.role !== "admin") {
         throw new AppError(
           401,
           "Only Admin can send Messages to Announcements"
         );
       }
     }
-    
+
 
     const data =
       await sendMessageToDB(
         conversationId,
         userId,
-        req.body
+        req.body,
+        accessToken
       );
 
 
@@ -286,6 +320,7 @@ export const sendMessage = async (
   }
 
 };
+
 
 
 
@@ -305,8 +340,11 @@ export const editMessage = async (
     const userId =
       req.user?.sub;
 
+    const accessToken =
+      req.cookies.accessToken;
 
-    if (!userId) {
+
+    if (!userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -318,7 +356,8 @@ export const editMessage = async (
       await editMessageFromDB(
         id,
         userId,
-        req.body.content
+        req.body.content,
+        accessToken
       );
 
 
@@ -334,6 +373,7 @@ export const editMessage = async (
   }
 
 };
+
 
 
 
@@ -353,8 +393,11 @@ export const deleteMessage = async (
     const userId =
       req.user?.sub;
 
+    const accessToken =
+      req.cookies.accessToken;
 
-    if (!userId) {
+
+    if (!userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -365,7 +408,8 @@ export const deleteMessage = async (
     const data =
       await deleteMessageFromDB(
         id,
-        userId
+        userId,
+        accessToken
       );
 
 
@@ -381,6 +425,7 @@ export const deleteMessage = async (
   }
 
 };
+
 
 
 
@@ -400,8 +445,11 @@ export const markConversationAsRead = async (
     const userId =
       req.user?.sub;
 
+    const accessToken =
+      req.cookies.accessToken;
 
-    if (!userId) {
+
+    if (!userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -411,7 +459,8 @@ export const markConversationAsRead = async (
 
     await markConversationAsReadFromDB(
       conversationId,
-      userId
+      userId,
+      accessToken
     );
 
 

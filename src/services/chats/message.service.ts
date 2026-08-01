@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../../config/supabase";
+import { createSupabaseUserClient } from "../../config/supabase";
 import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
 
@@ -6,6 +6,7 @@ import {
   AddMessage,
   MessageListItem,
 } from "../../types/chat";
+
 import { ensureConversationMember } from "./conversationMember.service";
 
 
@@ -25,24 +26,33 @@ const all = `
   )
 `;
 
+
+
 export const getMessagesFromDB = async (
   conversationId: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<MessageListItem[]> => {
 
 
   await ensureConversationMember(
     conversationId,
-    userId
+    userId,
+    accessToken
   );
 
-  const { data, error } = await supabaseAdmin
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(messageTab)
     .select(all)
     .eq("conversation_id", conversationId)
     .order("created_at", {
       ascending: true,
     });
+
 
   if (error) {
     throw new AppError(
@@ -51,23 +61,33 @@ export const getMessagesFromDB = async (
     );
   }
 
+
   return (data ?? []) as MessageListItem[];
 };
+
+
 
 
 export const sendMessageToDB = async (
   conversationId: string,
   userId: string,
-  message: AddMessage
+  message: AddMessage,
+  accessToken: string
 ): Promise<MessageListItem> => {
 
 
   await ensureConversationMember(
     conversationId,
-    userId
+    userId,
+    accessToken
   );
 
-  const { data, error } = await supabaseAdmin
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+
+  const { data, error } = await db
     .from(messageTab)
     .insert({
       conversation_id: conversationId,
@@ -79,6 +99,7 @@ export const sendMessageToDB = async (
     .select(all)
     .single();
 
+
   if (error) {
     throw new AppError(
       500,
@@ -87,14 +108,17 @@ export const sendMessageToDB = async (
   }
 
 
+
   const { error: conversationError } =
-    await supabaseAdmin
+    await db
       .from(conversationTab)
       .update({
         last_message_id: data.id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", conversationId);
+
+
 
   if (conversationError) {
     throw new AppError(
@@ -103,18 +127,28 @@ export const sendMessageToDB = async (
     );
   }
 
+
   return data as MessageListItem;
 };
+
+
+
 
 
 export const editMessageFromDB = async (
   id: string,
   userId: string,
-  content: string
+  content: string,
+  accessToken: string
 ): Promise<MessageListItem> => {
 
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+
   const { data: existing, error } =
-    await supabaseAdmin
+    await db
       .from(messageTab)
       .select(`
         conversation_id,
@@ -125,6 +159,8 @@ export const editMessageFromDB = async (
       .is("deleted_at", null)
       .single();
 
+
+
   if (error || !existing) {
     throw new AppError(
       404,
@@ -132,10 +168,15 @@ export const editMessageFromDB = async (
     );
   }
 
+
+
   await ensureConversationMember(
     existing.conversation_id,
-    userId
+    userId,
+    accessToken
   );
+
+
 
   if (existing.sender_id !== userId) {
     throw new AppError(
@@ -144,11 +185,16 @@ export const editMessageFromDB = async (
     );
   }
 
+
+
   const EDIT_WINDOW_MS = 15 * 60 * 1000;
+
+
 
   if (
     Date.now() -
-      new Date(existing.created_at).getTime() >
+      new Date(existing.created_at).getTime()
+      >
     EDIT_WINDOW_MS
   ) {
     throw new AppError(
@@ -157,17 +203,21 @@ export const editMessageFromDB = async (
     );
   }
 
+
+
   const { data, error: updateError } =
-    await supabaseAdmin
+    await db
       .from(messageTab)
       .update({
-        content: content,
+        content,
         edited_at: new Date().toISOString(),
       })
       .eq("id", id)
       .is("deleted_at", null)
       .select(all)
       .single();
+
+
 
   if (updateError || !data) {
     throw new AppError(
@@ -178,17 +228,29 @@ export const editMessageFromDB = async (
     );
   }
 
+
+
   return data as MessageListItem;
 };
 
 
+
+
+
+
 export const deleteMessageFromDB = async (
   id: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<string> => {
 
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+
   const { data: existing, error } =
-    await supabaseAdmin
+    await db
       .from(messageTab)
       .select(`
         conversation_id,
@@ -198,6 +260,8 @@ export const deleteMessageFromDB = async (
       .is("deleted_at", null)
       .single();
 
+
+
   if (error || !existing) {
     throw new AppError(
       404,
@@ -205,10 +269,15 @@ export const deleteMessageFromDB = async (
     );
   }
 
+
+
   await ensureConversationMember(
     existing.conversation_id,
-    userId
+    userId,
+    accessToken
   );
+
+
 
   if (existing.sender_id !== userId) {
     throw new AppError(
@@ -217,16 +286,22 @@ export const deleteMessageFromDB = async (
     );
   }
 
+
+
   const now = new Date().toISOString();
 
+
+
   const { error: deleteError } =
-    await supabaseAdmin
+    await db
       .from(messageTab)
       .update({
         deleted_at: now,
       })
       .eq("id", id)
       .is("deleted_at", null);
+
+
 
   if (deleteError) {
     throw new AppError(
@@ -235,22 +310,28 @@ export const deleteMessageFromDB = async (
     );
   }
 
+
+
+
   const {
     data: latestMessage,
     error: latestMessageError,
-  } = await supabaseAdmin
-    .from(messageTab)
-    .select("id")
-    .eq(
-      "conversation_id",
-      existing.conversation_id
-    )
-    .is("deleted_at", null)
-    .order("created_at", {
-      ascending: false,
-    })
-    .limit(1)
-    .maybeSingle();
+  } =
+    await db
+      .from(messageTab)
+      .select("id")
+      .eq(
+        "conversation_id",
+        existing.conversation_id
+      )
+      .is("deleted_at", null)
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle();
+
+
 
   if (latestMessageError) {
     throw new AppError(
@@ -259,19 +340,25 @@ export const deleteMessageFromDB = async (
     );
   }
 
+
+
+
   const {
     error: conversationError,
-  } = await supabaseAdmin
-    .from(conversationTab)
-    .update({
-      last_message_id:
-        latestMessage?.id ?? null,
-      updated_at: now,
-    })
-    .eq(
-      "id",
-      existing.conversation_id
-    );
+  } =
+    await db
+      .from(conversationTab)
+      .update({
+        last_message_id:
+          latestMessage?.id ?? null,
+        updated_at: now,
+      })
+      .eq(
+        "id",
+        existing.conversation_id
+      );
+
+
 
   if (conversationError) {
     throw new AppError(
@@ -279,6 +366,8 @@ export const deleteMessageFromDB = async (
       `Failed to update Conversation: ${conversationError.message}`
     );
   }
+
+
 
   return id;
 };

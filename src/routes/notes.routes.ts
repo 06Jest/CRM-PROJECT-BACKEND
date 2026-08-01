@@ -16,7 +16,7 @@ import {
   deletePrivateNote,
   deleteNote,
   getNotes,
-  isPineedNote,
+  isPinnedNote,
 } from "../controllers/notes.controller";
 
 import {
@@ -24,26 +24,25 @@ import {
   pinNoteSchema,
   updateNoteSchema,
 } from "../schema/note.schema";
-import { boolean } from "zod";
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+
 
 const router = Router();
 
 router.use(verifyToken);
 router.use(authenticateUser);
 
-router.get("/show-notes", getNotes);
-router.get("/show-public-notes", getPublicNotes);
-router.get("/show-private-notes", getPrivateNotes);
+router.get("/show-notes",readLimiter, getNotes);
+router.get("/show-public-notes",readLimiter, getPublicNotes);
+router.get("/show-private-notes",readLimiter, getPrivateNotes);
+router.get("/show-note/:id",readLimiter, getNoteByID);
 
-router.get("/show-note/:id", getNoteByID);
+router.post("/add-note",createLimiter, validateBody(addNoteSchema), addNote);
 
-router.post("/add-note", validateBody(addNoteSchema), addNote);
+router.patch("/update-note/:id", updateLimiter, validateBody(updateNoteSchema), updateNote);
+router.patch("/pin-note/:id", updateLimiter, validateBody(pinNoteSchema) , isPinnedNote);
 
-router.patch("/update-note/:id", validateBody(updateNoteSchema), updateNote);
-
-router.patch("/pin-note/:id", validateBody(pinNoteSchema) , isPineedNote);
-
-router.delete("/delete-private-note/:id",deletePrivateNote);
-router.delete("/delete-note/:id",deleteNote);
+router.delete("/delete-private-note/:id",deleteLimiter,deletePrivateNote);
+router.delete("/delete-note/:id",deleteLimiter,deleteNote);
 
 export default router;

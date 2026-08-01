@@ -1,10 +1,19 @@
 import { Request, Response, NextFunction } from "express";
-import { updateLeadFromDB, addLeadToDB, getLeadsFromDB, deleteLeadFromDB, updateLeadStatusFromDB, getLeadByIDFromDB, getLeadsListsFromDB } from "../services/leads.service";
+import {
+  updateLeadFromDB,
+  addLeadToDB,
+  getLeadsFromDB,
+  deleteLeadFromDB,
+  updateLeadStatusFromDB,
+  getLeadByIDFromDB,
+  getLeadsListsFromDB,
+} from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
 import { addContactFromLeadsToDB } from "../services/contacts.service";
 import { AddContact } from "../types/contact";
 import { Source } from "../types/global";
+import { addActivityToDB } from "../services/activities.service";
 
 export const getLeads = async (
   req: Request,
@@ -12,24 +21,23 @@ export const getLeads = async (
   next: NextFunction
 ) => {
   try {
-    const orgId = req.user?.orgId;
+    const accessToken = req.cookies.accessToken;
 
-    if (!orgId) {
-      throw new AppError(400, 'orgId is required');
+    if (!accessToken) {
+      throw new AppError(401, "Missing access token");
     }
 
-    const leads = await getLeadsFromDB(orgId);
+    const leads = await getLeadsFromDB(accessToken);
+
     return res.status(200).json({
       success: true,
-      message: 'Leads fetch successful',
-      data: leads, 
-      
+      message: "Leads fetch successful",
+      data: leads,
     });
-    
   } catch (err) {
     next(err);
   }
-}
+};
 
 export const getLeadsLists = async (
   req: Request,
@@ -37,25 +45,27 @@ export const getLeadsLists = async (
   next: NextFunction
 ) => {
   try {
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!orgId) {
-      throw new AppError(400, 'orgId is required');
+    if (!orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
     }
 
-    const leads = await getLeadsListsFromDB(orgId);
+    const leads = await getLeadsListsFromDB(
+      orgId,
+      accessToken
+    );
+
     return res.status(200).json({
       success: true,
-      message: 'Leads fetch successful',
-      data: leads, 
-      
+      message: "Leads fetch successful",
+      data: leads,
     });
-    
   } catch (err) {
-    console.error(err);
     next(err);
   }
-}
+};
 
 export const addLead = async (
   req: Request,
@@ -63,28 +73,40 @@ export const addLead = async (
   next: NextFunction
 ) => {
   try {
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
     const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
     const lead = req.body;
 
-    if (!orgId || !userId) {
-      throw new AppError(
-        401,
-        'Unauthorized user'
-      );
+    if (!orgId || !userId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await addLeadToDB(orgId, userId, lead);
+    const data = await addLeadToDB(
+      orgId,
+      userId,
+      lead,
+      accessToken
+    );
+
+    await addActivityToDB(orgId, userId, {
+      lead_id: data.id,
+      type: "lead",
+      action: "created",
+      title: "New lead",
+      target_name: `${lead.first_name} ${lead.last_name} ${data.suffix ?? ""}`,
+      description: `Added ${lead.first_name} ${lead.last_name} ${data.suffix ?? ""} as lead`,
+    },accessToken);
+
     return res.status(200).json({
       success: true,
-      message: 'Add Lead successful',
-      data, 
+      message: "Add Lead successful",
+      data,
     });
-    
   } catch (err) {
     next(err);
   }
-}
+};
 
 export const updateLead = async (
   req: Request,
@@ -94,33 +116,32 @@ export const updateLead = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const lead = req.body;
+
     const userId = req.user?.sub;
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!id) {
-      throw new AppError(
-        401,
-        'Contact required'
-      );
-    }
-    if (!userId || !orgId ) {
-      throw new AppError(
-        401,
-        'Unauthorized user'
-      );
+    if (!userId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await updateLeadFromDB(id, orgId, userId, lead);
+    const data = await updateLeadFromDB(
+      id,
+      orgId,
+      userId,
+      lead,
+      accessToken
+    );
+
     return res.status(200).json({
       success: true,
-      message: 'Update Lead successful',
-      data, 
+      message: "Update Lead successful",
+      data,
     });
-    
   } catch (err) {
     next(err);
   }
-}
+};
 
 export const updateLeadStatus = async (
   req: Request,
@@ -130,32 +151,30 @@ export const updateLeadStatus = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { status } = req.body;
+
     const userId = req.user?.sub;
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!id) {
-      throw new AppError(
-        401,
-        'Contact required'
-      );
-    }
-    if (!userId || !orgId ) {
-      throw new AppError(
-        401,
-        'Unauthorized user'
-      );
+    if (!userId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
     }
 
-    
+    const leadData = await getLeadByIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
 
-    if ( status === 'Qualified') {
+    const data = await updateLeadStatusFromDB(
+      id,
+      orgId,
+      userId,
+      status,
+      accessToken
+    );
 
-      const leadData = await getLeadByIDFromDB(id, orgId);
-
-      if (!leadData) {
-        throw new Error("Lead not found");
-      }
-
+    if (status === "Qualified") {
       const contact: AddContact = {
         lead_id: leadData.id,
         first_name: leadData.first_name,
@@ -183,19 +202,35 @@ export const updateLeadStatus = async (
         viber: leadData.viber,
       };
 
-      await addContactFromLeadsToDB(orgId, userId, contact);
+      const contactData = await addContactFromLeadsToDB(
+        orgId,
+        userId,
+        contact,
+        accessToken
+      );
+
+      const contactName =
+        `${contactData.first_name} ${contactData.last_name} ${contactData.suffix ?? ""}`.trim();
+
+      await addActivityToDB(orgId, userId, {
+        contact_id: contactData.id,
+        type: "contact",
+        action: "created",
+        title: "New contact",
+        target_name: contactName,
+        description: "Created contact from qualified lead",
+      },accessToken);
     }
 
-    const data = await updateLeadStatusFromDB(id, orgId, userId, status);
     return res.status(200).json({
       success: true,
-      message: 'Update Lead Status successful',
-      data, 
+      message: "Update Lead Status successful",
+      data,
     });
   } catch (err) {
     next(err);
   }
-}
+};
 
 export const deleteLead = async (
   req: Request,
@@ -204,31 +239,43 @@ export const deleteLead = async (
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
+
     const userId = req.user?.sub;
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    if (!id) {
-      throw new AppError(
-        401,
-        'Lead required'
-      );
-    }
-    if (!userId || !orgId) {
-      throw new AppError(
-        401,
-        'Unauthorized user'
-      );
+    if (!userId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await deleteLeadFromDB(id, orgId, userId);
+    const deleted = await getLeadByIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
+
+    const data = await deleteLeadFromDB(
+      id,
+      orgId,
+      userId,
+      accessToken
+    );
+
+    await addActivityToDB(orgId, userId, {
+      lead_id: deleted.id,
+      type: "lead",
+      action: "deleted",
+      title: "Removed contact",
+      target_name: `${deleted.first_name} ${deleted.last_name} ${deleted.suffix ?? ""}`,
+      description: `Removed ${deleted.first_name} ${deleted.last_name} ${deleted.suffix ?? ""} as contact`,
+    },accessToken);
+
     return res.status(200).json({
       success: true,
-      message: 'Delete Lead successful',
-      data, 
+      message: "Delete Lead successful",
+      data,
     });
-    
   } catch (err) {
     next(err);
   }
-}
-
+};

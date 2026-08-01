@@ -32,11 +32,19 @@ export interface Deal {
 export interface DealListItem extends Deal {
 
   owner: {
-      id: string;
-      first_name: string;
-      last_name: string;
-  };
-  
+    id: string;
+    first_name: string;
+    last_name: string;
+  },
+
+  contact: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
+
 }
 
 export interface AddDeal {

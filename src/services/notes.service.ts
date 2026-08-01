@@ -1,9 +1,8 @@
-import { supabaseAdmin } from '../config/supabase';
+import { createSupabaseUserClient } from '../config/supabase';
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
 
 import type {
-  Note,
   NoteListItem,
   AddNote,
   UpdateNote,
@@ -25,8 +24,11 @@ const all = selectAllWithAuthor;
 
 export const getPublicNotesFromDB = async (
   orgId: string,
+  accessToken: string
 ): Promise<NoteListItem[]> => {
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
     .from(tab)
     .select(all)
     .eq('org_id', orgId)
@@ -37,14 +39,18 @@ export const getPublicNotesFromDB = async (
   if (error) {
     throw new AppError(500, `Failed to fetch Notes: ${error.message}`);
   }
+
   return data ?? [];
 };
 
 export const getPrivateNotesFromDB = async (
   orgId: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<NoteListItem[]> => {
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
     .from(tab)
     .select(all)
     .eq('org_id', orgId)
@@ -56,14 +62,18 @@ export const getPrivateNotesFromDB = async (
   if (error) {
     throw new AppError(500, `Failed to fetch Notes: ${error.message}`);
   }
+
   return data ?? [];
 };
 
 export const getNotesFromDB = async (
   orgId: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<NoteListItem[]> => {
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
     .from(tab)
     .select(all)
     .eq("org_id", orgId)
@@ -82,9 +92,12 @@ export const getNotesFromDB = async (
 
 export const getNoteByIDFromDB = async (
   id: string,
-  orgId: string
+  orgId: string,
+  accessToken: string
 ): Promise<NoteListItem> => {
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
     .from(tab)
     .select(all)
     .eq('id', id)
@@ -102,18 +115,19 @@ export const getNoteByIDFromDB = async (
 export const addNoteToDB = async (
   orgId: string,
   userId: string,
-  note: AddNote
+  note: AddNote,
+  accessToken: string
 ): Promise<NoteListItem> => {
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
     .from(tab)
-    .insert([
-      {
-        ...note,
-        org_id: orgId,
-        author_id: userId,
-        updated_by: userId,
-      },
-    ])
+    .insert({
+      ...note,
+      org_id: orgId,
+      author_id: userId,
+      updated_by: userId,
+    })
     .select(all)
     .single();
 
@@ -128,9 +142,12 @@ export const updateNoteFromDB = async (
   id: string,
   orgId: string,
   userId: string,
-  note: UpdateNote
+  note: UpdateNote,
+  accessToken: string
 ): Promise<NoteListItem> => {
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
     .from(tab)
     .update({
       ...note,
@@ -150,21 +167,23 @@ export const updateNoteFromDB = async (
   return data;
 };
 
-export const isPineedNoteFromDB = async (
+export const isPinnedNoteFromDB = async (
   id: string,
   orgId: string,
   userId: string,
-  pinned: boolean
+  pinned: boolean,
+  accessToken: string
 ): Promise<NoteListItem> => {
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
     .from(tab)
     .update({
-      pinned: pinned,
+      pinned,
       updated_by: userId,
     })
     .eq('id', id)
     .eq('org_id', orgId)
-    .eq('author_id', userId)
     .is('deleted_at', null)
     .select(all)
     .single();
@@ -179,9 +198,12 @@ export const isPineedNoteFromDB = async (
 export const deletePrivateNoteFromDB = async (
   id: string,
   orgId: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<string> => {
-  const { error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
@@ -201,9 +223,12 @@ export const deletePrivateNoteFromDB = async (
 export const deleteNoteFromDB = async (
   id: string,
   orgId: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<string> => {
-  const { error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),

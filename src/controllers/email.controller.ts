@@ -4,16 +4,18 @@ import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
 
 import {
-  getEmails,
-  createDraft,
-  updateDraft,
-  sendEmail,
-  getLeadEmails,
-  getContactEmails,
-  getCustomerEmails,
-  deleteEmail,
+  getEmailsFromDB,
+  getEmailByIDFromDB,
+  createEmailDraftToDB,
+  updateEmailDraftFromDB,
+  getLeadEmailsFromDB,
+  getContactEmailsFromDB,
+  getCustomerEmailsFromDB,
+  deleteEmailFromDB,
 } from "../services/email.service";
-import { getEmailById } from "../repository/email.repository";
+import { sendEmailWithResend } from "../services/resend.service";
+
+
 
 export const getAllEmails = async (
   req: Request,
@@ -23,20 +25,27 @@ export const getAllEmails = async (
 
   try {
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId) {
-      throw new AppError(401, "Unauthorized user");
+    if (!orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
 
 
-    const data = await getEmails(orgId);
+    const data = await getEmailsFromDB(
+      orgId,
+      accessToken
+    );
 
 
     return res.status(200).json({
-      success: true,
-      message: "Emails fetch successful",
+      success:true,
+      message:"Emails fetch successful",
       data,
     });
 
@@ -47,6 +56,9 @@ export const getAllEmails = async (
 
 };
 
+
+
+
 export const getEmailByID = async (
   req: Request,
   res: Response,
@@ -55,19 +67,27 @@ export const getEmailByID = async (
 
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId){
-      throw new AppError(401,"Unauthorized user");
+    if (!orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
 
 
-    const data = await getEmailById(
+    const data = await getEmailByIDFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
 
 
@@ -78,11 +98,14 @@ export const getEmailByID = async (
     });
 
 
-  } catch(err){
+  } catch(err) {
     next(err);
   }
 
 };
+
+
+
 
 export const addEmailDraft = async (
   req: Request,
@@ -92,11 +115,12 @@ export const addEmailDraft = async (
 
   try {
 
-    const orgId = req.user?.orgId;
+    const orgId = req.user?.org_id;
     const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId || !userId){
+    if (!orgId || !userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -104,10 +128,11 @@ export const addEmailDraft = async (
     }
 
 
-    const data = await createDraft(
+    const data = await createEmailDraftToDB(
       orgId,
       userId,
-      req.body
+      req.body,
+      accessToken
     );
 
 
@@ -118,11 +143,72 @@ export const addEmailDraft = async (
     });
 
 
-  } catch(err){
+  } catch(err) {
     next(err);
   }
 
 };
+
+export const sendEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
+  try {
+
+    const orgId = req.user?.org_id;
+    const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
+
+
+    if (!orgId || !userId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+
+    const {
+      from,
+      to,
+      subject,
+      html,
+    } = req.body;
+
+
+    if (!from || !to || !subject || !html) {
+      throw new AppError(
+        400,
+        "Missing required email fields"
+      );
+    }
+
+
+    const data = await sendEmailWithResend({
+      from,
+      to,
+      subject,
+      html,
+    });
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Email sent successfully",
+      data,
+    });
+
+
+  } catch(err) {
+    next(err);
+  }
+
+};
+
+
+
 
 export const updateEmailDraft = async (
   req: Request,
@@ -132,12 +218,16 @@ export const updateEmailDraft = async (
 
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId){
+    if (!orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -145,10 +235,11 @@ export const updateEmailDraft = async (
     }
 
 
-    const data = await updateDraft(
+    const data = await updateEmailDraftFromDB(
       id,
       orgId,
-      req.body
+      req.body,
+      accessToken
     );
 
 
@@ -159,51 +250,14 @@ export const updateEmailDraft = async (
     });
 
 
-  } catch(err){
+  } catch(err) {
     next(err);
   }
 
 };
 
-export const sendEmailController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-
-  try {
-
-    const id = uuidSchema.parse(req.params.id);
-
-    const orgId = req.user?.orgId;
 
 
-    if(!orgId){
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
-    }
-
-
-    const data = await sendEmail(
-      id,
-      orgId
-    );
-
-
-    return res.status(200).json({
-      success:true,
-      message:"Email sent successfully",
-      data,
-    });
-
-
-  } catch(err){
-    next(err);
-  }
-
-};
 
 export const getLeadEmailHistory = async (
   req: Request,
@@ -217,10 +271,12 @@ export const getLeadEmailHistory = async (
       req.params.leadId
     );
 
-    const orgId = req.user?.orgId;
+
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId){
+    if (!orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -228,9 +284,10 @@ export const getLeadEmailHistory = async (
     }
 
 
-    const data = await getLeadEmails(
+    const data = await getLeadEmailsFromDB(
       orgId,
-      leadId
+      leadId,
+      accessToken
     );
 
 
@@ -241,11 +298,14 @@ export const getLeadEmailHistory = async (
     });
 
 
-  } catch(err){
+  } catch(err) {
     next(err);
   }
 
 };
+
+
+
 
 export const getContactEmailHistory = async (
   req: Request,
@@ -259,10 +319,12 @@ export const getContactEmailHistory = async (
       req.params.contactId
     );
 
-    const orgId = req.user?.orgId;
+
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId){
+    if (!orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -270,9 +332,10 @@ export const getContactEmailHistory = async (
     }
 
 
-    const data = await getContactEmails(
+    const data = await getContactEmailsFromDB(
       orgId,
-      contactId
+      contactId,
+      accessToken
     );
 
 
@@ -283,11 +346,14 @@ export const getContactEmailHistory = async (
     });
 
 
-  } catch(err){
+  } catch(err) {
     next(err);
   }
 
 };
+
+
+
 
 export const getCustomerEmailHistory = async (
   req: Request,
@@ -301,10 +367,12 @@ export const getCustomerEmailHistory = async (
       req.params.customerId
     );
 
-    const orgId = req.user?.orgId;
+
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId){
+    if (!orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -312,9 +380,10 @@ export const getCustomerEmailHistory = async (
     }
 
 
-    const data = await getCustomerEmails(
+    const data = await getCustomerEmailsFromDB(
       orgId,
-      customerId
+      customerId,
+      accessToken
     );
 
 
@@ -325,11 +394,14 @@ export const getCustomerEmailHistory = async (
     });
 
 
-  } catch(err){
+  } catch(err) {
     next(err);
   }
 
 };
+
+
+
 
 export const removeEmail = async (
   req: Request,
@@ -339,12 +411,16 @@ export const removeEmail = async (
 
   try {
 
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
-    const orgId = req.user?.orgId;
+
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId){
+    if (!orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -352,22 +428,22 @@ export const removeEmail = async (
     }
 
 
-    const data = await deleteEmail(
+    const data = await deleteEmailFromDB(
       id,
-      orgId
+      orgId,
+      accessToken
     );
 
 
     return res.status(200).json({
       success:true,
-      message:"Email deleted successfully",
+      message:"Delete Email successful",
       data,
     });
 
 
-  } catch(err){
+  } catch(err) {
     next(err);
   }
 
 };
-

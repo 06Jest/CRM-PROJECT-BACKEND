@@ -23,6 +23,7 @@ import {
   sendMessageSchema,
   updateMessageSchema,
 } from "../schema/chat.schema";
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
 
 
 const router = Router();
@@ -30,22 +31,17 @@ const router = Router();
 router.use(verifyToken);
 router.use(authenticateUser);
 
-router.get("/conversations", getUserConversations);
+router.get("/conversations",readLimiter, getUserConversations);
+router.get("/direct-conversation/:userId",readLimiter, getDirectConversation);
+router.get("/messages/:conversationId",readLimiter, getMessages);
 
-router.get("/direct-conversation/:userId", getDirectConversation);
+router.post("/direct-conversation", createLimiter, validateBody(createDirectConversationSchema), createDirectConversation);
+router.post("/messages/:conversationId", createLimiter, validateBody(sendMessageSchema), sendMessage);
 
-router.post("/direct-conversation", validateBody(createDirectConversationSchema), createDirectConversation);
+router.patch("/message/:id", updateLimiter, validateBody(updateMessageSchema), editMessage);
+router.patch("/conversation/:conversationId/read", updateLimiter, markConversationAsRead);
 
-router.get("/messages/:conversationId", getMessages);
-
-router.post("/messages/:conversationId", validateBody(sendMessageSchema), sendMessage);
-
-router.patch("/message/:id", validateBody(updateMessageSchema), editMessage);
-
-router.patch("/conversation/:conversationId/read", markConversationAsRead);
-
-router.delete("/message/:id", deleteMessage);
-
+router.delete("/message/:id",deleteLimiter, deleteMessage);
 
 
 export default router;

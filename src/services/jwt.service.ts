@@ -1,4 +1,3 @@
-
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "../config/environment";
 import type { AccessTokenPayload } from "../types/auth";
@@ -7,8 +6,9 @@ import { supabaseAdmin } from "../config/supabase";
 import { RequestMeta } from "../types/auth";
 import { table } from '../config/tables';
 import { Profile } from "../types/profile";
-import { getProfileByIdFromDB } from "./profiles.service";
 import { AppError } from "../middleware/error.middleware";
+
+
 
 const tab = table.refresh;
 
@@ -79,12 +79,19 @@ const replacedRow = async (
 export const createAccessToken = (profile: Profile): string => {
   return jwt.sign(
     {
+      aud: "authenticated",
+      iss: "supabase",
       sub: profile.id,
-      role: profile.role,
-      orgId: profile.org_id,
+      role: "authenticated",
+      email: profile.email,
+      org_id: profile.org_id,
+      user_metadata: {
+        role: profile.role,
+      },
     },
-    config.JWT.access.secret!,
+    config.SUPABASE.jwtSecret,
     {
+      algorithm: "HS256",
       expiresIn: config.JWT.access.expire,
     }
   );
@@ -102,23 +109,33 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
   try {
     const decoded = jwt.verify(
       token,
-      config.JWT.access.secret!
+      config.SUPABASE.jwtSecret,
+      {
+        algorithms: ["HS256"],
+      }
     ) as AccessTokenPayload;
 
-    if (
-      typeof decoded.sub !== "string" ||
-      typeof decoded.role !== "string" ||
-      (decoded.orgId !== undefined &&
-        typeof decoded.orgId !== "string")
-    ) {
-      throw new AppError(401, "Malformed access token");
-    }
+  const validAud =
+  decoded.aud === "authenticated" ||
+  (Array.isArray(decoded.aud) &&
+    decoded.aud.includes("authenticated"));
 
-    return {
-      sub: decoded.sub,
-      role: decoded.role,
-      orgId: decoded.orgId,
-    };
+  if (
+    !validAud ||
+    decoded.iss !== "supabase" ||
+    typeof decoded.sub !== "string" ||
+    decoded.role !== "authenticated" ||
+    typeof decoded.email !== "string" ||
+    typeof decoded.org_id !== "string" ||
+    !decoded.user_metadata ||
+    (decoded.user_metadata.role !== "admin" &&
+      decoded.user_metadata.role !== "agent")
+  ) {
+    throw new AppError(401, "Malformed access token");
+  }
+
+    return decoded;
+
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
       throw new AppError(401, "Access token expired");

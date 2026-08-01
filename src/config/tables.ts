@@ -8,6 +8,7 @@ export const table = {
   contacts: config.SUPABASE.TABLE.contacts || 'contacts',
   deals: config.SUPABASE.TABLE.deals || 'deals',
   customers: config.SUPABASE.TABLE.customers || 'customers',
+  activities: config.SUPABASE.TABLE.activities || 'activities',
   notes: config.SUPABASE.TABLE.notes || 'notes',
   emails: config.SUPABASE.TABLE.emails || 'emails',
   tasks: config.SUPABASE.TABLE.tasks || 'tasks',
@@ -17,4 +18,5 @@ export const table = {
     messages: config.SUPABASE.TABLE.chats.messages || 'messages',
   },
   calls: config.SUPABASE.TABLE.calls || 'calls',
+  sms: config.SUPABASE.TABLE.sms || 'sms',
 };

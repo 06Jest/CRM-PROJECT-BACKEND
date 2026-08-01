@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../config/supabase";
+import { createSupabaseUserClient } from "../config/supabase";
 import { table } from "../config/tables";
 
 import { AppError } from "../middleware/error.middleware";
@@ -10,10 +10,13 @@ import type {
   EndCall,
 } from "../types//calls";
 
+
 const tab = table.calls;
+
 
 const creatorFKey = "calls_created_by_fkey";
 const assignedFKey = "calls_assigned_to_fkey";
+
 
 const selectAllWithUsers = `
   *,
@@ -31,11 +34,17 @@ const selectAllWithUsers = `
 
 const all = selectAllWithUsers;
 
+
+
 export const getCallsFromDB = async (
-  orgId: string
+  orgId: string,
+  accessToken: string
 ): Promise<CallListItem[]> => {
 
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(tab)
     .select(all)
     .eq("org_id", orgId)
@@ -44,23 +53,32 @@ export const getCallsFromDB = async (
       ascending: false,
     });
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to fetch Calls: ${error.message}`
     );
   }
 
+
   return data ?? [];
 
 };
 
+
+
+
 export const getCallByIDFromDB = async (
   id: string,
-  orgId: string
+  orgId: string,
+  accessToken: string
 ): Promise<CallListItem> => {
 
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(tab)
     .select(all)
     .eq("id", id)
@@ -68,23 +86,32 @@ export const getCallByIDFromDB = async (
     .is("deleted_at", null)
     .single();
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to fetch Call: ${error.message}`
     );
   }
 
+
   return data;
 
 };
 
+
+
+
 export const getLeadCallsFromDB = async (
   orgId: string,
-  leadId: string
+  leadId: string,
+  accessToken: string
 ): Promise<CallListItem[]> => {
 
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(tab)
     .select(all)
     .eq("org_id", orgId)
@@ -94,23 +121,32 @@ export const getLeadCallsFromDB = async (
       ascending: false,
     });
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to fetch Lead Calls: ${error.message}`
     );
   }
 
+
   return data ?? [];
 
 };
 
+
+
+
 export const getContactCallsFromDB = async (
   orgId: string,
-  contactId: string
+  contactId: string,
+  accessToken: string
 ): Promise<CallListItem[]> => {
 
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(tab)
     .select(all)
     .eq("org_id", orgId)
@@ -120,24 +156,33 @@ export const getContactCallsFromDB = async (
       ascending: false,
     });
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to fetch Contact Calls: ${error.message}`
     );
   }
 
+
   return data ?? [];
 
 };
 
+
+
+
 export const addCallToDB = async (
   orgId: string,
   userId: string,
-  call: CreateCall
+  call: CreateCall,
+  accessToken: string
 ): Promise<CallListItem> => {
 
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(tab)
     .insert([
       {
@@ -147,29 +192,39 @@ export const addCallToDB = async (
         assigned_to: call.assigned_to ?? userId,
         status: "scheduled",
         started_at: null,
-        direction: 'outbound'
-      }])
+        direction: "outbound",
+      },
+    ])
     .select(all)
     .single();
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to add Call: ${error.message}`
     );
   }
 
+
   return data;
 
 };
 
+
+
+
 export const updateCallFromDB = async (
   id: string,
   orgId: string,
-  call: UpdateCall
+  call: UpdateCall,
+  accessToken: string
 ): Promise<CallListItem> => {
 
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(tab)
     .update(call)
     .eq("id", id)
@@ -178,28 +233,36 @@ export const updateCallFromDB = async (
     .select(all)
     .single();
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to update Call: ${error.message}`
     );
   }
 
+
   return data;
 
 };
 
+
+
+
 export const startCallFromDB = async (
   id: string,
-  orgId: string
+  orgId: string,
+  accessToken: string
 ): Promise<CallListItem> => {
 
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(tab)
     .update({
-      status: "active",
-      started_at:
-        new Date().toISOString(),
+      status:"active",
+      started_at:new Date().toISOString(),
     })
     .eq("id", id)
     .eq("org_id", orgId)
@@ -207,36 +270,48 @@ export const startCallFromDB = async (
     .select(all)
     .single();
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to start Call: ${error.message}`
     );
   }
 
+
   return data;
 
 };
 
+
+
+
 export const endCallFromDB = async (
   id: string,
   orgId: string,
-  call: EndCall
+  call: EndCall,
+  accessToken: string
 ): Promise<CallListItem> => {
 
-  const existing = await getCallByIDFromDB(
-    id,
-    orgId
-  );
 
-  if (!existing.started_at) {
+  const existing =
+    await getCallByIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
+
+
+  if(!existing.started_at){
     throw new AppError(
       400,
       "Call has not been started."
     );
   }
 
+
   const endedAt = new Date().toISOString();
+
 
   const durationSeconds = Math.floor(
     (
@@ -245,82 +320,104 @@ export const endCallFromDB = async (
     ) / 1000
   );
 
-  const { data, error } = await supabaseAdmin
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const { data, error } = await db
     .from(tab)
     .update({
-      status: "completed",
-
-      outcome: call.outcome,
-
-      notes: call.notes,
-
-      ended_at: endedAt,
-
-      duration_seconds: durationSeconds,
+      status:"completed",
+      outcome:call.outcome,
+      notes:call.notes,
+      ended_at:endedAt,
+      duration_seconds:durationSeconds,
     })
-    .eq("id", id)
-    .eq("org_id", orgId)
-    .is("deleted_at", null)
+    .eq("id",id)
+    .eq("org_id",orgId)
+    .is("deleted_at",null)
     .select(all)
     .single();
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to end Call: ${error.message}`
     );
   }
 
+
   return data;
 
 };
 
-export const cancelCallFromDB = async (
-  id: string,
-  orgId: string
-): Promise<CallListItem> => {
 
-  const { data, error } = await supabaseAdmin
+
+
+export const cancelCallFromDB = async (
+  id:string,
+  orgId:string,
+  accessToken:string
+):Promise<CallListItem> => {
+
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const {data,error} = await db
     .from(tab)
     .update({
-      status: "cancelled",
+      status:"cancelled",
     })
-    .eq("id", id)
-    .eq("org_id", orgId)
-    .is("deleted_at", null)
+    .eq("id",id)
+    .eq("org_id",orgId)
+    .is("deleted_at",null)
     .select(all)
     .single();
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to cancel Call: ${error.message}`
     );
   }
 
+
   return data;
 
 };
 
-export const deleteCallFromDB = async (
-  id: string,
-  orgId: string
-): Promise<string> => {
 
-  const { error } = await supabaseAdmin
+
+
+export const deleteCallFromDB = async (
+  id:string,
+  orgId:string,
+  accessToken:string
+):Promise<string> => {
+
+
+  const db = createSupabaseUserClient(accessToken);
+
+
+  const {error} = await db
     .from(tab)
     .update({
-      deleted_at: new Date().toISOString(),
+      deleted_at:new Date().toISOString(),
     })
-    .eq("id", id)
-    .eq("org_id", orgId);
+    .eq("id",id)
+    .eq("org_id",orgId);
 
-  if (error) {
+
+  if(error){
     throw new AppError(
       500,
       `Failed to delete Call: ${error.message}`
     );
   }
+
 
   return id;
 
