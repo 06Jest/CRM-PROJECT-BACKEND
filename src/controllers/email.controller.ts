@@ -7,13 +7,15 @@ import {
   getEmailsFromDB,
   getEmailByIDFromDB,
   createEmailDraftToDB,
-  updateEmailDraftFromDB,
+  updateDraftEmail,
   getLeadEmailsFromDB,
   getContactEmailsFromDB,
   getCustomerEmailsFromDB,
   deleteEmailFromDB,
+  sendEmailDraft,
 } from "../services/email.service";
-import { sendEmailWithResend } from "../services/resend.service";
+import { addActivityToDB } from "../services/activities.service";
+
 
 
 
@@ -116,11 +118,11 @@ export const addEmailDraft = async (
   try {
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -130,7 +132,7 @@ export const addEmailDraft = async (
 
     const data = await createEmailDraftToDB(
       orgId,
-      userId,
+      memberId,
       req.body,
       accessToken
     );
@@ -154,15 +156,14 @@ export const sendEmail = async (
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
+    const id = uuidSchema.parse(req.params.id);
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !accessToken || !memberId) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -170,44 +171,43 @@ export const sendEmail = async (
     }
 
 
-    const {
-      from,
-      to,
-      subject,
-      html,
-    } = req.body;
+    const data = await sendEmailDraft(
+      id,
+      orgId,
+      accessToken
+    );
 
+    const targetName =
+      data.lead
+        ? `${data.lead.first_name} ${data.lead.last_name}`
+        : data.contact
+          ? `${data.contact.first_name} ${data.contact.last_name}`
+          : "Unknown";
 
-    if (!from || !to || !subject || !html) {
-      throw new AppError(
-        400,
-        "Missing required email fields"
-      );
-    }
-
-
-    const data = await sendEmailWithResend({
-      from,
-      to,
-      subject,
-      html,
-    });
-
+    await addActivityToDB(
+      orgId,
+      memberId,
+      {
+        lead_id: data.lead_id,
+        contact_id: data.contact_id,
+        type: "email",
+        action: "sent",
+        title: "Email sent",
+        target_name: targetName,
+        description: `Sent Email to ${targetName}`,
+      },
+      accessToken
+    );
 
     return res.status(200).json({
       success:true,
       message:"Email sent successfully",
       data,
     });
-
-
   } catch(err) {
     next(err);
   }
-
 };
-
-
 
 
 export const updateEmailDraft = async (
@@ -235,7 +235,7 @@ export const updateEmailDraft = async (
     }
 
 
-    const data = await updateEmailDraftFromDB(
+    const data = await updateDraftEmail(
       id,
       orgId,
       req.body,

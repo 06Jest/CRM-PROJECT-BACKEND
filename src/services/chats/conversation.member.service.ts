@@ -1,43 +1,38 @@
-import { createSupabaseUserClient } from "../../config/supabase";
+import { createSupabaseUserClient, supabaseAdmin } from "../../config/supabase";
 import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
-import { MemberData } from "../../types/chat";
-
+import { ConversationType, MemberData } from "../../types/chat";
+import { OrganizationType } from "../../types/organization";
+import { getMemberIDbyProfileID } from "../organization.members.service";
+import { createNewConversationToDB } from "./conversation.service";
 
 const memberTab = table.chat.members;
-
-const profileFkey = "conversation_members_profile_id_fkey";
-
-
+const memberFkey = "conversation_members_member_id_fkey";
 const mData = `
   conversation_id,
-  member:profiles!${profileFkey}(
+  member:organization_members!${memberFkey}(
     id,
-    avatar_url,
-    display_name
+    role,
+    profile:profiles!organization_members_profile_fkey(
+      first_name,
+      last_name,
+      avatar_url
+    )
   )
 `;
 
-
-
 export const ensureConversationMember = async (
   conversationId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<void> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
   const { data, error } = await db
     .from(memberTab)
     .select("id")
     .eq("conversation_id", conversationId)
-    .eq("profile_id", userId)
+    .eq("member_id", memberId)
     .maybeSingle();
-
-
 
   if (error) {
     throw new AppError(
@@ -45,8 +40,6 @@ export const ensureConversationMember = async (
       `Failed to verify conversation member: ${error.message}`
     );
   }
-
-
 
   if (!data) {
     throw new AppError(
@@ -56,27 +49,16 @@ export const ensureConversationMember = async (
   }
 };
 
-
-
-
-
-
 export const getMembershipsFromDB = async (
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string[]> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
   const { data, error } =
     await db
       .from(memberTab)
       .select("conversation_id")
-      .eq("profile_id", userId);
-
-
+      .eq("member_id", memberId);
 
   if (error) {
     throw new AppError(
@@ -85,41 +67,25 @@ export const getMembershipsFromDB = async (
     );
   }
 
-
-
   return (data ?? []).map(
     (membership) => membership.conversation_id
   );
 };
 
-
-
-
-
-
 export const getMembersFromDB = async (
   conversationIds: string[],
   accessToken: string
 ): Promise<MemberData[]> => {
-
-
   if (conversationIds.length === 0) {
     return [];
   }
 
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { data, error } =
     await db
       .from(memberTab)
       .select(mData)
       .in("conversation_id", conversationIds);
-
-
 
   if (error) {
     throw new AppError(
@@ -127,44 +93,44 @@ export const getMembersFromDB = async (
       `Failed to fetch conversation members: ${error.message}`
     );
   }
+  const members = (data ?? []).map((conversation) => {
+    const memberArray = Array.isArray(conversation.member)
+      ? conversation.member
+      : [conversation.member];
 
+    return {
+      conversation_id: conversation.conversation_id,
+      member: memberArray.map((member) => ({
+        ...member,
+        profile: Array.isArray(member.profile)
+          ? member.profile[0]
+          : member.profile,
+      })),
+    };
+  });
 
-
-  return data ?? [];
+  return members;
 };
-
-
-
-
-
-
 
 export const addMemberInConversationToDB = async (
   conversationId: string,
-  userId: string,
+  memberId: string,
   otherUserId: string,
   accessToken: string
 ): Promise<void> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { error } = await db
     .from(memberTab)
     .insert([
       {
         conversation_id: conversationId,
-        profile_id: userId,
+        member_id: memberId,
       },
       {
         conversation_id: conversationId,
-        profile_id: otherUserId,
+        member_id: otherUserId,
       },
     ]);
-
-
 
   if (error) {
     throw new AppError(
@@ -175,40 +141,27 @@ export const addMemberInConversationToDB = async (
 };
 
 
-
-
-
-
-
-
 export const markConversationAsReadFromDB = async (
   conversationId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<void> => {
 
 
   await ensureConversationMember(
     conversationId,
-    userId,
+    memberId,
     accessToken
   );
 
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { error } = await db
     .from(memberTab)
     .update({
       last_read_at: new Date().toISOString(),
     })
     .eq("conversation_id", conversationId)
-    .eq("profile_id", userId);
-
-
+    .eq("member_id", memberId);
 
   if (error) {
     throw new AppError(
@@ -228,7 +181,7 @@ export const markConversationAsReadFromDB = async (
 
 export const getMyReadStatesFromDB = async (
   conversationIds: string[],
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<Record<string, string | null>> => {
 
@@ -246,7 +199,7 @@ export const getMyReadStatesFromDB = async (
   const { data, error } = await db
     .from(memberTab)
     .select("conversation_id, last_read_at")
-    .eq("profile_id", userId)
+    .eq("member_id", memberId)
     .in("conversation_id", conversationIds);
 
 
@@ -269,4 +222,84 @@ export const getMyReadStatesFromDB = async (
 
 
   return map;
+};
+
+export const addConversationMemberToDB = async (
+  conversationId: string,
+  memberId: string,
+  accessToken: string
+): Promise<void> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(memberTab)
+    .insert({
+      conversation_id: conversationId,
+      member_id: memberId,
+    });
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to add conversation member: ${error.message}`
+    );
+  }
+};
+
+export const addDefaultConversationMemberToDB = async (
+  conversationId: string,
+  memberId: string,
+): Promise<void> => {
+  const db = supabaseAdmin;
+
+  const { error } = await db
+    .from(memberTab)
+    .insert({
+      conversation_id: conversationId,
+      member_id: memberId,
+    });
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to add conversation member: ${error.message}`
+    );
+  }
+};
+
+export const createDefaultConversationsToDB = async (
+  orgId: string,
+  memberId: string,
+  orgType: OrganizationType,
+  accessToken: string
+): Promise<void> => {
+  if (orgType === "personal") {
+    return;
+  }
+
+
+  if (!memberId) {
+    throw new AppError(
+      401,
+      "Not a Member in Organization"
+    );
+  }
+
+  const conversationTypes: ConversationType[] = [
+    "organization",
+    "announcement",
+  ];
+
+  for (const type of conversationTypes) {
+    const conversation = await createNewConversationToDB(
+      orgId,
+      memberId,
+      type
+    );
+
+    await addDefaultConversationMemberToDB(
+      conversation.id,
+      memberId,
+    );
+  }
 };

@@ -4,9 +4,6 @@ import { Roles } from "./global";
 export interface SignUpDTO {
   email: string;
   password: string;
-  first_name: string;
-  last_name: string;
-  org_name: string;
 }
 
 export interface SignInDTO {
@@ -26,12 +23,13 @@ export interface UpdatePasswordDTO {
 export interface AccessTokenPayload extends JwtPayload {
   aud: string | string[];
   iss: string;
-  sub: string;
+  sub: string; 
   role: "authenticated";
   email: string;
-  org_id: string;
+  org_id: string | null;
+  member_id: string | null;
   user_metadata: {
-    role:  "admin" | "agent";
+    role: Roles | null;
   };
 }
 

@@ -30,11 +30,13 @@ export interface Customer {
 }
 
 export interface CustomerListItem extends Customer{
-
   owner: {
-      id: string;
+    id: string;
+    profile: {
       first_name: string;
       last_name: string;
+      avatar_url?: string | null;
+    }
   },
    contact: {
     id: string;

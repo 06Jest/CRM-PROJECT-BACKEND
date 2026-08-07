@@ -4,7 +4,7 @@ import { AppError } from "./error.middleware";
 import { verifyAccessToken } from "../services/jwt.service";
 import { table } from "../config/tables";
 
-const tab = table.profile;
+const profileTable = table.profile;
 
 export const verifyToken = (
   req: Request,
@@ -41,30 +41,24 @@ export const authenticateUser = async (
     if (!req.user) {
       throw new AppError(401, "Unauthorized");
     }
-
+    
     const db = createSupabaseUserClient(accessToken);
 
     const { data: profile, error } = await db
-      .from(tab)
-      .select("*")
+      .from(profileTable)
+      .select("id")
       .eq("id", req.user.sub)
       .single();
 
+    console.log({
+      profile,
+      error,
+    });
+
     if (error || !profile) {
-      throw new AppError(403, "User not found");
+      throw new AppError(403, "Profile not found");
     }
 
-    if (profile.org_id !== req.user.org_id) {
-      throw new AppError(403, "Organization mismatch");
-    }
-
-    if (profile.role !== req.user.user_metadata.role) {
-      throw new AppError(403, "Role mismatch");
-    }
-
-    if (profile.status !== "active") {
-      throw new AppError(403, "Account deactivated");
-    }
 
     next();
   } catch (err) {

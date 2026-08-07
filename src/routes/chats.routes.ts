@@ -32,7 +32,7 @@ router.use(verifyToken);
 router.use(authenticateUser);
 
 router.get("/conversations",readLimiter, getUserConversations);
-router.get("/direct-conversation/:userId",readLimiter, getDirectConversation);
+router.get("/direct-conversation/:memberId",readLimiter, getDirectConversation);
 router.get("/messages/:conversationId",readLimiter, getMessages);
 
 router.post("/direct-conversation", createLimiter, validateBody(createDirectConversationSchema), createDirectConversation);

@@ -20,10 +20,13 @@ const contactFkey = "deals_contact_id_fkey";
 
 const selectAll = `
   *,
-  owner:profiles!${ownerFkey} (
+  owner:organization_members!${ownerFkey} (
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   ),
   contact:contacts!${contactFkey} (
     id,
@@ -33,9 +36,6 @@ const selectAll = `
     phone
   )
 `;
-
-
-
 
 
 export const getDealsFromDB = async (
@@ -148,7 +148,7 @@ export const getDealsByIDFromDB = async (
 
 export const addDealToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   deal: AddDeal,
   accessToken: string
 ): Promise<DealListItem> => {
@@ -163,8 +163,8 @@ export const addDealToDB = async (
     .insert({
       ...deal,
       org_id: orgId,
-      owner_id: userId,
-      updated_by: userId,
+      owner_id: memberId,
+      updated_by: memberId,
     })
     .select(selectAll)
     .single();
@@ -191,7 +191,7 @@ export const addDealToDB = async (
 
 export const updateDealFromDB = async (
   id: string,
-  userId: string,
+  memberId: string,
   deal: UpdateDeal,
   orgId: string,
   accessToken: string
@@ -206,7 +206,7 @@ export const updateDealFromDB = async (
     .from(tab)
     .update({
       ...deal,
-      updated_by:userId,
+      updated_by:memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
@@ -236,7 +236,7 @@ export const updateDealFromDB = async (
 export const updateDealStageFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   stage: DealStage,
   accessToken: string
 ): Promise<DealListItem> => {
@@ -250,7 +250,7 @@ export const updateDealStageFromDB = async (
     .from(tab)
     .update({
       stage,
-      updated_by:userId,
+      updated_by:memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
@@ -280,7 +280,7 @@ export const updateDealStageFromDB = async (
 export const closeDealFromDB = async (
   id: string,
   outcome: "Closed Won" | "Closed Lost",
-  userId: string,
+  memberId: string,
   orgId: string,
   accessToken: string
 ): Promise<DealListItem> => {
@@ -294,9 +294,9 @@ export const closeDealFromDB = async (
     .from(tab)
     .update({
       stage: outcome,
-      updated_by:userId,
+      updated_by:memberId,
       close_date:new Date().toISOString(),
-      closed_by:userId,
+      closed_by:memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
@@ -325,7 +325,7 @@ export const closeDealFromDB = async (
 
 export const deleteDealFromDB = async (
   id: string,
-  userId: string,
+  memberId: string,
   orgId:string,
   accessToken:string
 ): Promise<string> => {
@@ -339,7 +339,7 @@ export const deleteDealFromDB = async (
     .from(tab)
     .update({
       deleted_at:new Date().toISOString(),
-      deleted_by:userId,
+      deleted_by:memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId);
@@ -367,7 +367,7 @@ export const deleteDealFromDB = async (
 export const deleteAllDealsByContactIDFromDB = async (
   id:string,
   orgId:string,
-  userId:string,
+  memberId:string,
   accessToken:string
 ):Promise<string> => {
 
@@ -380,7 +380,7 @@ export const deleteAllDealsByContactIDFromDB = async (
     .from(tab)
     .update({
       deleted_at:new Date().toISOString(),
-      deleted_by:userId,
+      deleted_by:memberId,
     })
     .eq("contact_id",id)
     .eq("org_id",orgId);
@@ -408,7 +408,7 @@ export const deleteAllDealsByContactIDFromDB = async (
 export const deleteAllDealsByBulkContactsFromDB = async (
   ids:string[],
   orgId:string,
-  userId:string,
+  memberId:string,
   accessToken:string
 ):Promise<string[]> => {
 
@@ -421,7 +421,7 @@ export const deleteAllDealsByBulkContactsFromDB = async (
     .from(tab)
     .update({
       deleted_at:new Date().toISOString(),
-      deleted_by:userId,
+      deleted_by:memberId,
     })
     .in("contact_id",ids)
     .eq("org_id",orgId);

@@ -1,213 +1,99 @@
-import { createSupabaseUserClient, supabaseAdmin } from '../config/supabase';
+import { createSupabaseClient, createSupabaseUserClient, supabaseAdmin } from '../config/supabase';
 import { AppError } from '../middleware/error.middleware';
 import type {
   Profile,
-  AddProfileDTO,
   UpdateProfileDTO,
-  ProfileStatus,
   DisplayProfile,
-  AddAdminProfileDTO,
-  ProfileIDName
+  CreateInitialProfileDTO,
+  CompleteProfileDTO,
+  ProfileStatus
 } from '../types/profile';
-import type { Roles } from '../types/global';
-
+import type { OnboardingStep, Roles } from '../types/global';
 import { table } from '../config/tables';
 
 const tab = table.profile;
 
-export const getActiveProfilesFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<Profile[]> => {
 
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .select('*')
-    .eq('org_id', orgId)
-    .eq('status', 'active')
-    .is('deleted_at', null)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new AppError(500, `Failed to fetch profiles: ${error.message}`);
-  }
-
-  return data ?? [];
-};
-
-
-export const getAllProfilesFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<Profile[]> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .select('*')
-    .eq('org_id', orgId)
-    .is('deleted_at', null)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new AppError(500, `Failed to fetch profiles: ${error.message}`);
-  }
-
-  return data ?? [];
-};
-
-
-export const getAllAgentsFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<Profile[]> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .select('*')
-    .eq('org_id', orgId)
-    .eq('role', 'agent')
-    .is('deleted_at', null)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new AppError(500, `Failed to fetch agents: ${error.message}`);
-  }
-
-  return data ?? [];
-};
-
-
-export const getActiveAgentsFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<Profile[]> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .select('*')
-    .eq('org_id', orgId)
-    .eq('role', 'agent')
-    .eq('status', 'active')
-    .is('deleted_at', null)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new AppError(500, `Failed to fetch agents: ${error.message}`);
-  }
-
-  return data ?? [];
-};
-
-
-export const getProfileByIdFromDB = async (
+export const getProfileIfExistFromDB = async (
   userId: string,
-  orgId: string,
-  accessToken: string
-): Promise<DisplayProfile> => {
+): Promise<Profile | null> => {
 
-  const db = createSupabaseUserClient(accessToken);
+  const db = supabaseAdmin
 
   const { data, error } = await db
     .from(tab)
-    .select(`*,
-      org:organizations!profiles_org_id_fkey(
-        name
-      )
-      `)
+    .select('*')
     .eq('id', userId)
-    .eq('org_id', orgId)
-    .eq('status', 'active')
     .is('deleted_at', null)
     .maybeSingle();
 
   if (error) {
     throw new AppError(500, `Failed to fetch profile: ${error.message}`);
   }
+  return data;
+};
+
+
+export const getProfileByIdFromDB = async (
+  userId: string,
+  accessToken: string
+): Promise<DisplayProfile> => {
+  const db = createSupabaseUserClient(accessToken);
+
+    const { data, error } = await db
+    .from(tab)
+    .select(`
+      *,
+      membership:organization_members!organization_members_profile_fkey(
+        id,
+        display_id,
+        role,
+        status,
+        created_at,
+        org:organizations!organization_members_org_id_fkey(
+          id,
+          name,
+          display_id,
+          logo_url,
+          type
+        )
+      )
+    `)
+    .eq("id", userId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    console.log("SUPABASE PROFILE ERROR:", error);
+    throw new AppError(
+      500,
+      error.message
+    );
+  }
+
+  if (!data) {
+    throw new AppError(
+      404,
+      "Profile not found"
+    );
+  }
 
   return data;
 };
 
 
-export const getAllMembersIDNamesFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<ProfileIDName[]> => {
 
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .select('id, display_name')
-    .eq('org_id', orgId)
-    .is('deleted_at', null);
-
-  if (error) {
-    throw new AppError(500, `Failed to fetch profile: ${error.message}`);
-  }
-
-  return data ?? [];
-};
-
-
-// export const getDisplayProfileFromDB = async (
-//   userId: string,
-//   orgId: string,
-//   accessToken: string
-// ): Promise<DisplayProfile> => {
-
-//   const db = createSupabaseUserClient(accessToken);
-
-//   const { data, error } = await db
-//     .from(tab)
-//     .select(`
-//       id,
-//       display_name,
-//       first_name,
-//       last_name,
-//       email,
-//       avatar_url,
-//       org:organizations!profiles_org_id_fkey(
-//       id,
-//       name
-//       )
-//     `)
-//     .eq('id', userId)
-//     .eq('org_id', orgId)
-//     .eq('status', 'active')
-//     .is('deleted_at', null)
-//     .single();
-
-//   if (error) {
-//     throw new AppError(500, `Failed to fetch profile: ${error.message}`);
-//   }
-//   return {
-//     ...data,
-//     org: data.org?.[0] ?? {
-//       id: '',
-//       name: '',
-//     },
-//   };
-// };
 
 
 export const isProfileExistFromDB = async (
   userId: string
 ): Promise<{
   id: string;
-  org_id: string;
 } | null> => {
 
   const { data, error } = await supabaseAdmin
     .from(tab)
-    .select('id, org_id')
+    .select('id')
     .eq('id', userId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -220,84 +106,129 @@ export const isProfileExistFromDB = async (
 };
 
 
-export const getProfileByIdAdminFromDB = async (
+export const createProfileToDB = async (
+  dto: CreateInitialProfileDTO
+): Promise<Profile> => {
+
+  const db = supabaseAdmin;
+
+  const {data,error}=await db
+    .from(tab)
+    .insert({
+      id:dto.id,
+      email:dto.email,
+      status:"pending",
+      onboarding_completed:false,
+      onboarding_step:0
+    })
+    .select()
+    .single();
+
+
+  if(error){
+    throw new AppError(
+      500,
+      error.message
+    );
+  }
+
+  return data;
+};
+
+export const updateProfileSetupToDB = async (
   userId: string,
-  orgId: string
+  dto: CompleteProfileDTO,
+  accessToken: string
 ): Promise<Profile> => {
 
-  const { data, error } = await supabaseAdmin
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
     .from(tab)
-    .select('*')
-    .eq('id', userId)
-    .eq('org_id', orgId)
-    .eq('status', 'active')
-    .is('deleted_at', null)
-    .maybeSingle();
-
-  if (error) {
-    throw new AppError(500, `Failed to fetch profile: ${error.message}`);
-  }
-
-  return data;
-};
-
-
-export const addAgentProfileToDB = async (
-  orgId: string,
-  dto: Omit<AddProfileDTO, 'id'>
-): Promise<Profile> => {
-
-  const { data, error } = await supabaseAdmin
-    .from(tab)
-    .insert([{
-      ...dto,
-      role: 'agent',
-      org_id: orgId,
-    }])
+    .update({
+      first_name: dto.first_name,
+      last_name: dto.last_name,
+      avatar_url: dto.avatar_url ?? null,
+      job_title: dto.job_title,
+      onboarding_step: 1,
+    })
+    .eq("id", userId)
     .select()
     .single();
 
   if (error) {
-    throw new AppError(500, `Failed to add profile: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to complete profile setup: ${error.message}`
+    );
   }
 
   return data;
 };
 
-
-export const addAdminProfileToDB = async (
-  dto: AddAdminProfileDTO
+export const updateOnboardingStepToDB = async (
+  userId: string,
+  step: OnboardingStep,
+  accessToken: string
 ): Promise<Profile> => {
+  const db = createSupabaseUserClient(accessToken);
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from(tab)
-    .insert([{
-      ...dto,
-      role: 'admin',
-      status: 'active'
-    }])
+    .update({
+      onboarding_step: step,
+    })
+    .eq("id", userId)
     .select()
     .single();
 
   if (error) {
-    throw new AppError(500, `Failed to add profile: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to update onboarding step: ${error.message}`
+    );
   }
 
   return data;
 };
+
+export const completeOnboardingInDB = async (
+  userId: string,
+  accessToken: string
+): Promise<Profile> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      onboarding_step: 4,
+      onboarding_completed: true,
+      status: "active",
+    })
+    .eq("id", userId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to complete onboarding: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
 
 export const getProfileByIdForAuthFromDB = async (
   userId: string,
-  orgId: string
 ): Promise<Profile> => {
 
   const { data, error } = await supabaseAdmin
     .from(tab)
-    .select('*')
-    .eq('id', userId)
-    .eq('org_id', orgId)
-    .eq('status', 'active')
-    .is('deleted_at', null)
+    .select("*")
+    .eq("id", userId)
+    .is("deleted_at", null)
     .single();
 
   if (error) {
@@ -312,7 +243,6 @@ export const getProfileByIdForAuthFromDB = async (
 
 export const updateProfileFromDB = async (
   userId: string,
-  orgId: string,
   dto: UpdateProfileDTO,
   accessToken: string
 ): Promise<Profile> => {
@@ -324,7 +254,6 @@ export const updateProfileFromDB = async (
     .update({
       ...dto
     })
-    .eq('org_id', orgId)
     .eq('id', userId)
     .select()
     .single();
@@ -335,74 +264,13 @@ export const updateProfileFromDB = async (
       `Failed to update profile: ${error.message}`
     );
   }
-
   return data;
 };
 
 
-export const updateProfileStatusFromDB = async (
+
+export const updateProfileAvatarFromDB = async (
   userId: string,
-  orgId: string,
-  status: ProfileStatus,
-  accessToken: string
-): Promise<Profile> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .update({
-      status
-    })
-    .eq('org_id', orgId)
-    .eq('id', userId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to update status: ${error.message}`
-    );
-  }
-
-  return data;
-};
-
-
-export const updateRoleFromDB = async (
-  userId: string,
-  orgId: string,
-  role: Roles,
-  accessToken: string
-): Promise<Roles> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .update({
-      role
-    })
-    .eq('org_id', orgId)
-    .eq('id', userId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to update role: ${error.message}`
-    );
-  }
-
-  return data.role;
-};
-
-
-export const updateAvatarFromDB = async (
-  userId: string,
-  orgId: string,
   avatar_url: string,
   accessToken: string
 ): Promise<string> => {
@@ -414,7 +282,6 @@ export const updateAvatarFromDB = async (
     .update({
       avatar_url
     })
-    .eq("org_id", orgId)
     .eq("id", userId)
     .select("avatar_url")
     .single();
@@ -422,17 +289,64 @@ export const updateAvatarFromDB = async (
   if (error) {
     throw new AppError(
       500,
-      `Failed to update avatar: ${error.message}`
+      `Failed to update profile avatar: ${error.message}`
     );
   }
-
   return data.avatar_url;
 };
 
+export const updateProfileStatusFromDB = async (
+  userId: string,
+  status: ProfileStatus,
+  accessToken: string
+): Promise<string> => {
+
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      status
+    })
+    .eq("id", userId)
+    .select("status")
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update profile status: ${error.message}`
+    );
+  }
+  return data.status;
+};
+
+export const updateLastLoginToDB = async (
+  profileId: string,
+  accessToken: string
+): Promise<void> => {
+
+  const db =
+    createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      last_login: new Date().toISOString(),
+    })
+    .eq("id", profileId);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update last login: ${error.message}`
+    );
+  }
+
+};
 
 export const deleteProfileFromDB = async (
   id: string,
-  orgId: string,
   accessToken: string
 ): Promise<string> => {
 
@@ -444,7 +358,6 @@ export const deleteProfileFromDB = async (
       deleted_at: new Date().toISOString()
     })
     .eq('id', id)
-    .eq('org_id', orgId);
 
   if (error) {
     throw new AppError(

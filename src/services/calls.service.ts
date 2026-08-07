@@ -20,15 +20,21 @@ const assignedFKey = "calls_assigned_to_fkey";
 
 const selectAllWithUsers = `
   *,
-  creator:profiles!${creatorFKey}(
+  creator:organization_members!${creatorFKey}(
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   ),
-  assigned_user:profiles!${assignedFKey}(
+  assigned_user:organization_members!${assignedFKey}(
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   )
 `;
 
@@ -174,7 +180,7 @@ export const getContactCallsFromDB = async (
 
 export const addCallToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   call: CreateCall,
   accessToken: string
 ): Promise<CallListItem> => {
@@ -188,8 +194,8 @@ export const addCallToDB = async (
       {
         ...call,
         org_id: orgId,
-        created_by: userId,
-        assigned_to: call.assigned_to ?? userId,
+        created_by: memberId,
+        assigned_to: call.assigned_to ?? memberId,
         status: "scheduled",
         started_at: null,
         direction: "outbound",

@@ -51,8 +51,11 @@ export interface ContactListItem extends Contact {
 
   owner: {
       id: string;
-      first_name: string;
-      last_name: string;
+      profile: {
+        first_name: string;
+        last_name: string;
+        avatar_url?: string | null;
+      }
   };
 
 }

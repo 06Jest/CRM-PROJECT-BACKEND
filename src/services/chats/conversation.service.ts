@@ -14,49 +14,43 @@ import {
   getMembersFromDB,
   getMembershipsFromDB,
   getMyReadStatesFromDB,
-} from "./conversationMember.service";
-
+} from "./conversation.member.service";
 
 const conversationTab = table.chat.conversations;
-
-
 const lastMessageFkey = "conversations_last_message_id_fkey";
-
-
 const all = `
   *,
   last_message:messages!${lastMessageFkey}(
     id,
-    sender_id,
     content,
-    created_at
+    created_at,
+    sender: organization_members!messages_sender_id_fkey(
+      id,
+      profile: profiles!organization_members_profile_fkey(
+        first_name,
+        last_name,
+        avatar_url
+      )
+    )
   )
 `;
 
-
-
 export const getUserConversationDataFromDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<UserConversationData> => {
-
-
   const conversationIds =
     await getMembershipsFromDB(
-      userId,
+      memberId,
       accessToken
     );
-
-
   if (!conversationIds.length) {
     return {
       conversations: [],
       members: [],
     };
   }
-
-
 
   const [
     conversations,
@@ -75,31 +69,15 @@ export const getUserConversationDataFromDB = async (
     ),
 
   ]);
-
-
-
-  return {
-    conversations,
-    members,
-  };
+  return {conversations,members,};
 };
-
-
-
-
-
 
 export const getConversationByIDFromDB = async (
   orgId: string,
   conversationID: string,
   accessToken: string
 ): Promise<ConversationWithLastMessage> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { data, error } =
     await db
       .from(conversationTab)
@@ -109,36 +87,21 @@ export const getConversationByIDFromDB = async (
       .is("deleted_at", null)
       .single();
 
-
-
   if (error) {
     throw new AppError(
       500,
       `Failed to fetch Conversations: ${error.message}`
     );
   }
-
-
   return data;
 };
-
-
-
-
-
-
 
 export const getConversationsByIDsFromDB = async (
   orgId: string,
   conversationIds: string[],
   accessToken: string
 ): Promise<ConversationWithLastMessage[]> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { data, error } =
     await db
       .from(conversationTab)
@@ -147,16 +110,12 @@ export const getConversationsByIDsFromDB = async (
       .eq("org_id", orgId)
       .is("deleted_at", null);
 
-
-
   if (error) {
     throw new AppError(
       500,
       `Failed to fetch Conversations: ${error.message}`
     );
   }
-
-
 
   const sortedConversations =
     (data ?? []).sort((a, b) => {
@@ -169,96 +128,68 @@ export const getConversationsByIDsFromDB = async (
         b.last_message?.created_at ??
         b.created_at;
 
-
       return (
         new Date(bTime).getTime() -
         new Date(aTime).getTime()
       );
     });
-
-
-
   return sortedConversations;
 };
 
 
-
-
-
-
-
-
-
 export const getUserConversationListItemsFromDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<ConversationListItem[]> => {
-
-
   const {
     conversations,
     members,
   } =
     await getUserConversationDataFromDB(
       orgId,
-      userId,
+      memberId,
       accessToken
     );
-
-
 
   if (!conversations.length) {
     return [];
   }
-
-
-
   const readStates =
     await getMyReadStatesFromDB(
       conversations.map((c) => c.id),
-      userId,
+      memberId,
       accessToken
     );
-
-
 
   const participantMap = new Map<
     string,
     ConversationListItem["other_participant"]
   >();
-
-
-
   for (const member of members) {
-
     const participants =
       Array.isArray(member.member)
         ? member.member
         : [member.member];
 
-
     for (const participant of participants) {
-
-      if (!participant || participant.id === userId) {
+      if (!participant || participant.id === memberId) {
         continue;
       }
-
 
       participantMap.set(
         member.conversation_id,
         {
           id: participant.id,
+          fist_name: participant.profile.first_name,
+          last_name: participant.profile.last_name,
           avatar_url:
-            participant.avatar_url ?? null,
-          display_name:
-            participant.display_name,
+            participant.profile.avatar_url ?? null,
+
         }
       );
     }
   }
-
-
 
   return conversations.map((conversation) => ({
     ...conversation,
@@ -273,64 +204,42 @@ export const getUserConversationListItemsFromDB = async (
   }));
 };
 
-
-
-
-
-
-
-
-
 export const findDirectConversationBetweenUsersFromDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   otherUserId: string,
   accessToken: string
 ): Promise<ConversationWithLastMessage | null> => {
-
-
   const {
     conversations,
     members,
   } =
     await getUserConversationDataFromDB(
       orgId,
-      userId,
+      memberId,
       accessToken
     );
-
-
 
   if (!conversations.length) {
     return null;
   }
 
-
-
   const membersMap =
     new Map<string, string[]>();
 
-
-
   for (const member of members) {
-
     const participants =
       Array.isArray(member.member)
         ? member.member
         : [member.member];
-
 
     const participantIds =
       participants
         .filter(Boolean)
         .map((p) => p.id);
 
-
-
     const existing =
       membersMap.get(member.conversation_id) ?? [];
-
-
 
     membersMap.set(
       member.conversation_id,
@@ -341,67 +250,41 @@ export const findDirectConversationBetweenUsersFromDB = async (
     );
   }
 
-
-
   for (const conversation of conversations) {
-
-
     if (conversation.type !== "direct") {
       continue;
     }
 
-
-
     const participantIds =
       membersMap.get(conversation.id) ?? [];
 
-
-
     if (
       participantIds.length === 2 &&
-      participantIds.includes(userId) &&
+      participantIds.includes(memberId) &&
       participantIds.includes(otherUserId)
     ) {
       return conversation;
     }
   }
-
-
-
   return null;
 };
 
-
-
-
-
-
-
-
-
 export const createNewConversationToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   type: ConversationType,
 ): Promise<ConversationWithLastMessage> => {
-
-
   const db = supabaseAdmin;
-
-
-
   const { data, error } =
     await db
       .from(conversationTab)
       .insert({
         org_id: orgId,
-        created_by: userId,
+        created_by: memberId,
         type,
       })
       .select(all)
       .single();
-
-
 
   if (error || !data) {
     throw new AppError(
@@ -411,36 +294,27 @@ export const createNewConversationToDB = async (
       }`
     );
   }
-
-
-
   return data;
 };
 
 export const createDirectConversationToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   otherUserId: string,
   accessToken: string
 ): Promise<ConversationWithLastMessage> => {
-
   const conversation =
     await createNewConversationToDB(
       orgId,
-      userId,
+      memberId,
       "direct",
     );
 
-
-
   await addMemberInConversationToDB(
     conversation.id,
-    userId,
+    memberId,
     otherUserId,
     accessToken
   );
-
-
-
   return conversation;
 };

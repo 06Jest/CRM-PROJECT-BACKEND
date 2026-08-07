@@ -7,7 +7,7 @@ import {
   MessageListItem,
 } from "../../types/chat";
 
-import { ensureConversationMember } from "./conversationMember.service";
+import { ensureConversationMember } from "./conversation.member.service";
 
 
 const messageTab = table.chat.messages;
@@ -18,11 +18,14 @@ const senderFkey = "messages_sender_id_fkey";
 
 const all = `
   *,
-  sender:profiles!${senderFkey}(
+  sender:organization_members!${senderFkey}(
     id,
-    first_name,
-    last_name,
-    avatar_url
+    profile:profiles(
+      id,
+      first_name,
+      last_name,
+      avatar_url
+    )
   )
 `;
 
@@ -30,14 +33,14 @@ const all = `
 
 export const getMessagesFromDB = async (
   conversationId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<MessageListItem[]> => {
 
 
   await ensureConversationMember(
     conversationId,
-    userId,
+    memberId,
     accessToken
   );
 
@@ -70,7 +73,7 @@ export const getMessagesFromDB = async (
 
 export const sendMessageToDB = async (
   conversationId: string,
-  userId: string,
+  memberId: string,
   message: AddMessage,
   accessToken: string
 ): Promise<MessageListItem> => {
@@ -78,7 +81,7 @@ export const sendMessageToDB = async (
 
   await ensureConversationMember(
     conversationId,
-    userId,
+    memberId,
     accessToken
   );
 
@@ -91,7 +94,7 @@ export const sendMessageToDB = async (
     .from(messageTab)
     .insert({
       conversation_id: conversationId,
-      sender_id: userId,
+      sender_id: memberId,
       content: message.content,
       entity_type: message.entity_type ?? null,
       entity_id: message.entity_id ?? null,
@@ -137,7 +140,7 @@ export const sendMessageToDB = async (
 
 export const editMessageFromDB = async (
   id: string,
-  userId: string,
+  memberId: string,
   content: string,
   accessToken: string
 ): Promise<MessageListItem> => {
@@ -172,13 +175,13 @@ export const editMessageFromDB = async (
 
   await ensureConversationMember(
     existing.conversation_id,
-    userId,
+    memberId,
     accessToken
   );
 
 
 
-  if (existing.sender_id !== userId) {
+  if (existing.sender_id !== memberId) {
     throw new AppError(
       403,
       "You can only edit your own messages."
@@ -240,7 +243,7 @@ export const editMessageFromDB = async (
 
 export const deleteMessageFromDB = async (
   id: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string> => {
 
@@ -273,13 +276,13 @@ export const deleteMessageFromDB = async (
 
   await ensureConversationMember(
     existing.conversation_id,
-    userId,
+    memberId,
     accessToken
   );
 
 
 
-  if (existing.sender_id !== userId) {
+  if (existing.sender_id !== memberId) {
     throw new AppError(
       403,
       "You can only delete your own messages."

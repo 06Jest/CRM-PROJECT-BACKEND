@@ -1,3 +1,4 @@
+
 import { createSupabaseUserClient } from "../config/supabase";
 import { table } from "../config/tables";
 
@@ -7,22 +8,39 @@ import type {
   EmailListItem,
   ComposeEmail,
   UpdateDraftEmail,
-  EmailStatus,
 } from "../types/email";
-
+import { ensureResourceLimit } from "./plans.service";
+import { sendEmailWithResend } from "./resend.service";
 
 const tab = table.emails;
-
-const senderFKey = "fk_email_sender";
+const devEmail = "onboarding@resend.dev";
+const senderFKey = "emails_sender_id_fkey";
 const orgFKey = "fk_email_org";
+const contactFKey = "fk_email_contact";
+const leadFKey = "fk_email_lead";
 
 
 const selectAllWithSender = `
   *,
-  sender:profiles!${senderFKey}(
+  sender:organization_members!${senderFKey}(
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  ),
+  lead:leads!${leadFKey}(
     id,
     first_name,
-    last_name
+    last_name,
+    phone
+  ),
+  contact:contacts!${contactFKey}(
+    id,
+    first_name,
+    last_name,
+    phone
   ),
   organization:organizations!${orgFKey}(
     id,
@@ -30,15 +48,13 @@ const selectAllWithSender = `
   )
 `;
 
+
 const all = selectAllWithSender;
-
-
 
 export const getEmailsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<EmailListItem[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -48,7 +64,6 @@ export const getEmailsFromDB = async (
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-
   if(error){
     throw new AppError(
       500,
@@ -56,19 +71,134 @@ export const getEmailsFromDB = async (
     );
   }
 
-
   return data ?? [];
 };
 
+export const sendEmailDraft = async (
+  id:string,
+  orgId:string,
+  accessToken:string
+):Promise<EmailListItem> => {
+  const email = await getEmailByIDFromDB(
+    id,
+    orgId,
+    accessToken
+  );
+
+  if(email.status !== "draft"){
+    throw new AppError(
+      400,
+      "Only drafts can be sent"
+    );
+  }
+
+  if(!email.recipient_email){
+    throw new AppError(
+      400,
+      "Recipient email is required"
+    );
+  }
+
+  if(!email.subject){
+    throw new AppError(
+      400,
+      "Subject is required"
+    );
+  }
+
+  if(!email.body_html){
+    throw new AppError(
+      400,
+      "Email body is required"
+    );
+  }
+
+  await ensureResourceLimit(
+    orgId,
+    table.emails,
+    "emails",
+    "active_limit",
+    accessToken
+  );
+
+  await markEmailQueuedFromDB(
+    id,
+    orgId,
+    accessToken
+  );
 
 
+  try {
+    const result = await sendEmailWithResend({
+      from:
+        `${email.organization.name} <${devEmail}>`,
+      to:
+        email.recipient_email,
+      subject:
+        email.subject,
+      html:
+        email.body_html,
+    });
+    
+
+    await markEmailSentFromDB(
+      id,
+      orgId,
+      result!.id,
+      accessToken
+    );
+
+    return await getEmailByIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
+
+  } catch(error:any) {
+    await markEmailFailedFromDB(
+      id,
+      orgId,
+      error.message,
+      accessToken
+    );
+
+    throw error;
+  }
+};
+
+export const updateDraftEmail = async (
+  id:string,
+  orgId:string,
+  email:UpdateDraftEmail,
+  accessToken:string
+)=>{
+  const existing =
+    await getEmailByIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
+
+  if(existing.status !== "draft"){
+    throw new AppError(
+      400,
+      "Only draft emails can be edited"
+    );
+  }
+
+  return await updateEmailDraftFromDB(
+    id,
+    orgId,
+    email,
+    accessToken
+  );
+};
 
 export const getEmailByIDFromDB = async (
   id:string,
   orgId:string,
   accessToken:string
 ):Promise<EmailListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data,error } = await db
@@ -79,7 +209,6 @@ export const getEmailByIDFromDB = async (
     .is("deleted_at", null)
     .single();
 
-
   if(error){
     throw new AppError(
       500,
@@ -87,12 +216,8 @@ export const getEmailByIDFromDB = async (
     );
   }
 
-
   return data;
 };
-
-
-
 
 export const createEmailDraftToDB = async (
   orgId:string,
@@ -100,10 +225,7 @@ export const createEmailDraftToDB = async (
   email:ComposeEmail,
   accessToken:string
 ):Promise<EmailListItem> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const { data,error } = await db
     .from(tab)
@@ -116,20 +238,19 @@ export const createEmailDraftToDB = async (
     .select(all)
     .single();
 
-
   if(error){
     throw new AppError(
       500,
       `Failed to create draft: ${error.message}`
     );
   }
-
-
+  console.log("CREATING EMAIL DRAFT", {
+    orgId,
+    senderId,
+    email
+  });
   return data;
 };
-
-
-
 
 export const updateEmailDraftFromDB = async (
   id:string,
@@ -138,9 +259,7 @@ export const updateEmailDraftFromDB = async (
   accessToken:string
 ):Promise<EmailListItem> => {
 
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const { data,error } = await db
     .from(tab)
@@ -148,7 +267,7 @@ export const updateEmailDraftFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .eq("status","draft")
-    .is("deleted_at",null)
+    .is("deleted_at", null)
     .select(all)
     .single();
 
@@ -163,19 +282,12 @@ export const updateEmailDraftFromDB = async (
 
   return data;
 };
-
-
-
-
 export const markEmailQueuedFromDB = async (
   id:string,
   orgId:string,
   accessToken:string
 ):Promise<void> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const {error} = await db
     .from(tab)
@@ -185,18 +297,13 @@ export const markEmailQueuedFromDB = async (
     .eq("id",id)
     .eq("org_id",orgId);
 
-
   if(error){
     throw new AppError(
       500,
       `Failed to queue Email: ${error.message}`
     );
   }
-
 };
-
-
-
 
 export const markEmailSentFromDB = async (
   id:string,
@@ -204,10 +311,7 @@ export const markEmailSentFromDB = async (
   providerMessageId:string,
   accessToken:string
 ):Promise<void> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const {error} = await db
     .from(tab)
@@ -220,18 +324,13 @@ export const markEmailSentFromDB = async (
     .eq("id",id)
     .eq("org_id",orgId);
 
-
   if(error){
     throw new AppError(
       500,
       `Failed to mark Email as sent: ${error.message}`
     );
   }
-
 };
-
-
-
 
 export const markEmailFailedFromDB = async (
   id:string,
@@ -239,10 +338,7 @@ export const markEmailFailedFromDB = async (
   errorMessage:string,
   accessToken:string
 ):Promise<void> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const {error} = await db
     .from(tab)
@@ -253,28 +349,20 @@ export const markEmailFailedFromDB = async (
     .eq("id",id)
     .eq("org_id",orgId);
 
-
   if(error){
     throw new AppError(
       500,
       `Failed to mark Email as failed: ${error.message}`
     );
   }
-
 };
-
-
-
 
 export const deleteEmailFromDB = async (
   id:string,
   orgId:string,
   accessToken:string
 ):Promise<string> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const {error} = await db
     .from(tab)
@@ -284,7 +372,6 @@ export const deleteEmailFromDB = async (
     .eq("id",id)
     .eq("org_id",orgId);
 
-
   if(error){
     throw new AppError(
       500,
@@ -292,22 +379,15 @@ export const deleteEmailFromDB = async (
     );
   }
 
-
   return id;
 };
-
-
-
 
 export const getLeadEmailsFromDB = async (
   orgId:string,
   leadId:string,
   accessToken:string
 ):Promise<EmailListItem[]> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const {data,error} = await db
     .from(tab)
@@ -317,7 +397,6 @@ export const getLeadEmailsFromDB = async (
     .is("deleted_at",null)
     .order("created_at",{ascending:false});
 
-
   if(error){
     throw new AppError(
       500,
@@ -325,22 +404,15 @@ export const getLeadEmailsFromDB = async (
     );
   }
 
-
   return data ?? [];
 };
-
-
-
 
 export const getContactEmailsFromDB = async (
   orgId:string,
   contactId:string,
   accessToken:string
 ):Promise<EmailListItem[]> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const {data,error} = await db
     .from(tab)
@@ -350,7 +422,6 @@ export const getContactEmailsFromDB = async (
     .is("deleted_at",null)
     .order("created_at",{ascending:false});
 
-
   if(error){
     throw new AppError(
       500,
@@ -358,22 +429,15 @@ export const getContactEmailsFromDB = async (
     );
   }
 
-
   return data ?? [];
 };
-
-
-
 
 export const getCustomerEmailsFromDB = async (
   orgId:string,
   customerId:string,
   accessToken:string
 ):Promise<EmailListItem[]> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
 
   const {data,error} = await db
     .from(tab)
@@ -383,7 +447,6 @@ export const getCustomerEmailsFromDB = async (
     .is("deleted_at",null)
     .order("created_at",{ascending:false});
 
-
   if(error){
     throw new AppError(
       500,
@@ -391,72 +454,5 @@ export const getCustomerEmailsFromDB = async (
     );
   }
 
-
   return data ?? [];
-};
-
-
-
-
-export const resetEmailToDraftFromDB = async (
-  id:string,
-  orgId:string,
-  accessToken:string
-):Promise<void> => {
-
-
-  const db = createSupabaseUserClient(accessToken);
-
-
-  const {error} = await db
-    .from(tab)
-    .update({
-      status:"draft",
-      error_message:null,
-      provider_message_id:null,
-      sent_at:null,
-    })
-    .eq("id",id)
-    .eq("org_id",orgId);
-
-
-  if(error){
-    throw new AppError(
-      500,
-      `Failed to reset Email: ${error.message}`
-    );
-  }
-
-};
-
-
-
-
-export const updateEmailStatusFromDB = async (
-  id:string,
-  orgId:string,
-  status:EmailStatus,
-  accessToken:string
-):Promise<void> => {
-
-
-  const db = createSupabaseUserClient(accessToken);
-
-
-  const {error} = await db
-    .from(tab)
-    .update({
-      status
-    })
-    .eq("id",id)
-    .eq("org_id",orgId);
-
-
-  if(error){
-    throw new AppError(
-      500,
-      `Failed to update Email status: ${error.message}`
-    );
-  }
-
 };

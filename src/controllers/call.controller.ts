@@ -18,6 +18,8 @@ import {
 } from "../services/calls.service";
 
 import { addActivityToDB } from "../services/activities.service";
+import { ensureResourceLimit } from "../services/plans.service";
+import { table } from "../config/tables";
 
 
 export const getCalls = async (
@@ -195,21 +197,29 @@ export const addCall = async (
   try {
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
       );
     }
 
+    await ensureResourceLimit(
+      orgId,
+      table.calls,
+      "calls",
+      "active_limit",
+      accessToken
+    );
+
 
     const data = await addCallToDB(
       orgId,
-      userId,
+      memberId,
       req.body,
       accessToken
     );
@@ -382,11 +392,11 @@ export const endCall = async (
     );
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -427,7 +437,7 @@ export const endCall = async (
 
     await addActivityToDB(
       orgId,
-      userId,
+      memberId,
       {
         lead_id: existing.lead_id,
         contact_id: existing.contact_id,

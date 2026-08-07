@@ -13,10 +13,13 @@ const fkey = 'notes_author_id_fkey';
 
 const selectAllWithAuthor = `
   *,
-  author:profiles!${fkey} (
+  author:organization_members!${fkey} (
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   )
 `;
 
@@ -45,7 +48,7 @@ export const getPublicNotesFromDB = async (
 
 export const getPrivateNotesFromDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<NoteListItem[]> => {
   const db = createSupabaseUserClient(accessToken);
@@ -54,7 +57,7 @@ export const getPrivateNotesFromDB = async (
     .from(tab)
     .select(all)
     .eq('org_id', orgId)
-    .eq('author_id', userId)
+    .eq('author_id', memberId)
     .eq('visibility', 'private')
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
@@ -68,7 +71,7 @@ export const getPrivateNotesFromDB = async (
 
 export const getNotesFromDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<NoteListItem[]> => {
   const db = createSupabaseUserClient(accessToken);
@@ -79,7 +82,7 @@ export const getNotesFromDB = async (
     .eq("org_id", orgId)
     .is("deleted_at", null)
     .or(
-      `visibility.eq.public,and(visibility.eq.private,author_id.eq.${userId})`
+      `visibility.eq.public,and(visibility.eq.private,author_id.eq.${memberId})`
     )
     .order("created_at", { ascending: false });
 
@@ -114,7 +117,7 @@ export const getNoteByIDFromDB = async (
 
 export const addNoteToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   note: AddNote,
   accessToken: string
 ): Promise<NoteListItem> => {
@@ -125,8 +128,8 @@ export const addNoteToDB = async (
     .insert({
       ...note,
       org_id: orgId,
-      author_id: userId,
-      updated_by: userId,
+      author_id: memberId,
+      updated_by: memberId,
     })
     .select(all)
     .single();
@@ -141,7 +144,7 @@ export const addNoteToDB = async (
 export const updateNoteFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   note: UpdateNote,
   accessToken: string
 ): Promise<NoteListItem> => {
@@ -151,11 +154,11 @@ export const updateNoteFromDB = async (
     .from(tab)
     .update({
       ...note,
-      updated_by: userId,
+      updated_by: memberId,
     })
     .eq('id', id)
     .eq('org_id', orgId)
-    .eq('author_id', userId)
+    .eq('author_id', memberId)
     .is('deleted_at', null)
     .select(all)
     .single();
@@ -170,7 +173,7 @@ export const updateNoteFromDB = async (
 export const isPinnedNoteFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   pinned: boolean,
   accessToken: string
 ): Promise<NoteListItem> => {
@@ -180,7 +183,7 @@ export const isPinnedNoteFromDB = async (
     .from(tab)
     .update({
       pinned,
-      updated_by: userId,
+      updated_by: memberId,
     })
     .eq('id', id)
     .eq('org_id', orgId)
@@ -198,7 +201,7 @@ export const isPinnedNoteFromDB = async (
 export const deletePrivateNoteFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string> => {
   const db = createSupabaseUserClient(accessToken);
@@ -207,11 +210,11 @@ export const deletePrivateNoteFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: userId,
+      deleted_by: memberId,
     })
     .eq('id', id)
     .eq('org_id', orgId)
-    .eq('author_id', userId);
+    .eq('author_id', memberId);
 
   if (error) {
     throw new AppError(500, `Failed to delete Note: ${error.message}`);
@@ -223,7 +226,7 @@ export const deletePrivateNoteFromDB = async (
 export const deleteNoteFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string> => {
   const db = createSupabaseUserClient(accessToken);
@@ -232,7 +235,7 @@ export const deleteNoteFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: userId,
+      deleted_by: memberId,
     })
     .eq('id', id)
     .eq('org_id', orgId);

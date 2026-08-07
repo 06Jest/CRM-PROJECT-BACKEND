@@ -7,7 +7,7 @@ const jsonMessage = (message: string) => ({
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 5,
+  limit: 5000,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonMessage("Too many login attempts. Please try again in 15 minutes."),

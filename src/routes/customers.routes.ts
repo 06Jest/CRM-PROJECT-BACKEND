@@ -7,7 +7,6 @@ import { updateCustomerNotesSchema, updateCustomerStatusSchema } from '../schema
 import { deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
 
 
-
 const router = Router();
 router.use(verifyToken);
 router.use(authenticateUser);

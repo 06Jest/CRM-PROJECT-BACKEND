@@ -19,10 +19,13 @@ const fkey = 'contacts_owner_id_fkey';
 
 const selectAllWithOwner = `
   *,
-  owner:profiles!${fkey} (
+  owner:organization_members!${fkey} (
     id,
-    first_name,
-    last_name
+     profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   )
 `;
 
@@ -122,7 +125,7 @@ export const getContactByIDFromDB = async (
 
 export const addContactToDB = async (
   orgId:string,
-  userId:string,
+  memberId:string,
   contact:AddContact,
   accessToken:string
 ):Promise<ContactListItem> => {
@@ -136,7 +139,7 @@ export const addContactToDB = async (
     .insert([{
       ...contact,
       org_id:orgId,
-      owner_id:userId,
+      owner_id:memberId,
       status:"Contacted"
     }])
     .select(all)
@@ -158,7 +161,7 @@ export const addContactToDB = async (
 
 export const addContactFromLeadsToDB = async (
   orgId:string,
-  userId:string,
+  memberId:string,
   contact:AddContact,
   accessToken:string
 ):Promise<ContactListItem> => {
@@ -172,8 +175,8 @@ export const addContactFromLeadsToDB = async (
     .insert([{
       ...contact,
       org_id:orgId,
-      owner_id:userId,
-      updated_by:userId,
+      owner_id:memberId,
+      updated_by:memberId,
       status:'Contacted'
     }])
     .select(all)
@@ -194,7 +197,7 @@ export const addContactFromLeadsToDB = async (
 export const updateContactFromDB = async (
   id:string,
   orgId:string,
-  userId:string,
+  memberId:string,
   contact:UpdateContact,
   accessToken:string
 ):Promise<ContactListItem> => {
@@ -203,7 +206,7 @@ export const updateContactFromDB = async (
     .from(tab)
     .update({
       ...contact,
-      updated_by:userId
+      updated_by:memberId
     })
     .eq('id',id)
     .eq('org_id',orgId)
@@ -224,7 +227,7 @@ export const updateContactFromDB = async (
 export const updateContactStatusFromDB = async (
   id:string,
   orgId:string,
-  userId:string,
+  memberId:string,
   status:ContactStatus,
   accessToken:string
 ):Promise<ContactListItem> => {
@@ -237,7 +240,7 @@ export const updateContactStatusFromDB = async (
     .from(tab)
     .update({
       status,
-      updated_by:userId
+      updated_by:memberId
     })
     .eq('id',id)
     .eq('org_id',orgId)
@@ -259,7 +262,7 @@ export const updateContactStatusFromDB = async (
 export const updateContactSocialsFromDB = async (
   id:string,
   orgId:string,
-  userId:string,
+  memberId:string,
   socials:ContactSocials,
   accessToken:string
 ):Promise<ContactListItem> => {
@@ -272,7 +275,7 @@ export const updateContactSocialsFromDB = async (
     .from(tab)
     .update({
       ...socials,
-      updated_by:userId
+      updated_by:memberId
     })
     .eq('id',id)
     .eq('org_id',orgId)
@@ -294,7 +297,7 @@ export const updateContactSocialsFromDB = async (
 export const updateContactCareerFromDB = async (
   id:string,
   orgId:string,
-  userId:string,
+  memberId:string,
   career:ContactCareer,
   accessToken:string
 ):Promise<ContactListItem> => {
@@ -307,7 +310,7 @@ export const updateContactCareerFromDB = async (
     .from(tab)
     .update({
       ...career,
-      updated_by:userId
+      updated_by:memberId
     })
     .eq('id',id)
     .eq('org_id',orgId)
@@ -329,7 +332,7 @@ export const updateContactCareerFromDB = async (
 export const deleteContactFromDB = async (
   id:string,
   orgId:string,
-  userId:string,
+  memberId:string,
   accessToken:string
 ):Promise<string> => {
 
@@ -341,7 +344,7 @@ export const deleteContactFromDB = async (
     .from(tab)
     .update({
       deleted_at:new Date().toISOString(),
-      deleted_by:userId
+      deleted_by:memberId
     })
     .eq('id',id)
     .eq('org_id',orgId);
@@ -361,7 +364,7 @@ export const deleteContactFromDB = async (
 export const deleteBulkContactsFromDB = async (
   ids:string[],
   orgId:string,
-  userId:string,
+  memberId:string,
   accessToken:string
 ):Promise<string[]> => {
 
@@ -373,7 +376,7 @@ export const deleteBulkContactsFromDB = async (
     .from(tab)
     .update({
       deleted_at:new Date().toISOString(),
-      deleted_by:userId
+      deleted_by:memberId
     })
     .in('id',ids)
     .eq('org_id',orgId);

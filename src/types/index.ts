@@ -4,9 +4,9 @@ import { AccessTokenPayload } from './auth';
 declare global {
   namespace Express {
     interface Request {
-      superAdminId?: string;
       token?: string;
       user?: AccessTokenPayload;
+      profile?: AuthProfile;
     }
   }
 }
@@ -18,12 +18,10 @@ export interface ApiResponse<T = unknown> {
   message: string;
 }
 
-export interface AuthenticatedRequest {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
+export interface AuthProfile {
+  id: string;
+  status: string;
+  onboarding_completed: boolean;
 }
 
 export interface AIDashboardRequest {

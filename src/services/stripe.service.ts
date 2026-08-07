@@ -11,14 +11,14 @@ const supabase = createClient(
 );
 
 export const getOrCreateCustomer =   async (
-  userId: string,
+  memberId: string,
   email: string,
   name?: string
 ): Promise<string> => {
   const { data: existing } = await supabase
     .from('subscriptions')
     .select('stripe_customer_id')
-    .eq('user_id', userId)
+    .eq('user_id', memberId)
     .single();
   
   if (existing?.stripe_customer_id) {
@@ -28,7 +28,7 @@ export const getOrCreateCustomer =   async (
   const customer = await stripe.customers.create({
     email,
     name,
-    metadata: { supabase_user_id: userId },
+    metadata: { supabase_user_id: memberId },
   });
 
   return customer.id;
@@ -36,11 +36,11 @@ export const getOrCreateCustomer =   async (
 
 export const createCheckoutSession = async (
   priceId: string,
-  userId: string,
+  memberId: string,
   email: string,
   name?: string
 ): Promise<string> => {
-  const customerId = await getOrCreateCustomer(userId, email, name);
+  const customerId = await getOrCreateCustomer(memberId, email, name);
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
@@ -51,20 +51,20 @@ export const createCheckoutSession = async (
     cancel_url: `${process.env.FRONTEND_URL}/pricing?canceled=true`,
     subscription_data: {
       trial_period_days: 14,
-      metadata: { supabase_user_id: userId },
+      metadata: { supabase_user_id: memberId },
     },
-    metadata: { supabase_user_id: userId },
+    metadata: { supabase_user_id: memberId },
   });
   return session.url!;
 };
 
 export const  createBillingPortalSession = async (
-  userId: string
+  memberId: string
 ): Promise<string> => {
   const { data } = await supabase
     .from('subscriptions')
     .select('stripe_customer_id')
-    .eq('user_id', userId)
+    .eq('user_id', memberId)
     .single();
 
   if (!data?.stripe_customer_id) {
@@ -99,23 +99,23 @@ export const handleWebhookEvent = async (
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      const userId = session.metadata?.supabase_user_id;
-      if(!userId || !session.subscription) break;
+      const memberId = session.metadata?.supabase_user_id;
+      if(!memberId || !session.subscription) break;
       
       const subscription = await stripe.subscriptions.retrieve(
         session.subscription as string
       );
 
-      await upsertSubscription(userId, session.customer as string, subscription);
+      await upsertSubscription(memberId, session.customer as string, subscription);
       break;
     }
 
     case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription;
-      const userId = subscription.metadata?.supabase_user_id;;
-      if (!userId) break;
+      const memberId = subscription.metadata?.supabase_user_id;;
+      if (!memberId) break;
       await upsertSubscription(
-        userId,
+        memberId,
         subscription.customer as string,
         subscription
       );
@@ -124,8 +124,8 @@ export const handleWebhookEvent = async (
 
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
-      const userId = subscription.metadata?.supabase_user_id;
-      if (!userId) break;
+      const memberId = subscription.metadata?.supabase_user_id;
+      if (!memberId) break;
 
       await supabase
         .from('subscriptions')
@@ -136,7 +136,7 @@ export const handleWebhookEvent = async (
 
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', userId);
+        .eq('user_id', memberId);
       break;
     }
 
@@ -157,7 +157,7 @@ export const handleWebhookEvent = async (
 };
 
 async function upsertSubscription(
-  userId: string,
+  memberId: string,
   customerId: string,
   subscription: Stripe.Subscription
 ): Promise<void> {
@@ -167,7 +167,7 @@ async function upsertSubscription(
   await supabase
     .from('subscriptions')
     .upsert({
-      user_id: userId,
+      user_id: memberId,
       stripe_customer_id: customerId,
       stripe_subscription_id: subscription.id,
       plan,
@@ -180,11 +180,11 @@ async function upsertSubscription(
     }, { onConflict: 'user_id'});
 }
 
-export const getUserSubscription = async (userId: string) => {
+export const getUserSubscription = async (memberId: string) => {
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
-    .eq('user_id', userId)
+    .eq('user_id', memberId)
     .single();
 
   if (error && error.code !== 'PGRST116') throw new Error(error.message);

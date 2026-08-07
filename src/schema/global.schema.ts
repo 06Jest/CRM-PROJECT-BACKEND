@@ -12,6 +12,9 @@ import { CHAT_TARGET_TYPES, CONVERSATION_TYPES } from "../types/chat";
 import { CALL_STATUSES, CALL_OUTCOMES, CALL_TYPES } from "../types/calls";
 import { SMS_STATUSES } from "../types/sms";
 import { ACTIVITY_ACTIONS, ACTIVITY_TYPES, MANUAL_ACTIVITY_ACTIONS, MANUAL_ACTIVITY_TYPES } from "../types/activity";
+import { BILLING_CYCLES, PAYMENT_PROVIDERS, SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUSES } from "../types/subscription";
+import { ORGANIZATION_TYPES } from "../types/organization";
+import { ORGANIZATION_MEMBER_STATUSES } from "../types/organization.member";
 
 export const sourceSchema = z.enum(SOURCES);
 
@@ -73,6 +76,19 @@ export const manualActivityActionsSchema = z.enum(MANUAL_ACTIVITY_ACTIONS);
 
 export const manualActivityTypesSchema =z.enum(MANUAL_ACTIVITY_TYPES);
 
+export const subscriptionPlanSchema = z.enum(SUBSCRIPTION_PLANS);
+
+export const subscriptionStatusSchema = z.enum(SUBSCRIPTION_STATUSES);
+
+export const workspaceTypeSchema = z.enum(ORGANIZATION_TYPES);
+
+export const billingCycleSchema = z.enum(BILLING_CYCLES);
+
+export const paymentProviderSchema = z.enum(PAYMENT_PROVIDERS);
+
+export const orgMemberStatusSchema = z.enum(ORGANIZATION_MEMBER_STATUSES);
+
+
 export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 12 characters")
@@ -121,6 +137,7 @@ export const phoneSchema = z
   .regex(/^09\d{9}$/, "Invalid Philippine mobile number");
 
 export const avatarSchema = z
+  .string()
   .url("Avatar URL must be a valid URL.");
 
 export const birthdateSchema = z
@@ -177,8 +194,12 @@ export const websiteSchema = z
 export const longTextSchema = z
   .string()
   .trim()
-  .min(1, "Text cannot be empty.")
   .max(5000, "Text cannot exceed 5000 characters.");
+
+export const shortTextSchema = z
+  .string()
+  .trim()
+  .max(5000, "Text cannot exceed 2000 characters.");
 
 export const displayNameSchema = z
   .string()
@@ -251,3 +272,28 @@ export const senderNameSchema = z
 export const senderEmailSchema = z
   .email("Invalid sender email.")
   .trim();
+
+export const businessTypeSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .nullable()
+  .optional();
+
+export const companySizeSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .nullable()
+  .optional();
+
+export const providerReferenceSchema = z
+  .string()
+  .trim()
+  .max(255);
+
+export const inviteCodeSchema = z
+  .string()
+  .trim()
+  .min(6)
+  .max(100);

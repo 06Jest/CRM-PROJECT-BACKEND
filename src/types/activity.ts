@@ -73,8 +73,11 @@ export interface Activity {
 export interface ActivityListItem extends Activity {
   creator: {
     id: string;
-    first_name: string;
-    last_name: string;
+    profile: {
+      first_name: string;
+      last_name: string;
+      avatar_url?: string | null;
+    }
   };
 
   lead?: {
@@ -95,10 +98,13 @@ export interface ActivityListItem extends Activity {
     last_name: string;
   } | null;
 
-  assignee: {
+  assignee?: {
     id: string;
-    first_name: string;
-    last_name: string;
+    profile: {
+      first_name: string;
+      last_name: string;
+      avatar_url?: string | null;
+    }
   };
 }
 

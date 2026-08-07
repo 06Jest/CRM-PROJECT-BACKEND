@@ -60,7 +60,8 @@ export const PRIORITIES = [
 export type Priority = typeof PRIORITIES[number];
 
 export const ROLES = [
-  "admin",
+  "owner",  
+  "manager",
   "agent",
 ] as const;
 
@@ -74,3 +75,14 @@ export const PREFERRED_CONTACT_TIMES = [
 ] as const;
 
 export type PreferredTime = typeof PREFERRED_CONTACT_TIMES[number];
+
+export const ONBOARDING_STEPS = {
+  ACCOUNT_CREATED: 0,
+  PROFILE_COMPLETED: 1,
+  WORKSPACE_CREATED: 2,
+  SUBSCRIPTION_CREATED: 3,
+  COMPLETED: 4,
+} as const;
+
+export type OnboardingStep =
+  (typeof ONBOARDING_STEPS)[keyof typeof ONBOARDING_STEPS];

@@ -20,6 +20,8 @@ import type {
 } from "../types/sms";
 
 import { addActivityToDB } from "../services/activities.service";
+import { ensureResourceLimit } from "../services/plans.service";
+import { table } from "../config/tables";
 
 
 
@@ -243,11 +245,11 @@ export const addSms = async (
   try {
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -278,11 +280,18 @@ export const addSms = async (
         "SMS requires a lead or contact"
       );
     }
+    await ensureResourceLimit(
+      orgId,
+      table.sms,
+      "sms",
+      "active_limit",
+      accessToken
+    );
 
 
     const data = await addSmsToDB(
       orgId,
-      userId,
+      memberId,
       sms,
       accessToken
     );
@@ -298,7 +307,7 @@ export const addSms = async (
 
     await addActivityToDB(
       orgId,
-      userId,
+      memberId,
       {
         lead_id: data.lead_id,
         contact_id: data.contact_id,

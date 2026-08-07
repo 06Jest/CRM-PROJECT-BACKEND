@@ -108,18 +108,18 @@ export const updateCustomerNotes = async (
     const id = uuidSchema.parse(req.params.id);
     const { notes } = req.body;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateCustomerNotesFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       notes,
       accessToken
     );
@@ -143,18 +143,18 @@ export const updateCustomerStatus = async (
     const id = uuidSchema.parse(req.params.id);
     const { status } = req.body;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateCustomerStatusFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       status,
       accessToken
     );
@@ -177,11 +177,11 @@ export const deleteCustomer = async (
   try {
     const id = uuidSchema.parse(req.params.id);
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -194,11 +194,11 @@ export const deleteCustomer = async (
     const data = await deleteCustomerFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
-    await addActivityToDB(orgId, userId, {
+    await addActivityToDB(orgId, memberId, {
       customer_id: deleted.id,
       type: "customer",
       action: "deleted",
@@ -227,7 +227,7 @@ export const deleteBulkCustomers = async (
   try {
     const ids = req.body.ids;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -238,14 +238,14 @@ export const deleteBulkCustomers = async (
       );
     }
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const data = await deleteBulkCustomersFromDB(
       ids,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 

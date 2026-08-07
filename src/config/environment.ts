@@ -13,8 +13,11 @@ export const config = {
 
     TABLE: {
       refresh_tokens: process.env.TABLE_REFRESH_TOKENS,
+      subscriptions:process.env.TABLE_SUBSCRIPTIONS,
       profile: process.env.TABLE_PROFILES ,
       organizations: process.env.TABLE_ORGANIZATIONS,
+      orgmembers: process.env.TABLE_ORGANIZATION_MEMBERS,
+      orginvites: process.env.TABLE_ORGANIZATION_INVITES,
       leads: process.env.TABLE_LEADS,
       contacts: process.env.TABLE_CONTACTS,
       deals: process.env.TABLE_DEALS,

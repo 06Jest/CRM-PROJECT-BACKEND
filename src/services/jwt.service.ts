@@ -7,6 +7,7 @@ import { RequestMeta } from "../types/auth";
 import { table } from '../config/tables';
 import { Profile } from "../types/profile";
 import { AppError } from "../middleware/error.middleware";
+import { Roles } from "../types/global";
 
 
 
@@ -15,7 +16,7 @@ const tab = table.refresh;
 interface StoredTokenRow {
   id: string;
   profile_id: string;
-  org_id: string,
+  org_id: string | null;
   replaced_by_id: string | null;
   token_hash: string;
   expires_at: string;
@@ -76,7 +77,14 @@ const replacedRow = async (
 }
 
 
-export const createAccessToken = (profile: Profile): string => {
+export const createAccessToken = (
+  profile: Profile,
+  membership?: {
+    id: string;
+    org_id: string;
+    role: Roles;
+  } | null
+): string => {
   return jwt.sign(
     {
       aud: "authenticated",
@@ -84,9 +92,12 @@ export const createAccessToken = (profile: Profile): string => {
       sub: profile.id,
       role: "authenticated",
       email: profile.email,
-      org_id: profile.org_id,
+      profile_id: profile.id,
+      org_id: membership?.org_id ?? null,
+      member_id: membership?.id ?? null,
+
       user_metadata: {
-        role: profile.role,
+        role: membership?.role ?? null,
       },
     },
     config.SUPABASE.jwtSecret,
@@ -96,9 +107,6 @@ export const createAccessToken = (profile: Profile): string => {
     }
   );
 };
-
-
-
 
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
@@ -126,10 +134,15 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
     typeof decoded.sub !== "string" ||
     decoded.role !== "authenticated" ||
     typeof decoded.email !== "string" ||
-    typeof decoded.org_id !== "string" ||
-    !decoded.user_metadata ||
-    (decoded.user_metadata.role !== "admin" &&
-      decoded.user_metadata.role !== "agent")
+    (
+      decoded.org_id !== null &&
+      typeof decoded.org_id !== "string"
+    ) ||
+    (
+      decoded.member_id !== null &&
+      typeof decoded.member_id !== "string"
+    ) ||
+    !decoded.user_metadata
   ) {
     throw new AppError(401, "Malformed access token");
   }
@@ -179,7 +192,7 @@ export function hashToken(rawToken: string): string {
 
 export async function issueRefreshToken(
   profileId: string,
-  orgId: string,
+  orgId: string | null,
   meta: RequestMeta = {}
 ): Promise<string> {
 
@@ -211,7 +224,7 @@ export async function issueRefreshToken(
 
 export const updateAccessSession = async (
   refreshHash: string,
-  userId: string,
+  memberId: string,
   meta: RequestMeta
 ) => {
    await supabaseAdmin
@@ -222,7 +235,7 @@ export const updateAccessSession = async (
       last_seen_at: new Date().toISOString(),
       })
     .eq("token_hash", refreshHash)
-    .eq("profile_id", userId)
+    .eq("profile_id", memberId)
 } 
 
 export const getRefreshDataByHash = async(
@@ -249,7 +262,11 @@ export const getRefreshDataByHash = async(
 export async function rotateRefreshToken(
   incomingRawToken: string,
   meta: RequestMeta = {}
-): Promise<{ profileId: string; newRawToken: string; orgId: string}> {
+): Promise<{ 
+  profileId: string; 
+  newRawToken: string; 
+  orgId: string | null;
+}> {
 
   const incomingHash = hashToken(incomingRawToken);
 
