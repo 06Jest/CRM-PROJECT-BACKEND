@@ -20,23 +20,17 @@ import {
   revokeAllForProfile,
 } from "./jwt.service";
 
-import { getProfileByIdForAuthFromDB, getProfileByIdFromDB } from "./profiles.service";
+import {  getProfileIfExistFromDB } from "./profiles.service";
+import { getMembershipForAuthFromDB } from "./organization.members.service";
 
 export const signUpWithAuth = async (
   dto: SignUpDTO
-): Promise<void> => {
+) => {
   const db = createSupabaseClient();
 
-  const { error } = await db.auth.signUp({
+  const { data, error } = await db.auth.signUp({
     email: dto.email.trim().toLowerCase(),
     password: dto.password,
-    options: {
-      data: {
-        first_name: dto.first_name,
-        last_name: dto.last_name,
-        org_name: dto.org_name,
-      },
-    },
   });
 
   if (error) {
@@ -45,6 +39,15 @@ export const signUpWithAuth = async (
       `Failed to create account: ${error.message}`
     );
   }
+
+  if (!data.user) {
+    throw new AppError(
+      500,
+      "Failed to create user."
+    );
+  }
+
+  return data.user;
 };
 
 export const signInWithAuth = async (
@@ -72,24 +75,53 @@ export const newRefresh = async (
   rawRefreshToken: string,
   meta: RequestMeta
 ): Promise<TokenPair> => {
+
   const {
     newRawToken,
-    orgId,
     profileId,
   } = await rotateRefreshToken(
     rawRefreshToken,
     meta
   );
 
-  // TODO:
-  // When profiles.service is migrated to RLS,
-  // replace this with a user-scoped query.
-  const profile = await getProfileByIdForAuthFromDB(
-    profileId,
-    orgId
-  );
 
-  const accessToken = createAccessToken(profile);
+  const profile =
+    await getProfileIfExistFromDB(profileId);
+
+
+  if (!profile) {
+    throw new AppError(
+      404,
+      "Profile not found"
+    );
+  }
+
+
+  let membership = null;
+
+
+  if (profile.onboarding_completed) {
+
+    membership =
+      await getMembershipForAuthFromDB(
+        profile.id
+      );
+
+    if (!membership) {
+      throw new AppError(
+        403,
+        "Organization membership not found"
+      );
+    }
+  }
+
+
+  const accessToken =
+    createAccessToken(
+      profile,
+      membership
+    );
+
 
   return {
     accessToken,
@@ -112,6 +144,8 @@ export const requestPasswordReset = async (
     );
   }
 };
+
+
 
 export const changePasswordFromAuth = async (
   user: ChangePasswordDTO,

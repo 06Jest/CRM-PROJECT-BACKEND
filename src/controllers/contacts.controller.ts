@@ -27,6 +27,8 @@ import {
 } from "../services/customer.service";
 
 import { addActivityToDB } from "../services/activities.service";
+import { ensureResourceLimit } from "../services/plans.service";
+import { table } from "../config/tables";
 
 
 export const getContacts = async (
@@ -104,21 +106,29 @@ export const addContact = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
     const contact = req.body;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
       );
     }
 
+    await ensureResourceLimit(
+      orgId,
+      table.contacts,
+      "leads",
+      "active_limit",
+      accessToken
+    );
+
     const data = await addContactToDB(
       orgId,
-      userId,
+      memberId,
       contact,
       accessToken
     );
@@ -129,7 +139,7 @@ export const addContact = async (
 
     await addActivityToDB(
       orgId,
-      userId,
+      memberId,
       {
         contact_id: data.id,
         type: "contact",
@@ -162,12 +172,12 @@ export const addContactFromLeads = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
     const contact = req.body;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -177,7 +187,7 @@ export const addContactFromLeads = async (
 
     const data = await addContactFromLeadsToDB(
       orgId,
-      userId,
+      memberId,
       contact,
       accessToken
     );
@@ -189,7 +199,7 @@ export const addContactFromLeads = async (
 
     await addActivityToDB(
       orgId,
-      userId,
+      memberId,
       {
         contact_id:data.id,
         type:"contact",
@@ -225,12 +235,12 @@ export const updateContact = async (
 
     const contact = req.body;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -241,7 +251,7 @@ export const updateContact = async (
     const data = await updateContactFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       contact,
       accessToken
     );
@@ -270,12 +280,12 @@ export const updateContactSocials = async (
 
     const socials = req.body;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -286,7 +296,7 @@ export const updateContactSocials = async (
     const data = await updateContactSocialsFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       socials,
       accessToken
     );
@@ -315,12 +325,12 @@ export const updateContactCareer = async (
 
     const career = req.body;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -331,7 +341,7 @@ export const updateContactCareer = async (
     const data = await updateContactCareerFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       career,
       accessToken
     );
@@ -356,12 +366,12 @@ export const deleteContact = async (
   try {
     const id = uuidSchema.parse(req.params.id);
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -379,7 +389,7 @@ export const deleteContact = async (
     const data = await deleteContactFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -390,7 +400,7 @@ export const deleteContact = async (
 
     await addActivityToDB(
       orgId,
-      userId,
+      memberId,
       {
         contact_id: deleted.id,
         type:"contact",
@@ -406,7 +416,7 @@ export const deleteContact = async (
     await deleteAllDealsByContactIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -414,7 +424,7 @@ export const deleteContact = async (
     await deleteCustomerByContactIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -440,7 +450,7 @@ export const deleteBulkContacts = async (
   try {
     const ids = req.body.ids;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -453,7 +463,7 @@ export const deleteBulkContacts = async (
     }
 
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
@@ -464,7 +474,7 @@ export const deleteBulkContacts = async (
     const data = await deleteBulkContactsFromDB(
       ids,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -473,14 +483,14 @@ export const deleteBulkContacts = async (
       deleteAllDealsByBulkContactsFromDB(
         ids,
         orgId,
-        userId,
+        memberId,
         accessToken
       ),
 
       deleteBulkCustomersByBulkContactIDsFromDB(
         ids,
         orgId,
-        userId,
+        memberId,
         accessToken
       )
     ]);
@@ -488,7 +498,7 @@ export const deleteBulkContacts = async (
 
     await addActivityToDB(
       orgId,
-      userId,
+      memberId,
       {
         type:"contact",
         action:"deleted",

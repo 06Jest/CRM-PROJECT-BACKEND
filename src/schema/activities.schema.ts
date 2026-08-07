@@ -6,6 +6,7 @@ import {
   longTextSchema,
   manualActivityActionsSchema,
   manualActivityTypesSchema,
+  shortTextSchema,
 } from "./global.schema";
 
 
@@ -39,7 +40,7 @@ export const manualAddActivitySchema = z.object({
 
 
   description:
-    longTextSchema
+    shortTextSchema
       .or(z.literal(""))
       .optional(),
 
@@ -55,7 +56,7 @@ export const updateActivitySchema = z.object({
 
 
   description:
-    longTextSchema
+    shortTextSchema
       .or(z.literal(""))
       .optional(),
 

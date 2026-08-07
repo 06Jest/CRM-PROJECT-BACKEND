@@ -32,10 +32,13 @@ const selectAll = `
     last_name,
     phone
   ),
-  sender:profiles!${senderFKey}(
+  sender:organization_members!${senderFKey}(
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   )
 `;
 
@@ -199,7 +202,7 @@ export const getSmsByStatusFromDB = async (
 
 export const addSmsToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   sms: CreateSms,
   accessToken: string
 ): Promise<SmsListItem> => {
@@ -212,7 +215,7 @@ export const addSmsToDB = async (
       {
         ...sms,
         org_id: orgId,
-        sender_id: userId,
+        sender_id: memberId,
         status: "sent",
       },
     ])

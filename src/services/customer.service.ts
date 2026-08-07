@@ -9,15 +9,18 @@ import type {
 
 const tab = table.customers;
 
-const fkey = 'fk_customer_owner';
+const fkey = 'customers_owner_id_fkey';
 const contactfkey = 'fk_customer_contact';
 
 const selectAllWithOwner = `
   *,
-  owner:profiles!${fkey}(
+  owner:organization_members!${fkey}(
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   ),
   contact:contacts!${contactfkey}(
     id,
@@ -110,7 +113,7 @@ export const getCustomerByIDFromDB = async (
 
 export const addCustomerToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   contactId: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
@@ -123,7 +126,7 @@ export const addCustomerToDB = async (
       contact_id: contactId,
       status: 'Active',
       org_id: orgId,
-      owner_id: userId
+      owner_id: memberId
     })
     .select(all)
     .single();
@@ -142,7 +145,7 @@ export const addCustomerToDB = async (
 export const updateCustomerNotesFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   notes: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
@@ -153,7 +156,7 @@ export const updateCustomerNotesFromDB = async (
     .from(tab)
     .update({
       notes,
-      updated_by: userId
+      updated_by: memberId
     })
     .eq('id', id)
     .eq('org_id', orgId)
@@ -174,7 +177,7 @@ export const updateCustomerNotesFromDB = async (
 export const updateCustomerStatusFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   status: CustomerStatus,
   accessToken: string
 ): Promise<CustomerListItem> => {
@@ -185,7 +188,7 @@ export const updateCustomerStatusFromDB = async (
     .from(tab)
     .update({
       status,
-      updated_by: userId
+      updated_by: memberId
     })
     .eq('id', id)
     .eq('org_id', orgId)
@@ -206,7 +209,7 @@ export const updateCustomerStatusFromDB = async (
 export const deleteCustomerFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string> => {
 
@@ -216,7 +219,7 @@ export const deleteCustomerFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: userId
+      deleted_by: memberId
     })
     .eq('id', id)
     .eq('org_id', orgId);
@@ -235,7 +238,7 @@ export const deleteCustomerFromDB = async (
 export const deleteBulkCustomersFromDB = async (
   ids: string[],
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string[]> => {
 
@@ -245,7 +248,7 @@ export const deleteBulkCustomersFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: userId
+      deleted_by: memberId
     })
     .in('id', ids)
     .eq('org_id', orgId);
@@ -264,7 +267,7 @@ export const deleteBulkCustomersFromDB = async (
 export const deleteCustomerByContactIDFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string> => {
 
@@ -274,7 +277,7 @@ export const deleteCustomerByContactIDFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: userId
+      deleted_by: memberId
     })
     .eq('contact_id', id)
     .eq('org_id', orgId);
@@ -293,7 +296,7 @@ export const deleteCustomerByContactIDFromDB = async (
 export const deleteBulkCustomersByBulkContactIDsFromDB = async (
   ids: string[],
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string[]> => {
 
@@ -303,7 +306,7 @@ export const deleteBulkCustomersByBulkContactIDsFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: userId
+      deleted_by: memberId
     })
     .in('contact_id', ids)
     .eq('org_id', orgId);

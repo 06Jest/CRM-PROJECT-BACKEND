@@ -15,6 +15,8 @@ import {
 } from "../services/tasks.service";
 
 import { addActivityToDB } from "../services/activities.service";
+import { ensureResourceLimit } from "../services/plans.service";
+import { table } from "../config/tables";
 
 
 export const getTasks = async (
@@ -24,16 +26,16 @@ export const getTasks = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const tasks = await getTasksFromDB(
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -58,17 +60,17 @@ export const getTaskByID = async (
     const id = uuidSchema.parse(req.params.id);
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const data = await getTaskByIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -91,18 +93,26 @@ export const addTask = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
     const task = req.body;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
+    await ensureResourceLimit(
+      orgId,
+      table.tasks,
+      "tasks",
+      "active_limit",
+      accessToken
+    );
+
     const data = await addTaskToDB(
       orgId,
-      userId,
+      memberId,
       task,
       accessToken
     );
@@ -110,7 +120,7 @@ export const addTask = async (
 
     await addActivityToDB(
       orgId,
-      userId,
+      memberId,
       {
         lead_id:
           data.target_type === "lead"
@@ -130,10 +140,10 @@ export const addTask = async (
         type: "task",
         action: "created",
         title:
-          `New task for ${data.assignee.first_name} ${data.assignee.last_name}`,
+          `New task for ${data.assignee.profile.first_name} ${data.assignee.profile.last_name}`,
 
         target_name:
-          `${data.assignee.first_name} ${data.assignee.last_name}`,
+          `${data.assignee.profile.first_name} ${data.assignee.profile.last_name}`,
 
         description:
           `Created task "${data.title}"`,
@@ -165,11 +175,11 @@ export const updateTask = async (
     const task = req.body;
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -177,12 +187,12 @@ export const updateTask = async (
     const check = await getTaskByIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
 
-    if (check.author_id !== userId) {
+    if (check.author_id !== memberId) {
       throw new AppError(
         403,
         "Only the task creator can edit this task"
@@ -193,7 +203,7 @@ export const updateTask = async (
     const data = await updateTaskFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       task,
       accessToken
     );
@@ -223,11 +233,11 @@ export const assignTask = async (
     const { assigned_to } = req.body;
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -235,12 +245,12 @@ export const assignTask = async (
     const check = await getTaskByIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
 
-    if (check.author_id !== userId) {
+    if (check.author_id !== memberId) {
       throw new AppError(
         403,
         "Only the task creator can assign this task"
@@ -251,7 +261,7 @@ export const assignTask = async (
     const data = await assignTaskFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       assigned_to,
       accessToken
     );
@@ -279,11 +289,11 @@ export const completeTask = async (
     const { completed } = req.body;
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -291,14 +301,14 @@ export const completeTask = async (
     const check = await getTaskByIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
 
     const isAllowed =
-      check.author_id === userId ||
-      check.assigned_to === userId;
+      check.author_id === memberId ||
+      check.assigned_to === memberId;
 
 
     if (!isAllowed) {
@@ -312,7 +322,7 @@ export const completeTask = async (
     const data = await completeTaskFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       completed,
       accessToken
     );
@@ -343,11 +353,11 @@ export const updateTaskPriority = async (
     const { priority } = req.body;
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -355,12 +365,12 @@ export const updateTaskPriority = async (
     const check = await getTaskByIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
 
-    if (check.author_id !== userId) {
+    if (check.author_id !== memberId) {
       throw new AppError(
         403,
         "Only the task creator can update the task priority"
@@ -371,7 +381,7 @@ export const updateTaskPriority = async (
     const data = await updateTaskPriorityFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       priority,
       accessToken
     );
@@ -402,11 +412,11 @@ export const updateTaskDueDate = async (
     const { due_date } = req.body;
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -414,12 +424,12 @@ export const updateTaskDueDate = async (
     const check = await getTaskByIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
 
-    if (check.author_id !== userId) {
+    if (check.author_id !== memberId) {
       throw new AppError(
         403,
         "Only the task creator can update the due date"
@@ -430,7 +440,7 @@ export const updateTaskDueDate = async (
     const data = await updateTaskDueDateFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       due_date,
       accessToken
     );
@@ -458,11 +468,11 @@ export const deleteTask = async (
     const id = uuidSchema.parse(req.params.id);
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -470,12 +480,12 @@ export const deleteTask = async (
     const check = await getTaskByIDFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
 
-    if (check.author_id !== userId) {
+    if (check.author_id !== memberId) {
       throw new AppError(
         403,
         "Only the task creator can delete this task"
@@ -486,7 +496,7 @@ export const deleteTask = async (
     const data = await deleteTaskFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 

@@ -17,6 +17,8 @@ import {
 } from "../services/contacts.service";
 import { addCustomerToDB } from "../services/customer.service";
 import { addActivityToDB } from "../services/activities.service";
+import { ensureResourceLimit } from "../services/plans.service";
+import { table } from "../config/tables";
 
 export const getDeals = async (
   req: Request,
@@ -81,13 +83,21 @@ export const addDeal = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
     const deal = req.body;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
+
+    await ensureResourceLimit(
+      orgId,
+      table.deals,
+      "leads",
+      "active_limit",
+      accessToken
+    );
 
     const contact = await getContactByIDFromDB(
       deal.contact_id,
@@ -99,7 +109,7 @@ export const addDeal = async (
       await updateContactStatusFromDB(
         contact.id,
         orgId,
-        userId,
+        memberId,
         "Opportunity",
         accessToken
       );
@@ -107,12 +117,12 @@ export const addDeal = async (
 
     const data = await addDealToDB(
       orgId,
-      userId,
+      memberId,
       deal,
       accessToken
     );
 
-    await addActivityToDB(orgId, userId, {
+    await addActivityToDB(orgId, memberId, {
       contact_id: data.contact_id,
       type: "deal",
       action: "created",
@@ -139,17 +149,17 @@ export const updateDeal = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const deal = req.body;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateDealFromDB(
       id,
-      userId,
+      memberId,
       deal,
       orgId,
       accessToken
@@ -174,11 +184,11 @@ export const updateDealStage = async (
     const id = uuidSchema.parse(req.params.id);
     const { stage } = req.body;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -198,9 +208,18 @@ export const updateDealStage = async (
 
     if (stage === "Closed Won") {
       if (contact.status !== "Customer") {
+
+        await ensureResourceLimit(
+          orgId,
+          table.customers,
+          "customers",
+          "active_limit",
+          accessToken
+        );
+
         await addCustomerToDB(
           orgId,
-          userId,
+          memberId,
           contact.id,
           accessToken
         );
@@ -208,12 +227,12 @@ export const updateDealStage = async (
         await updateContactStatusFromDB(
           contact.id,
           orgId,
-          userId,
+          memberId,
           "Customer",
           accessToken
         );
 
-        await addActivityToDB(orgId, userId, {
+        await addActivityToDB(orgId, memberId, {
           contact_id: contact.id,
           type: "customer",
           action: "created",
@@ -225,7 +244,7 @@ export const updateDealStage = async (
         },accessToken);
       }
 
-      await addActivityToDB(orgId, userId, {
+      await addActivityToDB(orgId, memberId, {
         contact_id: contact.id,
         type: "deal",
         action: "completed",
@@ -238,12 +257,12 @@ export const updateDealStage = async (
       data = await closeDealFromDB(
         id,
         stage,
-        userId,
+        memberId,
         orgId,
         accessToken
       );
     } else if (stage === "Closed Lost") {
-      await addActivityToDB(orgId, userId, {
+      await addActivityToDB(orgId, memberId, {
         contact_id: contact.id,
         type: "deal",
         action: "cancelled",
@@ -256,7 +275,7 @@ export const updateDealStage = async (
       data = await closeDealFromDB(
         id,
         stage,
-        userId,
+        memberId,
         orgId,
         accessToken
       );
@@ -264,7 +283,7 @@ export const updateDealStage = async (
       data = await updateDealStageFromDB(
         id,
         orgId,
-        userId,
+        memberId,
         stage,
         accessToken
       );
@@ -289,11 +308,11 @@ export const deleteDeal = async (
   try {
     const id = uuidSchema.parse(req.params.id);
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -305,12 +324,12 @@ export const deleteDeal = async (
 
     const data = await deleteDealFromDB(
       id,
-      userId,
+      memberId,
       orgId,
       accessToken
     );
 
-    await addActivityToDB(orgId, userId, {
+    await addActivityToDB(orgId, memberId, {
       contact_id: deleted.contact_id,
       type: "deal",
       action: "deleted",

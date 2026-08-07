@@ -1,20 +1,32 @@
-// export type SubscriptionStatus = 'active' | 'paused';
-export type SubscriptionPlan = 'Free' | 'Pro';
+import { SubscriptionPlan } from "./subscription";
+
+export const ORGANIZATION_TYPES = [
+  "personal",
+  "business",
+] as const;
+
+export type OrganizationType =
+  typeof ORGANIZATION_TYPES[number];
 
 export interface Organization {
   id: string;
+  display_id: string;
   name: string;
-  admin_id: string;
-  created_at?: string;
+  slug: string;
+  type: OrganizationType;
+  industry: string | null;
+  business_type: string | null;
+  company_size: string | null;
   subscription_plan: SubscriptionPlan;
-  // subscription_status: SubscriptionStatus;
-  // revenue: number;
+  created_at?: string
+  updated_at?: string;
 }
 
-export interface CreateOrgDTO {
+
+export interface CreateWorkspaceDTO {
   name: string;
-  admin_id: string;
-  subscription_plan: SubscriptionPlan;
-  // subscription_status: SubscriptionStatus;
-  // revenue: number;
+  type: OrganizationType;
+  industry?: string;
+  product_type?: string;
+  company_size?: string;
 }

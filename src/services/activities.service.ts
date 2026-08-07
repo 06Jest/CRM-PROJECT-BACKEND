@@ -18,10 +18,13 @@ const creatorFKey = "activities_created_by_fkey";
 
 const selectAll = `
   *,
-  creator:profiles!${creatorFKey}(
+  creator:organization_members!${creatorFKey}(
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   )
 `;
 
@@ -268,7 +271,7 @@ export const getActivitiesByTypeFromDB = async (
 
 export const addActivityToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   activity: CreateActivity,
   accessToken: string
 ): Promise<ActivityListItem> => {
@@ -283,7 +286,7 @@ export const addActivityToDB = async (
       {
         ...activity,
         org_id: orgId,
-        created_by: userId,
+        created_by: memberId,
       },
     ])
     .select(selectAll)
@@ -306,7 +309,7 @@ export const addActivityToDB = async (
 
 export const manualAddActivityToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   activity: ManualCreateActivity,
   accessToken: string
 ): Promise<ActivityListItem> => {
@@ -321,7 +324,7 @@ export const manualAddActivityToDB = async (
       {
         ...activity,
         org_id: orgId,
-        created_by: userId,
+        created_by: memberId,
       },
     ])
     .select(selectAll)

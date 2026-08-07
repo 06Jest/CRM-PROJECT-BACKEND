@@ -16,15 +16,21 @@ const assigneeFkey = "tasks_assigned_to_fkey";
 
 const selectAllWithUsers = `
   *,
-  author:profiles!${fkey}(
+  author:organization_members!${fkey}(
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   ),
-  assignee:profiles!${assigneeFkey}(
+  assignee:organization_members!${assigneeFkey}(
     id,
-    first_name,
-    last_name
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
   )
 `;
 
@@ -33,7 +39,7 @@ const all = selectAllWithUsers;
 
 export const getTasksFromDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<TaskListItem[]> => {
 
@@ -44,7 +50,7 @@ export const getTasksFromDB = async (
     .select(all)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .or(`author_id.eq.${userId},assigned_to.eq.${userId}`)
+    .or(`author_id.eq.${memberId},assigned_to.eq.${memberId}`)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -58,7 +64,7 @@ export const getTasksFromDB = async (
 export const getTaskByIDFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<TaskListItem> => {
 
@@ -70,7 +76,7 @@ export const getTaskByIDFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .or(`author_id.eq.${userId},assigned_to.eq.${userId}`)
+    .or(`author_id.eq.${memberId},assigned_to.eq.${memberId}`)
     .single();
 
   if (error) {
@@ -83,7 +89,7 @@ export const getTaskByIDFromDB = async (
 
 export const addTaskToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   task: AddTask,
   accessToken: string
 ): Promise<TaskListItem> => {
@@ -95,9 +101,9 @@ export const addTaskToDB = async (
     .insert({
       ...task,
       org_id: orgId,
-      author_id: userId,
-      assigned_to: task.assigned_to ?? userId,
-      updated_by: userId,
+      author_id: memberId,
+      assigned_to: task.assigned_to ?? memberId,
+      updated_by: memberId,
     })
     .select(all)
     .single();
@@ -113,7 +119,7 @@ export const addTaskToDB = async (
 export const updateTaskFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   task: UpdateTask,
   accessToken: string
 ): Promise<TaskListItem> => {
@@ -124,11 +130,11 @@ export const updateTaskFromDB = async (
     .from(tab)
     .update({
       ...task,
-      updated_by: userId,
+      updated_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
-    .eq("author_id", userId)
+    .eq("author_id", memberId)
     .is("deleted_at", null)
     .select(all)
     .single();
@@ -144,7 +150,7 @@ export const updateTaskFromDB = async (
 export const assignTaskFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   assignedTo: string,
   accessToken: string
 ): Promise<TaskListItem> => {
@@ -155,11 +161,11 @@ export const assignTaskFromDB = async (
     .from(tab)
     .update({
       assigned_to: assignedTo,
-      updated_by: userId,
+      updated_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
-    .eq("author_id", userId)
+    .eq("author_id", memberId)
     .is("deleted_at", null)
     .select(all)
     .single();
@@ -175,7 +181,7 @@ export const assignTaskFromDB = async (
 export const updateTaskPriorityFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   priority: TaskPriority,
   accessToken: string
 ): Promise<TaskListItem> => {
@@ -186,11 +192,11 @@ export const updateTaskPriorityFromDB = async (
     .from(tab)
     .update({
       priority,
-      updated_by: userId,
+      updated_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
-    .eq("author_id", userId)
+    .eq("author_id", memberId)
     .is("deleted_at", null)
     .select(all)
     .single();
@@ -209,7 +215,7 @@ export const updateTaskPriorityFromDB = async (
 export const updateTaskDueDateFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   dueDate: string | null,
   accessToken: string
 ): Promise<TaskListItem> => {
@@ -220,7 +226,7 @@ export const updateTaskDueDateFromDB = async (
     .from(tab)
     .update({
       due_date: dueDate,
-      updated_by: userId,
+      updated_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
@@ -242,7 +248,7 @@ export const updateTaskDueDateFromDB = async (
 export const completeTaskFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   completed: boolean,
   accessToken: string
 ): Promise<TaskListItem> => {
@@ -254,7 +260,7 @@ export const completeTaskFromDB = async (
     .update({
       status: completed ? "completed" : "todo",
       completed_at: completed ? new Date().toISOString() : null,
-      updated_by: userId,
+      updated_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
@@ -276,7 +282,7 @@ export const completeTaskFromDB = async (
 export const deleteTaskFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ): Promise<string> => {
 
@@ -286,10 +292,10 @@ export const deleteTaskFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: userId,
+      deleted_by: memberId,
     })
     .eq("id", id)
-    .eq("author_id", userId)
+    .eq("author_id", memberId)
     .eq("org_id", orgId);
 
   if (error) {

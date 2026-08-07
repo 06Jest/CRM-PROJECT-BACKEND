@@ -13,6 +13,8 @@ import {
   getNotesFromDB,
   isPinnedNoteFromDB,
 } from "../services/notes.service";
+import { ensureResourceLimit } from "../services/plans.service";
+import { table } from "../config/tables";
 
 export const getPublicNotes = async (
   req: Request,
@@ -51,16 +53,16 @@ export const getNotes = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized");
     }
 
     const notes = await getNotesFromDB(
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -83,16 +85,16 @@ export const getPrivateNotes = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized");
     }
 
     const notes = await getPrivateNotesFromDB(
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -148,18 +150,26 @@ export const addNote = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
     const note = req.body;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
+    await ensureResourceLimit(
+      orgId,
+      table.notes,
+      "notes",
+      "active_limit",
+      accessToken
+    );
+
     const data = await addNoteToDB(
       orgId,
-      userId,
+      memberId,
       note,
       accessToken
     );
@@ -187,10 +197,10 @@ export const updateNote = async (
     const note = req.body;
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -200,7 +210,7 @@ export const updateNote = async (
       accessToken
     );
 
-    if (check.author_id !== userId) {
+    if (check.author_id !== memberId) {
       throw new AppError(
         401,
         "Only Author can edit this note"
@@ -210,7 +220,7 @@ export const updateNote = async (
     const data = await updateNoteFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       note,
       accessToken
     );
@@ -238,17 +248,17 @@ export const isPinnedNote = async (
     const { pinned } = req.body;
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const data = await isPinnedNoteFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       pinned,
       accessToken
     );
@@ -274,10 +284,10 @@ export const deletePrivateNote = async (
     const id = uuidSchema.parse(req.params.id);
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -287,7 +297,7 @@ export const deletePrivateNote = async (
       accessToken
     );
 
-    if (checkNote.author_id !== userId) {
+    if (checkNote.author_id !== memberId) {
       throw new AppError(
         401,
         "Only the author can delete this note"
@@ -297,7 +307,7 @@ export const deletePrivateNote = async (
     const data = await deletePrivateNoteFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
@@ -322,17 +332,17 @@ export const deleteNote = async (
     const id = uuidSchema.parse(req.params.id);
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const data = await deleteNoteFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 

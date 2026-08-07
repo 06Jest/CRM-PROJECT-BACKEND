@@ -354,11 +354,11 @@ export const addActivity = async (
   try {
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId || !userId || !accessToken){
+    if(!orgId || !memberId || !accessToken){
       throw new AppError(
         401,
         "Unauthorized user"
@@ -368,7 +368,7 @@ export const addActivity = async (
 
     const data = await addActivityToDB(
       orgId,
-      userId,
+      memberId,
       req.body,
       accessToken
     );
@@ -398,11 +398,11 @@ export const manualAddActivity = async (
   try {
 
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
 
 
-    if(!orgId || !userId || !accessToken){
+    if(!orgId || !memberId || !accessToken){
       throw new AppError(
         401,
         "Unauthorized user"
@@ -413,7 +413,7 @@ export const manualAddActivity = async (
     const data =
       await manualAddActivityToDB(
         orgId,
-        userId,
+        memberId,
         req.body,
         accessToken
       );

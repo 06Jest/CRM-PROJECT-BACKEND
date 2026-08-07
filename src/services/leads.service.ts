@@ -5,10 +5,16 @@ import { table } from '../config/tables';
 
 const tab = table.leads;
 const fkey = 'leads_owner_id_fkey';
-const selectAllWithOwner = `*, owner:profiles!${fkey} (
-        id,
+const selectAllWithOwner = `
+    *, 
+    owner:organization_members!${fkey} (
+      id,
+      profile:profiles(
         first_name,
-        last_name )`
+        last_name,
+        avatar_url
+      )
+    )`
 
 const all = selectAllWithOwner;
 
@@ -68,9 +74,11 @@ export const getLeadByIDFromDB = async (
   return data;
 }
 
+
+
 export const addLeadToDB = async (
   orgId: string,
-  userId: string,
+  memberId: string,
   lead: AddLead,
   accessToken: string
 ) : Promise<LeadListItem> => {
@@ -80,8 +88,8 @@ export const addLeadToDB = async (
       .insert([{
         ...lead,
         org_id: orgId,
-        owner_id: userId,
-        updated_by: userId,
+        owner_id: memberId,
+        updated_by: memberId,
       }])
       .select(all)
       .single()
@@ -95,7 +103,7 @@ export const addLeadToDB = async (
 export const updateLeadFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   lead: UpdateLead,
   accessToken: string
 ) : Promise<LeadListItem> => {
@@ -104,7 +112,7 @@ export const updateLeadFromDB = async (
       .from(tab)
       .update([{
         ...lead,
-        updated_by: userId
+        updated_by: memberId
       }])
       .eq('id', id)
       .eq('org_id', orgId)
@@ -120,7 +128,7 @@ export const updateLeadFromDB = async (
 export const updateLeadStatusFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   status: LeadStatus,
   accessToken: string
 ) : Promise<LeadListItem> => {
@@ -129,7 +137,7 @@ export const updateLeadStatusFromDB = async (
       .from(tab)
       .update({
         status: status,
-        updated_by: userId
+        updated_by: memberId
       })
       .eq('id', id)
       .eq('org_id', orgId)
@@ -145,7 +153,7 @@ export const updateLeadStatusFromDB = async (
 export const deleteLeadFromDB = async (
   id: string,
   orgId: string,
-  userId: string,
+  memberId: string,
   accessToken: string
 ) : Promise<string> => {
   const db = createSupabaseUserClient(accessToken);
@@ -153,7 +161,7 @@ export const deleteLeadFromDB = async (
       .from(tab)
       .update({
         deleted_at: new Date().toISOString(),
-        deleted_by: userId,
+        deleted_by: memberId,
       })
       .eq('id', id)
       .eq('org_id', orgId)

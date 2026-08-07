@@ -9,12 +9,13 @@ import {
   taskVisibilitySchema,
   taskTypesSchema,
   longTextSchema,
+  shortTextSchema,
 } from "./global.schema";
 
 export const addTaskSchema = z.object({
   title: titleSchema,
 
-  description: longTextSchema.optional(),
+  description: shortTextSchema.optional(),
   
   task_type: taskTypesSchema,
 
@@ -37,7 +38,7 @@ export const updateTaskSchema = z.object({
 
   task_type: taskTypesSchema.optional(),
 
-  description: longTextSchema.optional(),
+  description: shortTextSchema.optional(),
 
   target_type: taskTargetTypeSchema.optional(),
 

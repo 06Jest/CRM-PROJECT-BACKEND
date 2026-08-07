@@ -14,6 +14,8 @@ import { addContactFromLeadsToDB } from "../services/contacts.service";
 import { AddContact } from "../types/contact";
 import { Source } from "../types/global";
 import { addActivityToDB } from "../services/activities.service";
+import { ensureResourceLimit } from "../services/plans.service";
+import { table } from "../config/tables";
 
 export const getLeads = async (
   req: Request,
@@ -74,29 +76,42 @@ export const addLead = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
     const lead = req.body;
 
-    if (!orgId || !userId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
+    await ensureResourceLimit(
+      orgId,
+      table.leads,
+      "leads",
+      "active_limit",
+      accessToken
+    );
+
     const data = await addLeadToDB(
       orgId,
-      userId,
+      memberId,
       lead,
       accessToken
     );
 
-    await addActivityToDB(orgId, userId, {
-      lead_id: data.id,
-      type: "lead",
-      action: "created",
-      title: "New lead",
-      target_name: `${lead.first_name} ${lead.last_name} ${data.suffix ?? ""}`,
-      description: `Added ${lead.first_name} ${lead.last_name} ${data.suffix ?? ""} as lead`,
-    },accessToken);
+    await addActivityToDB(
+      orgId,
+      memberId,
+      {
+        lead_id: data.id,
+        type: "lead",
+        action: "created",
+        title: "New lead",
+        target_name: `${lead.first_name} ${lead.last_name} ${data.suffix ?? ""}`,
+        description: `Added ${lead.first_name} ${lead.last_name} ${data.suffix ?? ""} as lead`,
+      },
+      accessToken
+    );
 
     return res.status(200).json({
       success: true,
@@ -117,18 +132,18 @@ export const updateLead = async (
     const id = uuidSchema.parse(req.params.id);
     const lead = req.body;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateLeadFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       lead,
       accessToken
     );
@@ -152,11 +167,11 @@ export const updateLeadStatus = async (
     const id = uuidSchema.parse(req.params.id);
     const { status } = req.body;
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -169,7 +184,7 @@ export const updateLeadStatus = async (
     const data = await updateLeadStatusFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       status,
       accessToken
     );
@@ -204,7 +219,7 @@ export const updateLeadStatus = async (
 
       const contactData = await addContactFromLeadsToDB(
         orgId,
-        userId,
+        memberId,
         contact,
         accessToken
       );
@@ -212,7 +227,7 @@ export const updateLeadStatus = async (
       const contactName =
         `${contactData.first_name} ${contactData.last_name} ${contactData.suffix ?? ""}`.trim();
 
-      await addActivityToDB(orgId, userId, {
+      await addActivityToDB(orgId, memberId, {
         contact_id: contactData.id,
         type: "contact",
         action: "created",
@@ -240,11 +255,11 @@ export const deleteLead = async (
   try {
     const id = uuidSchema.parse(req.params.id);
 
-    const userId = req.user?.sub;
+    const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!userId || !orgId || !accessToken) {
+    if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -257,11 +272,11 @@ export const deleteLead = async (
     const data = await deleteLeadFromDB(
       id,
       orgId,
-      userId,
+      memberId,
       accessToken
     );
 
-    await addActivityToDB(orgId, userId, {
+    await addActivityToDB(orgId, memberId, {
       lead_id: deleted.id,
       type: "lead",
       action: "deleted",
