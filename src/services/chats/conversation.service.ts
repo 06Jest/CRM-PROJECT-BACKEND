@@ -18,15 +18,17 @@ import {
 
 const conversationTab = table.chat.conversations;
 const lastMessageFkey = "conversations_last_message_id_fkey";
+
 const all = `
   *,
   last_message:messages!${lastMessageFkey}(
     id,
     content,
     created_at,
-    sender: organization_members!messages_sender_id_fkey(
+    sender:organization_members!messages_sender_id_fkey(
       id,
-      profile: profiles!organization_members_profile_fkey(
+      profile:profiles!organization_members_profile_fkey(
+        id,
         first_name,
         last_name,
         avatar_url
@@ -34,6 +36,8 @@ const all = `
     )
   )
 `;
+
+
 
 export const getUserConversationDataFromDB = async (
   orgId: string,
@@ -71,6 +75,7 @@ export const getUserConversationDataFromDB = async (
   ]);
   return {conversations,members,};
 };
+
 
 export const getConversationByIDFromDB = async (
   orgId: string,
@@ -162,32 +167,30 @@ export const getUserConversationListItemsFromDB = async (
       accessToken
     );
 
-  const participantMap = new Map<
+    const participantMap = new Map<
     string,
     ConversationListItem["other_participant"]
   >();
+
   for (const member of members) {
-    const participants =
-      Array.isArray(member.member)
-        ? member.member
-        : [member.member];
+    const participants = Array.isArray(member.member)
+      ? member.member
+      : [member.member];
 
     for (const participant of participants) {
       if (!participant || participant.id === memberId) {
         continue;
       }
 
-      participantMap.set(
-        member.conversation_id,
-        {
-          id: participant.id,
-          fist_name: participant.profile.first_name,
+      participantMap.set(member.conversation_id, {
+        id: participant.id,
+        profile: {
+          id: participant.profile.id,
+          first_name: participant.profile.first_name,
           last_name: participant.profile.last_name,
-          avatar_url:
-            participant.profile.avatar_url ?? null,
-
-        }
-      );
+          avatar_url: participant.profile.avatar_url ?? null,
+        },
+      });
     }
   }
 
@@ -199,7 +202,7 @@ export const getUserConversationListItemsFromDB = async (
         ? participantMap.get(conversation.id)
         : undefined,
 
-    my_last_read_at:
+    last_read_at:
       readStates[conversation.id] ?? null,
   }));
 };

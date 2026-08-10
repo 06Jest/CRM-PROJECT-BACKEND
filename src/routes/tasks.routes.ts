@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   authenticateUser,
+  requireActiveMembership,
   verifyToken,
 } from "../middleware/auth.middleware";
 
@@ -38,6 +39,7 @@ router.use(authenticateUser);
 router.get("/show-tasks",readLimiter, getTasks);
 router.get("/show-task/:id",readLimiter, getTaskByID);
 
+router.use(requireActiveMembership);
 
 router.post(
   "/add-task",

@@ -13,6 +13,7 @@ export const ACTIVITY_TYPES = [
   "note",
   "sms",
   "email",
+  "system"
 ] as const;
 
 export type ActivityType =

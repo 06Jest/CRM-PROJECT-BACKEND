@@ -43,7 +43,7 @@ export interface ConversationWithLastMessage extends Conversation {
     sender: {
       id: string,
       profile: {
-        fist_name: string,
+        first_name: string,
         last_name: string,
         avatar_url: string | null,
       }
@@ -52,14 +52,16 @@ export interface ConversationWithLastMessage extends Conversation {
 }
 
 export interface ConversationListItem extends ConversationWithLastMessage {
-
   other_participant?: {
     id: string,
-    fist_name: string,
-    last_name: string,
-    avatar_url: string | null,
+    profile: {
+      id: string;
+      first_name: string,
+      last_name: string,
+      avatar_url: string | null,
+    }
   },
-  my_last_read_at: string  | null
+  last_read_at: string  | null
 }
 
 export interface UserConversationData {
@@ -74,6 +76,7 @@ export interface MemberData {
     id: string,
     role: Roles,
     profile: {
+      id: string;
       first_name: string,
       last_name: string,
       avatar_url?: string | null

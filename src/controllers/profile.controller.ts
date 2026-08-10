@@ -72,7 +72,7 @@ export const updateProfile = async (
 
 
     const profile =
-      await updateProfileSetupToDB(
+      await updateProfileFromDB(
         userId,
         req.body,
         accessToken
@@ -172,6 +172,8 @@ export const updateProfileStatus = async (
   }
 };
 
+
+
 export const getProfile = async (
   req: Request,
   res: Response,
@@ -179,7 +181,7 @@ export const getProfile = async (
 ): Promise<void> => {
 
   try {
-
+    
     const userId = req.user?.sub
 
     const accessToken =

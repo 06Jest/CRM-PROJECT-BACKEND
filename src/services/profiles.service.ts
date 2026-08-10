@@ -33,13 +33,31 @@ export const getProfileIfExistFromDB = async (
   return data;
 };
 
+export const checkEmailIfExistFromDB = async (
+  email: string
+): Promise<{ id: string; email: string } | null> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .select("id, email")
+    .eq("email", email.trim().toLowerCase())
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to check email existence: ${error.message}`
+    );
+  }
+  return data;
+};
+
 
 export const getProfileByIdFromDB = async (
   userId: string,
   accessToken: string
 ): Promise<DisplayProfile> => {
   const db = createSupabaseUserClient(accessToken);
-
     const { data, error } = await db
     .from(tab)
     .select(`
@@ -64,7 +82,6 @@ export const getProfileByIdFromDB = async (
     .maybeSingle();
 
   if (error) {
-    console.log("SUPABASE PROFILE ERROR:", error);
     throw new AppError(
       500,
       error.message
@@ -95,6 +112,7 @@ export const isProfileExistFromDB = async (
     .from(tab)
     .select('id')
     .eq('id', userId)
+    .eq("status", "active")
     .is('deleted_at', null)
     .maybeSingle();
 

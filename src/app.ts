@@ -22,11 +22,10 @@ import callsRoutes from './routes/calls.routes';
 import smsRoutes from './routes/sms.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import activitiesRoutes from './routes/activities.routes'
-
+import feedbackRoutes from './routes/feedback.routes';
 import stripeRoutes from './routes/stripe.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import analyticsRoutes from './routes/analytics.routes';
-import agentsRoutes from './routes/members.routes';
 import healthRoutes from './routes/health';
 import cookieParser from 'cookie-parser';
 
@@ -65,7 +64,8 @@ app.use('/api/emails', emailRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/chat', chatsRoutes);
 app.use('/api/calls', callsRoutes); 
-app.use('/health', healthRoutes);
+
+app.use('/api/health', healthRoutes);
 
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json'}));
 
@@ -75,7 +75,7 @@ app.use('/api/ai', aiRoutes);;
 app.use('/api/sms', smsRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/agents', agentsRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 app.use(errorHandler);
 app.use(notFound);

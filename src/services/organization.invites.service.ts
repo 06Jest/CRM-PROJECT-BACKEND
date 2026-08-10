@@ -7,8 +7,54 @@ import { Profile } from "../types/profile";
 import { OrganizationMember } from "../types/organization.member";
 import { addOrganizationMemberToDB, getMembershipForAuthFromDB } from "./organization.members.service";
 import { completeOnboardingInDB } from "./profiles.service";
+import { joinDefaultConversations } from "./chats/conversation.member.service";
 
 const tab = table.orginvites;
+const acceptanceTab = table.acceptances;
+const acceptanceFkey =
+  "organization_invite_acceptances_invite_id_fkey";
+
+const selectAllWithAcceptances = `
+  *,
+  acceptances:organization_invite_acceptances!${acceptanceFkey}(
+    id,
+    profile_id,
+    accepted_at,
+    profile:profiles(
+      first_name,
+      last_name,
+      email,
+      avatar_url
+    )
+  )
+`;
+
+const all = selectAllWithAcceptances;
+
+
+
+export const createInviteAcceptance = async (
+  inviteId: string,
+  profileId: string,
+  accessToken: string
+): Promise<void> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(acceptanceTab)
+    .insert({
+      invite_id: inviteId,
+      profile_id: profileId,
+    });
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to record invite acceptance: ${error.message}`
+    );
+  }
+};
+
 
 export const createInvite = async (
   orgId: string,
@@ -34,7 +80,7 @@ export const createInvite = async (
       max_uses: dto.max_uses,
       expires_at: dto.expires_at,
     })
-    .select()
+    .select(all)
     .single();
 
   if (error) {
@@ -54,7 +100,7 @@ export const getInviteByCode = async (
 
   const { data, error } = await supabaseAdmin
     .from(tab)
-    .select("*")
+    .select(all)
     .eq("code", code)
     .single();
 
@@ -85,7 +131,7 @@ export const getOrganizationInvites = async (
 
   const { data, error } = await db
     .from(tab)
-    .select("*")
+    .select(all)
     .eq("org_id", orgId)
     .order("created_at", {
       ascending: false,
@@ -104,6 +150,7 @@ export const getOrganizationInvites = async (
 
 export const revokeInvite = async (
   inviteId: string,
+  orgId: string,
   accessToken: string
 ): Promise<OrganizationInvite> => {
 
@@ -115,13 +162,21 @@ export const revokeInvite = async (
       status: "revoked",
     })
     .eq("id", inviteId)
-    .select()
+    .eq("org_id", orgId)
+    .select(all)
     .single();
 
   if (error) {
     throw new AppError(
       500,
       `Failed to revoke invite: ${error.message}`
+    );
+  }
+
+  if (!data) {
+    throw new AppError(
+      404,
+      "Invite not found in your organization"
     );
   }
 
@@ -185,25 +240,32 @@ export const acceptInvite = async (
   );
 
   const existingMembership =
-  await getMembershipForAuthFromDB(profile.id);
+    await getMembershipForAuthFromDB(profile.id);
 
-if (existingMembership) {
-  throw new AppError(
-    400,
-    "You already belong to an organization."
-  );
-}
-
-  const member =
-    await addOrganizationMemberToDB(
-      {
-        org_id: invite.org_id,
-        profile_id: profile.id,
-        role: invite.role,
-        status: "active",
-      },
-      accessToken
+  if (existingMembership) {
+    throw new AppError(
+      400,
+      "You already belong to an organization."
     );
+  }
+
+  const member = await addOrganizationMemberToDB({
+    org_id: invite.org_id,
+    profile_id: profile.id,
+    role: invite.role,
+    status: "invited",
+  });
+
+  await joinDefaultConversations(
+    invite.org_id,
+    member.id
+  );
+
+  await createInviteAcceptance(
+    invite.id,
+    profile.id,
+    accessToken
+  );
 
   await completeOnboardingInDB(
     profile.id,
@@ -212,8 +274,7 @@ if (existingMembership) {
 
   const uses = invite.used_count + 1;
 
-  const db =
-    createSupabaseUserClient(accessToken);
+  const db = supabaseAdmin;
 
   const { error } = await db
     .from(tab)
@@ -223,14 +284,6 @@ if (existingMembership) {
         uses >= invite.max_uses
           ? "completed"
           : invite.status,
-      accepted_at:
-        uses >= invite.max_uses
-          ? new Date().toISOString()
-          : invite.accepted_at,
-      accepted_by:
-        uses >= invite.max_uses
-          ? profile.id
-          : invite.accepted_by,
     })
     .eq("id", invite.id);
 

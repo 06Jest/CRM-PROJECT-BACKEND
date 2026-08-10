@@ -25,7 +25,7 @@ const router = Router();
 
 router.use(verifyToken);
 
-router.patch(
+router.get(
   "/me",
   getProfile
 );

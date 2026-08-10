@@ -30,8 +30,8 @@ export interface Profile {
 export interface DisplayProfile {
     id: string;
     avatar_url?: string;
-    first_name: string;
-    last_name: string;
+    first_name?: string;
+    last_name?: string;
     display_name?: string;
     email: string;
     display_id?: string;
@@ -88,6 +88,5 @@ export interface UpdateProfileDTO {
   first_name?: string;
   last_name?: string;
   display_name?: string;
-  phone?: string;
   job_title?: string;
 }

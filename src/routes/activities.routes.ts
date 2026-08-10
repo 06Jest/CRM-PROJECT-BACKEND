@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   verifyToken,
   authenticateUser,
+  requireActiveMembership,
 } from "../middleware/auth.middleware";
 
 import { validateBody } from "../middleware/validate";
@@ -30,6 +31,7 @@ const router = Router();
 router.use(verifyToken);
 router.use(authenticateUser);
 
+
 router.get("/show-activities",readLimiter, getActivities);
 
 router.get("/show-activity/:id",readLimiter, getActivityByID);
@@ -43,6 +45,8 @@ router.get("/show-customer-activities/:customerId",readLimiter, getCustomerActiv
 router.get("/show-activities-action/:action",readLimiter, getActivitiesByAction);
 
 router.get("/show-activities-type/:type",readLimiter, getActivitiesByType);
+
+router.use(requireActiveMembership);
 
 router.post(
   "/add-manual-activity",

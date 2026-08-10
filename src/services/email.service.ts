@@ -61,7 +61,6 @@ export const getEmailsFromDB = async (
     .from(tab)
     .select(all)
     .eq("org_id", orgId)
-    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if(error){
@@ -244,11 +243,6 @@ export const createEmailDraftToDB = async (
       `Failed to create draft: ${error.message}`
     );
   }
-  console.log("CREATING EMAIL DRAFT", {
-    orgId,
-    senderId,
-    email
-  });
   return data;
 };
 
@@ -378,7 +372,6 @@ export const deleteEmailFromDB = async (
       `Failed to delete Email: ${error.message}`
     );
   }
-
   return id;
 };
 

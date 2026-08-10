@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateUser, verifyToken } from '../middleware/auth.middleware';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
 import { 
   getContacts,
   addContact,
@@ -20,8 +20,11 @@ const router = Router();
 router.use(verifyToken);
 router.use(authenticateUser);
 
+
 router.get('/show-contacts',readLimiter, getContacts);
 router.get('/show-contacts-lists',readLimiter, getContactsLists);
+
+router.use(requireActiveMembership);
 
 router.post('/add-contact',createLimiter, validateBody(addContactSchema), addContact);
 router.post('/move-contact',createLimiter, validateBody(addContactSchema),  addContactFromLeads);

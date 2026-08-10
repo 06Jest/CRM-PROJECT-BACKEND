@@ -1,3 +1,4 @@
+
 import { NextFunction, Request, Response } from "express";
 
 import {
@@ -13,6 +14,7 @@ import {
   getProfileByIdForAuthFromDB,
   createProfileToDB,
   getProfileIfExistFromDB,
+  checkEmailIfExistFromDB,
 } from "../services/profiles.service";
 
 import {
@@ -153,6 +155,21 @@ export const signUp = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+
+    const email = req.body.email;
+
+    const existingProfile =
+      await checkEmailIfExistFromDB(email);
+
+    if (existingProfile) {
+      throw new AppError(
+        409,
+        "Email is already registered"
+      );
+    }
+
+    await signUpWithAuth(req.body);
+    
     await signUpWithAuth(
       req.body
     );

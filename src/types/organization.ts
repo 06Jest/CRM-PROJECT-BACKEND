@@ -1,4 +1,4 @@
-import { SubscriptionPlan } from "./subscription";
+import { Subscription, type SubscriptionPlan, type SubscriptionStatus } from "./subscription";
 
 export const ORGANIZATION_TYPES = [
   "personal",
@@ -15,13 +15,13 @@ export interface Organization {
   slug: string;
   type: OrganizationType;
   industry: string | null;
-  business_type: string | null;
+  logo_url?: string | null;
+  description?: string | null;
+  product_type?: string | null;
   company_size: string | null;
-  subscription_plan: SubscriptionPlan;
-  created_at?: string
+  created_at?: string;
   updated_at?: string;
 }
-
 
 export interface CreateWorkspaceDTO {
   name: string;
@@ -29,4 +29,30 @@ export interface CreateWorkspaceDTO {
   industry?: string;
   product_type?: string;
   company_size?: string;
+}
+
+export interface DisplayOrganization {
+  id: string;
+  name: string;
+  display_id: string;
+  industry?: string | null;
+  company_size?: string | null;
+  website?: string | null;
+  type: OrganizationType;
+  logo_url?: string | null;
+  product_type?: string | null;
+  description?: string | null;
+  created_at: string;
+  subscription?: Subscription[] | null;
+}
+
+export interface UpdateWorkspaceDetailsDTO {
+  name?: string;
+  industry?: string | null;
+  business_type?: string | null;
+  company_size?: string | null;
+  product_type?: string | null;
+  website?: string | null;
+  description?: string | null;
+  logo_url?: string | null;
 }

@@ -2,8 +2,7 @@ import { z } from "zod";
 
 import {
   avatarSchema,
-  firstNameSchema,
-  lastNameSchema,
+  NameSchema,
   positionSchema,
   profileStatusSchema,
 } from "./global.schema";
@@ -11,9 +10,9 @@ import {
 
 export const completeProfileSchema = z.object({
 
-  first_name: firstNameSchema,
+  first_name: NameSchema,
 
-  last_name: lastNameSchema,
+  last_name: NameSchema,
 
   avatar_url: avatarSchema.optional().nullable(),
 
@@ -23,11 +22,13 @@ export const completeProfileSchema = z.object({
 
 export const updateProfileSchema = z.object({
 
-  first_name: firstNameSchema
+  first_name: NameSchema
     .optional(),
 
-  last_name: lastNameSchema
+  last_name: NameSchema
     .optional(),
+
+  display_name: NameSchema.optional(),
 
   job_title: positionSchema.optional().nullable(),
 

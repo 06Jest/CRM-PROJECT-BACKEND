@@ -1,6 +1,7 @@
 import {
   createSupabaseClient,
   createSupabaseUserClient,
+  supabaseAdmin,
 } from "../config/supabase";
 
 import type {
@@ -22,6 +23,7 @@ import {
 
 import {  getProfileIfExistFromDB } from "./profiles.service";
 import { getMembershipForAuthFromDB } from "./organization.members.service";
+import { table } from "../config/tables";
 
 export const signUpWithAuth = async (
   dto: SignUpDTO
@@ -60,7 +62,7 @@ export const signInWithAuth = async (
       email: dto.email.trim().toLowerCase(),
       password: dto.password,
     });
-
+  
   if (error) {
     throw new AppError(
       400,
@@ -70,6 +72,19 @@ export const signInWithAuth = async (
 
   return data;
 };
+
+export const updateLastLogin = async (userId: string) => {
+  const { error } = await supabaseAdmin
+    .from(table.profile)
+    .update({
+      last_login: new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  if (error) throw error;
+};
+
+
 
 export const newRefresh = async (
   rawRefreshToken: string,

@@ -6,6 +6,7 @@ export const table = {
   profile: config.SUPABASE.TABLE.profile || 'profiles',
   org: config.SUPABASE.TABLE.organizations || 'organizations',
   orginvites: config.SUPABASE.TABLE.orginvites || 'organization_invites',
+  acceptances: config.SUPABASE.TABLE.acceptances || 'organization_invite_acceptances',
   orgmembers: config.SUPABASE.TABLE.orgmembers || 'organization_members',
   leads: config.SUPABASE.TABLE.leads || 'leads',
   contacts: config.SUPABASE.TABLE.contacts || 'contacts',

@@ -10,6 +10,7 @@ import {
 import {
   verifyToken,
   authenticateUser,
+  requireActiveMembership,
 } from "../middleware/auth.middleware";
 
 import { validateBody } from "../middleware/validate";
@@ -24,10 +25,13 @@ const router = Router();
 router.use(verifyToken);
 router.use(authenticateUser);
 
+
 router.get(
   "/",
   getMembersListItem
 );
+
+router.use(requireActiveMembership);
 
 router.patch(
   "/:id/role",

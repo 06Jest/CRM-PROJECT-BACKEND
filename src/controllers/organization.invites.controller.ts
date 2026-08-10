@@ -14,6 +14,9 @@ import {
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
 import { requireManagerOrOwner } from "../utils/requirePermission";
+import { approvedJoinMemberFromDB, getOrganizationMemberByIdFromDB, rejectJoinMemberFromDB } from "../services/organization.members.service";
+import { addActivityToDB } from "../services/activities.service";
+import { Roles } from "../types/global";
 
 
 export const createOrganizationInvite = async (
@@ -148,7 +151,7 @@ export const acceptOrganizationInvite = async (
     if (!profile) {
       throw new AppError(
         404,
-        "Profile not found"
+        "Accept Invite Failed: Profile not found"
       );
     }
 
@@ -183,12 +186,15 @@ export const revokeOrganizationInvite = async (
     const role =
       req.user?.user_metadata?.role;
 
+    const orgId =
+      req.user?.org_id;
+
     const accessToken =
       req.cookies.accessToken;
 
     requireManagerOrOwner(role);
 
-    if (!accessToken) {
+    if (!accessToken || !orgId) {
       throw new AppError(
         401,
         "Unauthorized"
@@ -203,6 +209,7 @@ export const revokeOrganizationInvite = async (
     const invite =
       await revokeInvite(
         inviteId,
+        orgId,
         accessToken
       );
 
@@ -217,4 +224,124 @@ export const revokeOrganizationInvite = async (
     next(err);
   }
 
+};
+
+// export const approveJoinMember = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ): Promise<void> => {
+//   try {
+//     const orgId = req.user?.org_id;
+//     const memberId = uuidSchema.parse(req.params.id);
+//     const accessToken = req.cookies.accessToken;
+
+//     if (!orgId || !memberId || !accessToken) {
+//       throw new AppError(401, "Unauthorized");
+//     }
+
+//     const member = await approvedJoinMemberFromDB(
+//       memberId,
+//       orgId,
+//       accessToken
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       data: member,
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+export const approveJoinMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const orgId = req.user?.org_id;
+    const mId = req.user?.member_id;
+    const actorRole =
+      req.user?.user_metadata?.role as Roles | undefined;
+
+    const memberId = uuidSchema.parse(req.params.id);
+    const accessToken = req.cookies.accessToken;
+
+    requireManagerOrOwner(actorRole);
+
+    if (!orgId || !mId || !accessToken || !actorRole) {
+      throw new AppError(401, "Unauthorized");
+    }
+
+    const target = await getOrganizationMemberByIdFromDB(
+      memberId,
+      orgId,
+      accessToken
+    );
+
+    const profile = await getProfileIfExistFromDB(target.profile_id);
+
+    const member = await approvedJoinMemberFromDB(
+      memberId,
+      orgId,
+      accessToken
+    );
+
+    const targetName = [
+      profile?.first_name,
+      profile?.last_name
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    await addActivityToDB(
+      orgId,
+      mId,
+      {
+        type: "system",
+        action: "updated",
+        title: "Member approved",
+        target_name: targetName,
+        description: `Approved ${targetName}'s request to join the organization`,
+      },
+      accessToken
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Member approved successfully",
+      data: member,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const rejectJoinMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const orgId = req.user?.org_id;
+    const memberId = uuidSchema.parse(req.params.id);
+
+    if (!orgId || !memberId) {
+      throw new AppError(400, "Missing organization or member ID");
+    }
+
+    const result = await rejectJoinMemberFromDB(
+      memberId,
+      orgId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
 };

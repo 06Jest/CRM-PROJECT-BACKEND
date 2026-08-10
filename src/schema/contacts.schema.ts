@@ -6,9 +6,8 @@ import {
   departmentSchema,
   displayNameSchema,
   emailSchema,
-  firstNameSchema,
+  NameSchema,
   genderSchema,
-  lastNameSchema,
   phoneSchema,
   positionSchema,
   suffixSchema,
@@ -28,9 +27,9 @@ export const addContactSchema = z.object({
 
   lead_id: uuidSchema.optional(),
 
-  first_name: firstNameSchema,
+  first_name: NameSchema,
 
-  last_name: lastNameSchema,
+  last_name: NameSchema,
 
   suffix: suffixSchema.nullable().optional(),
 
@@ -87,9 +86,9 @@ export const addContactSchema = z.object({
 
 export const updateContactSchema = z.object({
 
-  first_name: firstNameSchema.optional(),
+  first_name: NameSchema.optional(),
 
-  last_name: lastNameSchema.optional(),
+  last_name: NameSchema.optional(),
 
   suffix: suffixSchema.nullable(),
 

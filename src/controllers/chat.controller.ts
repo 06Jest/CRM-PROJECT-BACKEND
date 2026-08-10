@@ -19,6 +19,8 @@ import {
 import {
   markConversationAsReadFromDB,
 } from "../services/chats/conversation.member.service";
+import { getMemberIDbyProfileID } from "../services/organization.members.service";
+import { supabaseAdmin } from "../config/supabase";
 
 
 
@@ -115,75 +117,100 @@ export const getDirectConversation = async (
 
 };
 
-
-
-
 export const createDirectConversation = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
-    const { member_id } = req.body;
-
-
     if (!orgId || !memberId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const otherMemberId = uuidSchema.parse(req.params.memberId);
+
+    if (otherMemberId === memberId) {
+      throw new AppError(400, "You can't start a direct conversation with yourself.");
     }
 
 
-    const existing =
-      await findDirectConversationBetweenUsersFromDB(
-        orgId,
-        memberId,
-        member_id,
-        accessToken
-      );
+    const { data: targetMember, error: lookupError } = await supabaseAdmin
+      .from("organization_members")
+      .select(`
+        id,
+        profile:profiles!organization_members_profile_fkey(
+          id,
+          first_name,
+          last_name,
+          avatar_url
+        )
+      `)
+      .eq("id", otherMemberId)
+      .eq("org_id", orgId)
+      .eq("status", "active")
+      .maybeSingle();
 
+    if (lookupError) {
+      throw new AppError(500, `Failed to verify member: ${lookupError.message}`);
+    }
+    if (!targetMember) {
+      throw new AppError(400, "Selected user is not an active member of your organization.");
+    }
+
+    const otherProfile = Array.isArray(targetMember.profile)
+      ? targetMember.profile[0]
+      : targetMember.profile;
+
+    const existing = await findDirectConversationBetweenUsersFromDB(
+      orgId,
+      memberId,
+      otherMemberId,
+      accessToken
+    );
 
     if (existing) {
-
       return res.status(200).json({
-        success:true,
-        message:"Direct conversation already exists",
+        success: true,
+        message: "Direct conversation already exists",
         data: existing,
       });
-
     }
 
+    const conversation = await createDirectConversationToDB(
+      orgId,
+      memberId,
+      otherMemberId,
+      accessToken
+    );
 
-    const data =
-      await createDirectConversationToDB(
-        orgId,
-        memberId,
-        member_id,
-        accessToken
-      );
 
+    const data = {
+      ...conversation,
+      other_participant: {
+        id: targetMember.id,
+        profile: {
+          id: otherProfile.id,
+          first_name: otherProfile.first_name,
+          last_name: otherProfile.last_name,
+          avatar_url: otherProfile.avatar_url ?? null,
+        },
+      },
+      last_read_at: null,
+    };
 
     return res.status(201).json({
-      success:true,
-      message:"Direct conversation created",
+      success: true,
+      message: "Direct conversation created",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };
-
-
 
 
 export const getMessages = async (
@@ -232,7 +259,6 @@ export const getMessages = async (
   } catch(err) {
     next(err);
   }
-
 };
 
 
@@ -461,6 +487,12 @@ export const markConversationAsRead = async (
         "Unauthorized user"
       );
     }
+
+    console.log("MARK AS READ:", {
+      conversationId,
+      memberId,
+      profileId: req.user?.sub,
+    });
 
 
     await markConversationAsReadFromDB(

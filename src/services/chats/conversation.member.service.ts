@@ -3,7 +3,6 @@ import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
 import { ConversationType, MemberData } from "../../types/chat";
 import { OrganizationType } from "../../types/organization";
-import { getMemberIDbyProfileID } from "../organization.members.service";
 import { createNewConversationToDB } from "./conversation.service";
 
 const memberTab = table.chat.members;
@@ -14,6 +13,7 @@ const mData = `
     id,
     role,
     profile:profiles!organization_members_profile_fkey(
+      id,
       first_name,
       last_name,
       avatar_url
@@ -141,13 +141,12 @@ export const addMemberInConversationToDB = async (
 };
 
 
+
 export const markConversationAsReadFromDB = async (
   conversationId: string,
   memberId: string,
   accessToken: string
-): Promise<void> => {
-
-
+): Promise<{ last_read_at: string }> => {
   await ensureConversationMember(
     conversationId,
     memberId,
@@ -155,13 +154,18 @@ export const markConversationAsReadFromDB = async (
   );
 
   const db = createSupabaseUserClient(accessToken);
-  const { error } = await db
+
+  const readAt = new Date().toISOString();
+
+  const { data, error } = await db
     .from(memberTab)
     .update({
-      last_read_at: new Date().toISOString(),
+      last_read_at: readAt,
     })
     .eq("conversation_id", conversationId)
-    .eq("member_id", memberId);
+    .eq("member_id", memberId)
+    .select("last_read_at")
+    .single();
 
   if (error) {
     throw new AppError(
@@ -169,12 +173,9 @@ export const markConversationAsReadFromDB = async (
       `Failed to mark Conversation as read: ${error.message}`
     );
   }
+
+  return data;
 };
-
-
-
-
-
 
 
 
@@ -301,5 +302,61 @@ export const createDefaultConversationsToDB = async (
       conversation.id,
       memberId,
     );
+  }
+};
+
+export const joinDefaultConversations = async (
+  orgId: string,
+  memberId: string,
+): Promise<void> => {
+  const db = supabaseAdmin;
+
+  if (!memberId) {
+    throw new AppError(
+      401,
+      "Not a Member in Organization"
+    );
+  }
+
+  const conversationTypes: ConversationType[] = [
+    "organization",
+    "announcement",
+  ];
+
+  const { data: conversations, error } = await db
+    .from(table.chat.conversations)
+    .select("id, type")
+    .eq("org_id", orgId)
+    .in("type", conversationTypes);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch default conversations: ${error.message}`
+    );
+  }
+
+  if (!conversations?.length) {
+    return;
+  }
+
+  for (const conversation of conversations) {
+    const { error: memberError } = await db
+      .from(memberTab)
+      .insert({
+        conversation_id: conversation.id,
+        member_id: memberId,
+      });
+
+    if (memberError) {
+      if (memberError.code === "23505") {
+        continue;
+      }
+
+      throw new AppError(
+        500,
+        `Failed to join default conversation: ${memberError.message}`
+      );
+    }
   }
 };

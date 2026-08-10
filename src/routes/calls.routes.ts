@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   authenticateUser,
+  requireActiveMembership,
   verifyToken,
 } from "../middleware/auth.middleware";
 
@@ -31,6 +32,7 @@ const router = Router();
 router.use(verifyToken);
 router.use(authenticateUser);
 
+
 router.get("/show-calls", getCalls);
 
 router.get("/show-call/:id", getCallByID);
@@ -38,6 +40,8 @@ router.get("/show-call/:id", getCallByID);
 router.get("/show-lead-calls/:leadId", getLeadCalls);
 
 router.get("/show-contact-calls/:contactId", getContactCalls);
+
+router.use(requireActiveMembership);
 
 router.post("/add-call", validateBody(addCallSchema), addCall);
 
