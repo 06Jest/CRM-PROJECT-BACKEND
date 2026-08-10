@@ -5,9 +5,8 @@ import {
   sourceSchema,
   departmentSchema,
   emailSchema,
-  firstNameSchema,
+  NameSchema,
   genderSchema,
-  lastNameSchema,
   phoneSchema,
   positionSchema,
   suffixSchema,
@@ -30,9 +29,9 @@ export const addLeadSchema = z.object({
 
   source: sourceSchema,
 
-  first_name: firstNameSchema,
+  first_name: NameSchema,
 
-  last_name: lastNameSchema,
+  last_name: NameSchema,
 
   suffix: suffixSchema.optional().nullable(),
 
@@ -44,17 +43,17 @@ export const addLeadSchema = z.object({
 
   phone: phoneSchema.nullable(),
   
-  industry: industrySchema.optional(),
+  industry: industrySchema.optional().nullable(),
 
-  company_name: companyNameSchema.optional(),
+  company_name: companyNameSchema.optional().nullable(),
 
-  position: positionSchema.optional(),
+  position: positionSchema.optional().nullable(),
 
-  department: departmentSchema.optional(),
+  department: departmentSchema.optional().nullable(),
 
   website: websiteSchema.optional().nullable(),
 
-  notes: longTextSchema.optional(),
+  notes: longTextSchema.optional().nullable(),
 
   priority: prioritySchema,
 
@@ -83,9 +82,9 @@ export const updateLeadSchema = z.object({
 
   source: sourceSchema.optional(),
 
-  first_name: firstNameSchema.optional(),
+  first_name: NameSchema.optional(),
 
-  last_name: lastNameSchema.optional(),
+  last_name: NameSchema.optional(),
 
   suffix: suffixSchema.nullable().optional(),
 

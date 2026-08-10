@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateUser, verifyToken } from '../middleware/auth.middleware';
+import { authenticateUser,  requireActiveMembership,  verifyToken } from '../middleware/auth.middleware';
 import { getLeads, addLead, updateLead, deleteLead, updateLeadStatus, getLeadsLists  } from '../controllers/leads.controller';
 import { validateBody } from '../middleware/validate';
 import { addLeadSchema, updateLeadSchema, updateLeadStatusSchema } from '../schema/leads.schema';
@@ -13,6 +13,7 @@ router.use(authenticateUser);
 router.get('/show-leads-lists', readLimiter, getLeadsLists);
 router.get('/show-leads', readLimiter,  getLeads);
 
+router.use(requireActiveMembership);
 
 router.post('/add-lead',createLimiter, validateBody(addLeadSchema), addLead);
 router.patch('/update-lead/:id',updateLimiter, validateBody(updateLeadSchema), updateLead);

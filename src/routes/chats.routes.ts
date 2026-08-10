@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   authenticateUser,
+  requireActiveMembership,
   verifyToken,
 } from "../middleware/auth.middleware";
 
@@ -31,11 +32,14 @@ const router = Router();
 router.use(verifyToken);
 router.use(authenticateUser);
 
+
 router.get("/conversations",readLimiter, getUserConversations);
 router.get("/direct-conversation/:memberId",readLimiter, getDirectConversation);
 router.get("/messages/:conversationId",readLimiter, getMessages);
 
-router.post("/direct-conversation", createLimiter, validateBody(createDirectConversationSchema), createDirectConversation);
+router.use(requireActiveMembership);
+
+router.post("/direct-conversation/create/:memberId", createLimiter, createDirectConversation);
 router.post("/messages/:conversationId", createLimiter, validateBody(sendMessageSchema), sendMessage);
 
 router.patch("/message/:id", updateLimiter, validateBody(updateMessageSchema), editMessage);

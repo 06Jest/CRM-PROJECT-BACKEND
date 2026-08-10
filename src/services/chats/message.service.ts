@@ -77,18 +77,13 @@ export const sendMessageToDB = async (
   message: AddMessage,
   accessToken: string
 ): Promise<MessageListItem> => {
-
-
   await ensureConversationMember(
     conversationId,
     memberId,
     accessToken
   );
 
-
   const db = createSupabaseUserClient(accessToken);
-
-
 
   const { data, error } = await db
     .from(messageTab)
@@ -102,34 +97,12 @@ export const sendMessageToDB = async (
     .select(all)
     .single();
 
-
   if (error) {
     throw new AppError(
       500,
       `Failed to send Message: ${error.message}`
     );
   }
-
-
-
-  const { error: conversationError } =
-    await db
-      .from(conversationTab)
-      .update({
-        last_message_id: data.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", conversationId);
-
-
-
-  if (conversationError) {
-    throw new AppError(
-      500,
-      `Failed to update conversation timestamp: ${conversationError.message}`
-    );
-  }
-
 
   return data as MessageListItem;
 };
@@ -230,56 +203,36 @@ export const editMessageFromDB = async (
       }`
     );
   }
-
-
-
   return data as MessageListItem;
 };
-
-
-
-
-
 
 export const deleteMessageFromDB = async (
   id: string,
   memberId: string,
   accessToken: string
-): Promise<string> => {
-
-
+): Promise<MessageListItem> => {
   const db = createSupabaseUserClient(accessToken);
 
-
-
-  const { data: existing, error } =
-    await db
-      .from(messageTab)
-      .select(`
-        conversation_id,
-        sender_id
-      `)
-      .eq("id", id)
-      .is("deleted_at", null)
-      .single();
-
-
+  const { data: existing, error } = await db
+    .from(messageTab)
+    .select(`
+      conversation_id,
+      sender_id,
+      created_at
+    `)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
 
   if (error || !existing) {
-    throw new AppError(
-      404,
-      "Message not found."
-    );
+    throw new AppError(404, "Message not found.");
   }
-
-
 
   await ensureConversationMember(
     existing.conversation_id,
     memberId,
     accessToken
   );
-
 
 
   if (existing.sender_id !== memberId) {
@@ -290,51 +243,56 @@ export const deleteMessageFromDB = async (
   }
 
 
+  const DELETE_WINDOW_MS = 15 * 60 * 1000;
 
-  const now = new Date().toISOString();
-
-
-
-  const { error: deleteError } =
-    await db
-      .from(messageTab)
-      .update({
-        deleted_at: now,
-      })
-      .eq("id", id)
-      .is("deleted_at", null);
-
-
-
-  if (deleteError) {
+  if (
+    Date.now() - new Date(existing.created_at).getTime() >
+    DELETE_WINDOW_MS
+  ) {
     throw new AppError(
-      500,
-      `Failed to delete Message: ${deleteError.message}`
+      403,
+      "Messages can only be deleted within 15 minutes."
     );
   }
 
+  const now = new Date().toISOString();
 
+  // 5. Soft delete the message
+  const {
+    data: deletedMessage,
+    error: deleteError,
+  } = await db
+    .from(messageTab)
+    .update({
+      deleted_at: now,
+    })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select(all)
+    .single();
 
+  if (deleteError || !deletedMessage) {
+    throw new AppError(
+      500,
+      `Failed to delete Message: ${
+        deleteError?.message ?? "Message could not be deleted."
+      }`
+    );
+  }
 
   const {
     data: latestMessage,
     error: latestMessageError,
-  } =
-    await db
-      .from(messageTab)
-      .select("id")
-      .eq(
-        "conversation_id",
-        existing.conversation_id
-      )
-      .is("deleted_at", null)
-      .order("created_at", {
-        ascending: false,
-      })
-      .limit(1)
-      .maybeSingle();
-
-
+  } = await db
+    .from(messageTab)
+    .select("id")
+    .eq("conversation_id", existing.conversation_id)
+    .is("deleted_at", null)
+    .order("created_at", {
+      ascending: false,
+    })
+    .limit(1)
+    .maybeSingle();
 
   if (latestMessageError) {
     throw new AppError(
@@ -344,24 +302,13 @@ export const deleteMessageFromDB = async (
   }
 
 
-
-
-  const {
-    error: conversationError,
-  } =
-    await db
-      .from(conversationTab)
-      .update({
-        last_message_id:
-          latestMessage?.id ?? null,
-        updated_at: now,
-      })
-      .eq(
-        "id",
-        existing.conversation_id
-      );
-
-
+  const { error: conversationError } = await db
+    .from(conversationTab)
+    .update({
+      last_message_id: latestMessage?.id ?? null,
+      updated_at: now,
+    })
+    .eq("id", existing.conversation_id);
 
   if (conversationError) {
     throw new AppError(
@@ -370,7 +317,5 @@ export const deleteMessageFromDB = async (
     );
   }
 
-
-
-  return id;
+  return deletedMessage as MessageListItem;
 };

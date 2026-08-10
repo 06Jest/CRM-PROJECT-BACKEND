@@ -6,12 +6,38 @@ import {
   getMembersListItemFromDB,
   removeOrganizationMemberFromDB,
   getOrganizationMemberByIdFromDB,
+  rejectJoinMemberFromDB,
+  approvedJoinMemberFromDB,
 } from "../services/organization.members.service";
 
 import { AppError } from "../middleware/error.middleware";
 
 import { uuidSchema } from "../schema/global.schema";
 import { requireManagerOrOwner } from "../utils/requirePermission";
+import type { Roles } from "../types/global";
+import { addActivityToDB } from "../services/activities.service";
+
+
+const nextRoleFor = (actorRole: Roles, targetRole: Roles): Roles | null => {
+  if (actorRole === "owner") {
+    if (targetRole === "agent") return "manager";
+    if (targetRole === "manager") return "agent";
+    return null; 
+  }
+
+  if (actorRole === "manager" && targetRole === "agent") {
+    return "manager";
+  }
+
+  return null;
+};
+
+const canChangeStatus = (actorRole: Roles, targetRole: Roles): boolean => {
+  if (targetRole === "owner") return false;
+  if (actorRole === "owner") return true;
+  if (actorRole === "manager") return targetRole === "agent";
+  return false;
+};
 
 export const getMembersListItem = async (
   req: Request,
@@ -52,50 +78,104 @@ export const updateMemberRole = async (
   next: NextFunction
 ) => {
   try {
-    const memberId =
-      uuidSchema.parse(
-        req.params.id
-      );
+    const memberId = uuidSchema.parse(req.params.id);
 
-    const role =
-      req.user?.user_metadata?.role;
+    const actorRole =
+      req.user?.user_metadata?.role as Roles | undefined;
+
+    const actorProfileId =
+      req.user?.sub;
+
+    const orgId =
+      req.user?.org_id;
+    
+    const mId = req.user?.member_id;
+
+
 
     const accessToken =
       req.cookies.accessToken;
 
+    requireManagerOrOwner(actorRole);
 
-    requireManagerOrOwner(role);
-
-
-    if (!accessToken) {
+    if (!accessToken || !orgId || !actorProfileId || !actorRole|| !mId) {
       throw new AppError(
         401,
         "Unauthorized"
       );
     }
 
+    const target = await getOrganizationMemberByIdFromDB(
+      memberId,
+      orgId,
+      accessToken
+    );
+
+    if (target.profile_id === actorProfileId) {
+      throw new AppError(
+        403,
+        "You cannot change your own role."
+      );
+    }
+
+    const allowedNewRole = nextRoleFor(
+      actorRole,
+      target.role
+    );
+
+    if (!allowedNewRole) {
+      throw new AppError(
+        403,
+        "You do not have permission to change this member's role."
+      );
+    }
+
+    if (req.body.role !== allowedNewRole) {
+      throw new AppError(
+        400,
+        `This member's role can only be changed to "${allowedNewRole}".`
+      );
+    }
 
     const updated =
       await updateMemberRoleFromDB(
         memberId,
-        req.body.role,
+        orgId,
+        allowedNewRole,
         accessToken
       );
 
+    if (allowedNewRole === "manager") {
+      const targetName = [
+        updated.profile?.first_name,
+        updated.profile?.last_name,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      await addActivityToDB(
+        orgId,
+        mId,
+        {
+          type: "system",
+          action: "updated",
+          title: "Member promoted",
+          target_name: targetName,
+          description: `Promoted ${targetName} to manager`,
+        },
+        accessToken
+      );
+    }
 
     res.status(200).json({
       success: true,
-      message:
-        "Member role updated successfully",
+      message: "Member role updated successfully",
       data: updated,
     });
-
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const updateMemberStatus = async (
   req: Request,
@@ -103,13 +183,13 @@ export const updateMemberStatus = async (
   next: NextFunction
 ) => {
   try {
-    const memberId =
-      uuidSchema.parse(
-        req.params.id
-      );
+    const memberId = uuidSchema.parse(req.params.id);
 
-    const role =
-      req.user?.user_metadata?.role;
+    const actorRole =
+      req.user?.user_metadata?.role as Roles | undefined;
+
+    const actorProfileId =
+      req.user?.sub;
 
     const orgId =
       req.user?.org_id;
@@ -117,16 +197,47 @@ export const updateMemberStatus = async (
     const accessToken =
       req.cookies.accessToken;
 
+    requireManagerOrOwner(actorRole);
 
-    requireManagerOrOwner(role);
-
-    if (!accessToken || !orgId) {
+    if (
+      !accessToken ||
+      !orgId ||
+      !actorProfileId ||
+      !actorRole
+    ) {
       throw new AppError(
         401,
         "Unauthorized"
       );
     }
 
+    const target =
+      await getOrganizationMemberByIdFromDB(
+        memberId,
+        orgId,
+        accessToken
+      );
+
+    if (target.profile_id === actorProfileId) {
+      throw new AppError(
+        403,
+        "You cannot change your own status."
+      );
+    }
+
+    if (!canChangeStatus(actorRole, target.role)) {
+      throw new AppError(
+        403,
+        "You do not have permission to change this member's status."
+      );
+    }
+
+    if (req.body.status === 'remove') {
+       throw new AppError(
+        403,
+        "This feature is currently unavailable."
+      );
+    }
 
     const updated =
       await updateMemberStatusFromDB(
@@ -136,20 +247,15 @@ export const updateMemberStatus = async (
         accessToken
       );
 
-
     res.status(200).json({
       success: true,
-      message:
-        "Member status updated successfully",
+      message: "Member status updated successfully",
       data: updated,
     });
-
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const removeMember = async (
   req: Request,
@@ -157,44 +263,27 @@ export const removeMember = async (
   next: NextFunction
 ) => {
   try {
-    const memberId =
-      uuidSchema.parse(
-        req.params.id
-      );
+    const memberId = uuidSchema.parse(req.params.id);
 
-    const currentUser =
-      req.user?.sub;
+    const actorProfileId = req.user?.sub;
+    const actorRole =
+      req.user?.user_metadata?.role as Roles | undefined;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
 
-    const orgId =
-      req.user?.org_id;
-
-    const role =
-      req.user?.user_metadata?.role;
-
-    const accessToken =
-      req.cookies.accessToken;
-
-
-    if (memberId === currentUser) {
-      throw new AppError(
-        400,
-        "You cannot remove yourself"
-      );
-    }
-
-    if (!accessToken || !orgId || !currentUser) {
+    if (
+      !accessToken ||
+      !orgId ||
+      !actorProfileId ||
+      !actorRole
+    ) {
       throw new AppError(
         401,
         "Unauthorized"
       );
     }
 
-    if (!["owner", "manager"].includes(role ?? "")) {
-      throw new AppError(
-        403,
-        "Only owners and managers can remove members."
-      );
-    }
+    requireManagerOrOwner(actorRole);
 
     const targetMember =
       await getOrganizationMemberByIdFromDB(
@@ -203,7 +292,15 @@ export const removeMember = async (
         accessToken
       );
 
+    // Cannot remove yourself
+    if (targetMember.profile_id === actorProfileId) {
+      throw new AppError(
+        403,
+        "You cannot remove yourself."
+      );
+    }
 
+    // Owner cannot be removed
     if (targetMember.role === "owner") {
       throw new AppError(
         403,
@@ -211,8 +308,9 @@ export const removeMember = async (
       );
     }
 
+    // Managers cannot remove other managers
     if (
-      role === "manager" &&
+      actorRole === "manager" &&
       targetMember.role === "manager"
     ) {
       throw new AppError(
@@ -228,17 +326,13 @@ export const removeMember = async (
         accessToken
       );
 
-
     res.status(200).json({
       success: true,
-      message:
-        "Member removed successfully",
+      message: "Member removed successfully",
       data: {
         id: removed,
       },
     });
-
-
   } catch (err) {
     next(err);
   }

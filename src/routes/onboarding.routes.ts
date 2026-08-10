@@ -19,7 +19,7 @@ import {
   createSubscriptionSchema,
 } from "../schema/subscription.schema";
 import { completeProfileSetup } from "../controllers/profile.controller";
-import { createWorkspaceController } from "../controllers/organizations.controller";
+import { createWorkspaceController, joinOrganization } from "../controllers/organizations.controller";
 import { createFreeSubscription } from "../controllers/subscription.controller";
 
 const router = Router();
@@ -33,10 +33,16 @@ router.post(
   completeProfileSetup
 );
 
+
 router.post(
   "/workspace",
   validateBody(createWorkspaceSchema),
   createWorkspaceController
+);
+
+router.post(
+  "/workspace/join/:code",
+  joinOrganization
 );
 
 router.post(

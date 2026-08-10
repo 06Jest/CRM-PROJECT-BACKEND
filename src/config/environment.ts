@@ -18,6 +18,7 @@ export const config = {
       organizations: process.env.TABLE_ORGANIZATIONS,
       orgmembers: process.env.TABLE_ORGANIZATION_MEMBERS,
       orginvites: process.env.TABLE_ORGANIZATION_INVITES,
+      acceptances: process.env.TABLE_ORGANIZATION_INVITES_ACCEPTANCES,
       leads: process.env.TABLE_LEADS,
       contacts: process.env.TABLE_CONTACTS,
       deals: process.env.TABLE_DEALS,

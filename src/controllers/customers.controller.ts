@@ -11,6 +11,7 @@ import {
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
 import { addActivityToDB } from "../services/activities.service";
+import { getContactByIDFromDB, updateContactStatusFromDB } from "../services/contacts.service";
 
 export const getCustomers = async (
   req: Request,
@@ -158,6 +159,22 @@ export const updateCustomerStatus = async (
       status,
       accessToken
     );
+
+    if (status === 'Churned') {
+      const customer = await getCustomerByIDFromDB(
+        id,
+        orgId,
+        accessToken
+      )
+
+      await updateContactStatusFromDB(
+        customer.contact_id,
+        orgId,
+        memberId,
+        "Churned",
+        accessToken
+      )
+    }
 
     return res.status(200).json({
       success: true,

@@ -91,7 +91,7 @@ export const orgMemberStatusSchema = z.enum(ORGANIZATION_MEMBER_STATUSES);
 
 export const passwordSchema = z
   .string()
-  .min(8, "Password must be at least 12 characters")
+  .min(12, "Password must be at least 12 characters")
   .max(128, "Password must be at most 128 characters")
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[a-z]/, "Password must contain at least one lowercase letter")
@@ -102,21 +102,15 @@ export const emailSchema = z
   .email("Invalid email address")
   .trim();
 
-export const firstNameSchema = z
+export const NameSchema = z
   .string()
   .trim()
-  .min(2, "Please provide a valid First Name.")
+  .min(2, "Please provide a valid Name.")
   .max(50)
-  .refine(
-    (value) => !/(.)\1{3,}/.test(value),
-    "A character cannot be repeated 4 or more times consecutively."
-  );
-
-export const lastNameSchema = z
-  .string()
-  .trim()
-  .min(2, "Please provide a valid Last Name.")
-  .max(50)
+  .regex(
+    /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/,
+    "Name can only contain letters, spaces, hyphens, or apostrophes."
+  )
   .refine(
     (value) => !/(.)\1{3,}/.test(value),
     "A character cannot be repeated 4 or more times consecutively."
@@ -125,6 +119,10 @@ export const lastNameSchema = z
 export const orgNameSchema = z
   .string()
   .trim()
+  .regex(
+    /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/,
+    "Organization/Workspace can only contain letters, spaces, hyphens, or apostrophes."
+  )
   .min(3, "Please provide a valid Organization Name.")
   .max(100)
   
@@ -153,30 +151,64 @@ export const birthdateSchema = z
 export const companyNameSchema = z
   .string()
   .trim()
-  .max(100);
-
-export const industrySchema = z
-  .string()
-  .trim()
-  .max(100);
+  .max(100, "Company name must be 100 characters or fewer.")
+  .refine(
+    (value) =>
+      value === "" ||
+      /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(value),
+    "Company name can only contain letters, spaces, hyphens, or apostrophes."
+  )
+  .refine(
+    (value) => value === "" || !/(.)\1{3,}/.test(value),
+    "A character cannot be repeated 4 or more times consecutively."
+  );
 
 export const positionSchema = z
   .string()
   .trim()
-  .max(50)
+  .max(50, "Position/Job Title must be 50 characters or fewer.")
   .refine(
-    (value) => !/(.)\1{3,}/.test(value),
+    (value) =>
+      value === "" ||
+      /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(value),
+    "Position/Job Title can only contain letters, spaces, hyphens, or apostrophes."
+  )
+  .refine(
+    (value) => value === "" || !/(.)\1{3,}/.test(value),
     "A character cannot be repeated 4 or more times consecutively."
   );
 
 export const departmentSchema = z
   .string()
   .trim()
-  .max(50)
+  .max(50, "Department must be 50 characters or fewer.")
+  .refine(
+    (value) =>
+      value === "" ||
+      /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(value),
+    "Department can only contain letters, spaces, hyphens, or apostrophes."
+  )
+  .refine(
+    (value) => value === "" || !/(.)\1{3,}/.test(value),
+    "A character cannot be repeated 4 or more times consecutively."
+  );
+  
+export const industrySchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) =>
+      value === "" ||
+      /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(value),
+    "Industry can only contain letters, spaces, hyphens, or apostrophes."
+  )
   .refine(
     (value) => !/(.)\1{3,}/.test(value),
     "A character cannot be repeated 4 or more times consecutively."
-  );
+  )
+  .max(100);
+
+
 
 export const websiteSchema = z
   .string()
@@ -199,7 +231,7 @@ export const longTextSchema = z
 export const shortTextSchema = z
   .string()
   .trim()
-  .max(5000, "Text cannot exceed 2000 characters.");
+  .max(2000, "Text cannot exceed 2000 characters.");
 
 export const displayNameSchema = z
   .string()
@@ -276,6 +308,14 @@ export const senderEmailSchema = z
 export const businessTypeSchema = z
   .string()
   .trim()
+  .regex(
+    /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/,
+    "Type can only contain letters, spaces, hyphens, or apostrophes."
+  )
+  .refine(
+    (value) => !/(.)\1{3,}/.test(value),
+    "A character cannot be repeated 4 or more times consecutively."
+  )
   .max(100)
   .nullable()
   .optional();
@@ -297,3 +337,25 @@ export const inviteCodeSchema = z
   .trim()
   .min(6)
   .max(100);
+
+export const inviteMaxUsesSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(50);
+
+
+export const inviteExpiresAtSchema = z
+  .string()
+  .datetime();
+
+export const logoUrlSchema = z
+  .string()
+  .trim()
+  .url("Logo URL must be a valid URL")
+  .max(2048, "Logo URL must be 2048 characters or fewer");
+
+export const productTypeSchema = z
+  .string()
+  .trim()
+  .max(120, "Product / service must be 120 characters or fewer");

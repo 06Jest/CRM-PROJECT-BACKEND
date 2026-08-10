@@ -50,12 +50,25 @@ router.patch(
 );
 
 router.use(verifyToken);
-router.use(authenticateUser);
 
 router.get(
   "/me",
   getCurrentUser
 );
+
+router.use(authenticateUser);
+
+router.get("/realtime-token", (req, res) => {
+  const token = req.cookies.accessToken;
+
+  if (!token) {
+    return res.status(401).json({
+      message: "Missing authorization token",
+    });
+  }
+
+  return res.json({ token });
+});
 
 router.patch(
   "/me/change-password",

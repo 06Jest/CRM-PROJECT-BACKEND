@@ -5,6 +5,8 @@ import {
   getInvites,
   acceptOrganizationInvite,
   revokeOrganizationInvite,
+  approveJoinMember,
+  rejectJoinMember,
 } from "../controllers/organization.invites.controller";
 
 import {
@@ -19,20 +21,31 @@ import {
   acceptOrganizationInviteSchema,
 } from "../schema/orginvites.schema";
 
+
 const router = Router();
 
 router.use(verifyToken);
 router.use(authenticateUser);
 
-router.post(
-  "/",
-  validateBody(createOrganizationInviteSchema),
-  createOrganizationInvite
-);
 
 router.get(
   "/",
   getInvites
+);
+router.patch(
+  "/join/approve/:id",
+  approveJoinMember
+);
+
+router.delete(
+  "/join/reject/:id",
+  rejectJoinMember
+);
+
+router.post(
+  "/create",
+  validateBody(createOrganizationInviteSchema),
+  createOrganizationInvite
 );
 
 router.post(
@@ -42,7 +55,7 @@ router.post(
 );
 
 router.delete(
-  "/:id",
+  "/delete/:id",
   revokeOrganizationInvite
 );
 

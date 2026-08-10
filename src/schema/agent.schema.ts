@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { 
-  firstNameSchema,
-  lastNameSchema,
+  NameSchema,
   phoneSchema,
   uuidSchema,
  } from "./global.schema";
@@ -9,9 +8,9 @@ import {
 
 export const updateProfileSchema = z.object({
 
-  first_name: firstNameSchema.optional(),
+  first_name: NameSchema.optional(),
 
-  last_name: lastNameSchema.optional(),
+  last_name: NameSchema.optional(),
 
   display_name:  z.string().max(100).optional(),
 

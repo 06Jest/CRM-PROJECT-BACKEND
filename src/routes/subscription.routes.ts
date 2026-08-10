@@ -10,6 +10,7 @@ import {
 import {
   verifyToken,
   authenticateUser,
+  requireActiveMembership,
 } from "../middleware/auth.middleware";
 
 import { validateBody } from "../middleware/validate";
@@ -35,6 +36,8 @@ router.get(
   "/",
   getSubscription
 );
+
+router.use(requireActiveMembership);
 
 router.patch(
   "/plan",

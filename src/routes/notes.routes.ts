@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   authenticateUser,
+  requireActiveMembership,
   verifyToken,
 } from "../middleware/auth.middleware";
 
@@ -32,10 +33,13 @@ const router = Router();
 router.use(verifyToken);
 router.use(authenticateUser);
 
+
 router.get("/show-notes",readLimiter, getNotes);
 router.get("/show-public-notes",readLimiter, getPublicNotes);
 router.get("/show-private-notes",readLimiter, getPrivateNotes);
 router.get("/show-note/:id",readLimiter, getNoteByID);
+
+router.use(requireActiveMembership);
 
 router.post("/add-note",createLimiter, validateBody(addNoteSchema), addNote);
 

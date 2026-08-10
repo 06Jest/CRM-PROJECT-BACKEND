@@ -94,7 +94,6 @@ export const handleWebhookEvent = async (
   } catch (err: any) {
     throw new Error(`Webhook signature verification failed: ${err.message}`);
   }
-  console.log(`[STRIPE] Webhook event: ${event.type}`);
 
   switch (event.type) {
     case 'checkout.session.completed': {

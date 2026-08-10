@@ -26,7 +26,6 @@ export const getMembershipForAuthFromDB = async (
     .from(tab)
     .select("*")
     .eq("profile_id", profileId)
-    .eq("status", "active")
     .maybeSingle();
 
     
@@ -48,7 +47,6 @@ export const getMemberIDbyProfileID = async (
     .from(tab)
     .select("id")
     .eq("profile_id", profileId)
-    .eq("status", "active")
     .single();
 
     
@@ -75,8 +73,6 @@ export const getMembersListItemFromDB = async (
     .eq('org_id', orgId)
     .is('deleted_at', null);
 
-  console.log("MEMBERS QUERY ERROR:", error);
-  console.log("MEMBERS QUERY DATA:", data);
 
   if (error) {
     throw new AppError(500, `Failed to fetch profile: ${error.message}`);
@@ -87,10 +83,9 @@ export const getMembersListItemFromDB = async (
 
 export const addOrganizationMemberToDB = async (
   dto: CreateOrganizationMemberDTO,
-  accessToken: string
 ): Promise<OrganizationMember> => {
 
-  const db = createSupabaseUserClient(accessToken);
+  const db = supabaseAdmin;
 
   const { data, error } = await db
     .from(tab)
@@ -98,7 +93,7 @@ export const addOrganizationMemberToDB = async (
       org_id: dto.org_id,
       profile_id: dto.profile_id,
       role: dto.role,
-      status: dto.status ?? "active",
+      status: dto.status ?? "invited",
     })
     .select()
     .single();
@@ -113,7 +108,6 @@ export const addOrganizationMemberToDB = async (
   return data;
 };
 
-
 export const getOrganizationMemberByIdFromDB = async (
   memberId: string,
   orgId: string,
@@ -125,7 +119,7 @@ export const getOrganizationMemberByIdFromDB = async (
   const { data, error } = await db
     .from(tab)
     .select("*")
-    .eq("profile_id", memberId)
+    .eq("id", memberId)
     .eq("org_id", orgId)
     .single();
 
@@ -198,7 +192,7 @@ export const getActiveProfilesFromDB = async (
     .from(tab)
     .select('*')
     .eq('org_id', orgId)
-    .eq('status', 'active')
+    .eq("status", "active")
     .is('deleted_at', null)
     .order("created_at", { ascending: false });
 
@@ -231,57 +225,97 @@ export const getAllAgentsFromDB = async (
   return data ?? [];
 };
 
+export const getMemberWithProfileFromDB = async (
+  memberId: string,
+  orgId: string,
+  accessToken: string
+): Promise<DisplayOrganizationMember> => {
+  const db = createSupabaseUserClient(accessToken);
 
+  const { data, error } = await db
+    .from(tab)
+    .select(all)
+    .eq("id", memberId)
+    .eq("org_id", orgId)
+    .single();
 
-export const updateMemberRoleFromDB = async(
- memberId:string,
- role:Roles,
- accessToken:string
-)=>{
- const db=createSupabaseUserClient(accessToken);
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch updated member: ${error.message}`
+    );
+  }
 
-
- const {data,error}=await db
- .from(tab)
- .update({
-    role
- })
- .eq(
-    "id",
-    memberId
- )
- .select()
- .single();
-
-
- if(error){
-   throw new AppError(
-    500,
-    error.message
-   );
- }
-
-
- return data;
+  return data as DisplayOrganizationMember;
 };
+
+export const updateMemberRoleFromDB = async (
+  memberId: string,
+  orgId: string,
+  role: Roles,
+  accessToken: string
+): Promise<DisplayOrganizationMember> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({ role })
+    .eq("id", memberId)
+    .eq("status", "active")
+    .eq("org_id", orgId)
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update member role: ${error.message}`
+    );
+  }
+
+  return getMemberWithProfileFromDB(
+    data.id,
+    orgId,
+    accessToken
+  );
+};
+
+
 
 export const updateMemberStatusFromDB = async (
   memberId: string,
   orgId: string,
   status: OrganizationMemberStatus,
   accessToken: string
-): Promise<OrganizationMember> => {
-
+): Promise<DisplayOrganizationMember> => {
   const db = createSupabaseUserClient(accessToken);
+
+  if (status === "active") {
+    const { count, error } = await db
+      .from(tab)
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("org_id", orgId)
+      .eq("status", "active")
+      .is("deleted_at", null);
+
+    if (error) {
+      throw new AppError(
+        500,
+        `Failed to check active member limit: ${error.message}`
+      );
+    }
+
+  }
 
   const { data, error } = await db
     .from(tab)
-    .update({
-      status
-    })
-    .eq('org_id', orgId)
-    .eq('id', memberId)
-    .select()
+    .update({ status })
+    .eq("org_id", orgId)
+    .eq("id", memberId)
+    .select("id")
     .single();
 
   if (error) {
@@ -291,8 +325,67 @@ export const updateMemberStatusFromDB = async (
     );
   }
 
+  return getMemberWithProfileFromDB(
+    data.id,
+    orgId,
+    accessToken
+  );
+};
+
+export const approvedJoinMemberFromDB = async (
+  memberId: string,
+  orgId: string,
+  accessToken: string
+): Promise<DisplayOrganizationMember> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({ status: 'active' })
+    .eq("org_id", orgId)
+    .eq("id", memberId)
+    .eq("status", "invited")
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update status: ${error.message}`
+    );
+  }
+
+  return getMemberWithProfileFromDB(
+    data.id,
+    orgId,
+    accessToken
+  );
+};
+
+export const rejectJoinMemberFromDB = async (
+  memberId: string,
+  orgId: string,
+): Promise<{ id: string }> => {
+  const db = supabaseAdmin;
+
+  const { data, error } = await db
+    .from(tab)
+    .delete()
+    .eq("org_id", orgId)
+    .eq("id", memberId)
+    .eq("status", "invited")
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to reject join request: ${error.message}`
+    );
+  }
   return data;
 };
+
 
 export const createOwnerMemberToDB = async(
  orgId:string,
@@ -329,18 +422,20 @@ export const removeOrganizationMemberFromDB = async (
   memberId: string,
   orgId: string,
   accessToken: string
-): Promise<string> => {
-
+): Promise<DisplayOrganizationMember> => {
   const db = createSupabaseUserClient(accessToken);
 
-  const { error } = await db
+  const { data, error } = await db
     .from(tab)
     .update({
+      status: "removed",
       deleted_at: new Date().toISOString(),
-      status: "inactive",
     })
     .eq("id", memberId)
-    .eq("org_id", orgId);
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .select("id")
+    .single();
 
   if (error) {
     throw new AppError(
@@ -349,5 +444,9 @@ export const removeOrganizationMemberFromDB = async (
     );
   }
 
-  return memberId;
+  return getMemberWithProfileFromDB(
+    data.id,
+    orgId,
+    accessToken
+  );
 };

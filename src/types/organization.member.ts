@@ -2,9 +2,9 @@ import { Roles } from "./global";
 
 
 export const ORGANIZATION_MEMBER_STATUSES = [
-  "pending",
+  "invited",
   "active",
-  "inactive",
+  "suspended",
   "removed",
 ] as const;
 
