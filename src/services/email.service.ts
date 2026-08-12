@@ -228,7 +228,7 @@ export const createEmailDraftToDB = async (
 ):Promise<EmailListItem> => {
   const db = createSupabaseUserClient(accessToken);
 
-  const orgName = getWorkspaceName(orgId, accessToken);
+  const orgName = await getWorkspaceName(orgId, accessToken);
 
   const { data,error } = await db
     .from(tab)
@@ -236,7 +236,8 @@ export const createEmailDraftToDB = async (
       ...email,
       org_id:orgId,
       sender_id:senderId,
-      sender_email: `${orgName} ${devEmail}`,
+      sender_name: orgName,
+      sender_email: devEmail,
       status:"draft",
     })
     .select(all)
