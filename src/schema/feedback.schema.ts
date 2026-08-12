@@ -16,6 +16,16 @@ export const createFeedbackSchema = z.object({
     .optional()
     .or(z.literal("")),
 
+  userType: z
+    .enum([
+      "everyday_user",
+      "manager",
+      "technical",
+      "prefer_not_to_say",
+    ])
+    .optional()
+    .default("prefer_not_to_say"),
+
   rating: z
     .number()
     .int()

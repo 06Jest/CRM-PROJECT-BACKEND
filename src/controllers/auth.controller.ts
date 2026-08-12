@@ -7,6 +7,7 @@ import {
   signInWithAuth,
   signOutFromAuth,
   newRefresh,
+  updateLastLogin,
 } from "../services/auth.service";
 
 import {
@@ -15,6 +16,7 @@ import {
   createProfileToDB,
   getProfileIfExistFromDB,
   checkEmailIfExistFromDB,
+  updateLastLoginToDB,
 } from "../services/profiles.service";
 
 import {
@@ -242,6 +244,10 @@ export const signIn = async (
       profile,
       meta
     );
+
+    await updateLastLogin(
+      userId
+    )
     res.status(200).json({
       success: true,
       message:

@@ -232,12 +232,12 @@ export const updateMemberStatus = async (
       );
     }
 
-    if (req.body.status === 'remove') {
+    if (req.body.status === 'removed') {
        throw new AppError(
         403,
         "This feature is currently unavailable."
       );
-    }
+    } 
 
     const updated =
       await updateMemberStatusFromDB(
