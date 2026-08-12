@@ -65,6 +65,28 @@ export const getWorkspaceDataFromDB = async (
   return data;
 };
 
+export const getWorkspaceName = async (
+  orgId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .select('name')
+    .eq("id", orgId)
+    .single();
+    
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch workspace: ${error.message}`
+    );
+  }
+
+  return data.name;
+};
 
 export const createWorkspaceInDB = async (
   dto: CreateWorkspaceDTO,

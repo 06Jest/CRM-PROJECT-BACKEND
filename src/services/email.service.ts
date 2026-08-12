@@ -1,6 +1,7 @@
 
 import { createSupabaseUserClient } from "../config/supabase";
 import { table } from "../config/tables";
+import { getWorkspaceData } from "../controllers/organizations.controller";
 
 import { AppError } from "../middleware/error.middleware";
 
@@ -9,6 +10,7 @@ import type {
   ComposeEmail,
   UpdateDraftEmail,
 } from "../types/email";
+import { getWorkspaceName } from "./organization.service";
 import { ensureResourceLimit } from "./plans.service";
 import { sendEmailWithResend } from "./resend.service";
 
@@ -226,12 +228,15 @@ export const createEmailDraftToDB = async (
 ):Promise<EmailListItem> => {
   const db = createSupabaseUserClient(accessToken);
 
+  const orgName = getWorkspaceName(orgId, accessToken);
+
   const { data,error } = await db
     .from(tab)
     .insert({
       ...email,
       org_id:orgId,
       sender_id:senderId,
+      sender_email: `${orgName} ${devEmail}`,
       status:"draft",
     })
     .select(all)
