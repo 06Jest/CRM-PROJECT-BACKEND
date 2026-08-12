@@ -13,7 +13,7 @@ import { ensureResourceLimit } from "./plans.service";
 import { sendEmailWithResend } from "./resend.service";
 
 const tab = table.emails;
-const devEmail = "onboarding@resend.dev";
+const devEmail = "noreply@unithreadcrm.com";
 const senderFKey = "emails_sender_id_fkey";
 const orgFKey = "fk_email_org";
 const contactFKey = "fk_email_contact";
