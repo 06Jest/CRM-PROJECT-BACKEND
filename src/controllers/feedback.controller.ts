@@ -15,6 +15,7 @@ export const createFeedback = async (
     const feedback = await createFeedbackToDB({
       name: req.body.name,
       email: req.body.email,
+      userType: req.body.userType,
       rating: req.body.rating ?? null,
       message: req.body.message,
     });
