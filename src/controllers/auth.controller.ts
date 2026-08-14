@@ -169,8 +169,6 @@ export const signUp = async (
         "Email is already registered"
       );
     }
-
-    await signUpWithAuth(req.body);
     
     await signUpWithAuth(
       req.body
