@@ -8,6 +8,7 @@ import {
   getDealsByIDFromDB,
   getDealsListsFromDB,
   closeDealFromDB,
+  getOpenDealsByContactIDFromDB,
 } from "../services/deals.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -262,24 +263,59 @@ export const updateDealStage = async (
         accessToken
       );
     } else if (stage === "Closed Lost") {
-      await addActivityToDB(orgId, memberId, {
-        contact_id: contact.id,
-        type: "deal",
-        action: "cancelled",
-        title: "Deal lost",
-        target_name: deal.title,
-        description:
-          `Lost deal ${deal.title}`,
-      },accessToken);
+        await addActivityToDB(
+          orgId,
+          memberId,
+          {
+            contact_id: contact.id,
+            type: "deal",
+            action: "cancelled",
+            title: "Deal lost",
+            target_name: deal.title,
+            description: `Lost deal ${deal.title}`,
+          },
+          accessToken
+        );
 
-      data = await closeDealFromDB(
-        id,
-        stage,
-        memberId,
-        orgId,
-        accessToken
-      );
-    } else {
+        data = await closeDealFromDB(
+          id,
+          stage,
+          memberId,
+          orgId,
+          accessToken
+        );
+
+        const openDeals = await getOpenDealsByContactIDFromDB(
+          contact.id,
+          orgId,
+          accessToken
+        );
+
+        if (openDeals.length === 0 && contact.status === "Opportunity") {
+          await updateContactStatusFromDB(
+            contact.id,
+            orgId,
+            memberId,
+            "Contacted",
+            accessToken
+          );
+
+          await addActivityToDB(
+            orgId,
+            memberId,
+            {
+              contact_id: contact.id,
+              type: "contact",
+              action: "updated",
+              title: "Contact status updated",
+              target_name: `${contact.first_name} ${contact.last_name}`,
+              description:
+                "Contact moved back to Contacted because there are no open deals",
+            },
+            accessToken
+          );
+        }
+      } else {
       data = await updateDealStageFromDB(
         id,
         orgId,
