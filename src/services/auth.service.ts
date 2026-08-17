@@ -22,7 +22,7 @@ import {
 } from "./jwt.service";
 
 import {  getProfileIfExistFromDB } from "./profiles.service";
-import { getMembershipForAuthFromDB } from "./organization.members.service";
+import { getMembershipForAuthFromDB } from "./organization.members.service";  
 import { table } from "../config/tables";
 
 export const signUpWithAuth = async (

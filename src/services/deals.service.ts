@@ -184,7 +184,30 @@ export const addDealToDB = async (
 
 
 
+export const getOpenDealsByContactIDFromDB = async (
+  contactId: string,
+  orgId: string,
+  accessToken: string
+) => {
+  const db = createSupabaseUserClient(accessToken);
 
+  const { data, error } = await db
+    .from("deals")
+    .select("*")
+    .eq("contact_id", contactId)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .not("stage", "in", '("Closed Won","Closed Lost")');
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch open deals: ${error.message}`
+    );
+  }
+
+  return data ?? [];
+};
 
 
 

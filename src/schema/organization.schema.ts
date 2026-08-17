@@ -59,6 +59,8 @@ export const createWorkspaceSchema = z.object({
 
   company_size: companySizeSchema,
 
+  product_type: productTypeSchema.optional().nullable(),
+
 });
 
 
