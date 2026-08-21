@@ -7,7 +7,6 @@ const cookieOptions = {
   secure: isSecure,
   sameSite: isSecure ? ("none" as const) : ("lax" as const),
 };
-//Changeddd
 export const setAuthCookies = (
   res: Response,
   accessToken: string,
