@@ -11,6 +11,10 @@ import {
   updateContactCareerFromDB,
   getContactsListsFromDB,
   getContactByIDFromDB,
+  updateContactSourceFromDB,
+  updateContactPriorityFromDB,
+  updateContactNotesFromDB,
+  updateContactPreferredTmeFromDB,
 } from "../services/contacts.service";
 
 import { AppError } from "../middleware/error.middleware";
@@ -184,7 +188,6 @@ export const addContactFromLeads = async (
       );
     }
 
-
     const data = await addContactFromLeadsToDB(
       orgId,
       memberId,
@@ -247,7 +250,6 @@ export const updateContact = async (
       );
     }
 
-
     const data = await updateContactFromDB(
       id,
       orgId,
@@ -277,13 +279,10 @@ export const updateContactSocials = async (
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
-
     const socials = req.body;
-
     const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!memberId || !orgId || !accessToken) {
       throw new AppError(
@@ -292,7 +291,6 @@ export const updateContactSocials = async (
       );
     }
 
-
     const data = await updateContactSocialsFromDB(
       id,
       orgId,
@@ -300,7 +298,6 @@ export const updateContactSocials = async (
       socials,
       accessToken
     );
-
 
     return res.status(200).json({
       success:true,
@@ -329,14 +326,12 @@ export const updateContactCareer = async (
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-
     if (!memberId || !orgId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
       );
     }
-
 
     const data = await updateContactCareerFromDB(
       id,
@@ -354,6 +349,142 @@ export const updateContactCareer = async (
     });
 
   } catch(err){
+    next(err);
+  }
+};
+
+export const updateContactSource = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { source } = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateContactSourceFromDB(
+      id,
+      orgId,
+      memberId,
+      source,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact source successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateContactPriority = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { priority } = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateContactPriorityFromDB(
+      id,
+      orgId,
+      memberId,
+      priority,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact priority successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateContactNotes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { notes } = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateContactNotesFromDB(
+      id,
+      orgId,
+      memberId,
+      notes,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact Notes successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateContactPreferredTime = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { preferedTime } = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateContactPreferredTmeFromDB(
+      id,
+      orgId,
+      memberId,
+      preferedTime,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact Preferred contact time successful",
+      data,
+    });
+  } catch (err) {
     next(err);
   }
 };

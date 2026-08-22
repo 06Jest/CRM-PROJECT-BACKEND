@@ -4,7 +4,6 @@ import {
   companyNameSchema,
   sourceSchema,
   departmentSchema,
-  displayNameSchema,
   emailSchema,
   NameSchema,
   genderSchema,
@@ -100,17 +99,6 @@ export const updateContactSchema = z.object({
 
   phone: phoneSchema.optional(),
 
-  source: sourceSchema.optional(),
-
-  display_name:  displayNameSchema.optional(),
-
-  notes: longTextSchema.optional(),
-
-  status: contactStatusSchema,
-
-  priority: prioritySchema,
-
-  preferred_contact_time: preferedTimeSchema,
 });
 
 
@@ -147,5 +135,29 @@ export const updateCareerSchema = z.object({
 
   website: websiteSchema.optional().nullable(),
 });
+
+export const updateContactNotesSchema = z.object({
+
+  notes: longTextSchema,
+
+});
+export const updateContactSourceSchema = z.object({
+
+  source: sourceSchema,
+
+});
+
+export const updateContactPrioritySchema = z.object({
+
+  priority: prioritySchema,
+
+});
+
+export const updateContactPreferredTimeSchema = z.object({
+
+  preferred_contact_time: preferedTimeSchema,
+
+});
+
 
 

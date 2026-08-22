@@ -78,39 +78,24 @@ export const addLeadSchema = z.object({
 
 export const updateLeadSchema = z.object({
 
-  title: titleSchema.optional(),
-
-  source: sourceSchema.optional(),
-
   first_name: NameSchema.optional(),
 
   last_name: NameSchema.optional(),
 
-  suffix: suffixSchema.nullable().optional(),
+  suffix: suffixSchema.nullable(),
 
-  gender: genderSchema,
+  gender: genderSchema.optional(),
 
-  birth_date: birthdateSchema.nullable().optional(),
+  birth_date: birthdateSchema.optional().nullable(),
 
-  email: emailSchema.nullable(),
+  email: emailSchema.optional(),
 
-  phone: phoneSchema.nullable (),
+  phone: phoneSchema.optional(),
 
-  industry: industrySchema.optional(),
+});
 
-  company_name: companyNameSchema.optional(),
 
-  position: positionSchema.optional(),
-
-  department: departmentSchema.optional(),
-
-  website: websiteSchema.optional().nullable(),
-
-  notes: longTextSchema.optional(),
-
-  priority: prioritySchema,
-
-  preferred_contact_time: preferedTimeSchema,
+export const updateSocialsSchema = z.object({
 
   linkedin: socialUsernameSchema.nullable().optional(),
 
@@ -128,6 +113,43 @@ export const updateLeadSchema = z.object({
 
   viber: messagingNumberSchema.nullable().optional(),
 });
+
+export const updateCareerSchema = z.object({
+
+  company_name: companyNameSchema.nullable().optional(),
+
+  industry: industrySchema.nullable().optional(),
+
+  position: positionSchema.nullable().optional(),
+
+  department: departmentSchema.nullable().optional(),
+
+  website: websiteSchema.optional().nullable(),
+});
+
+export const updateLeadNotesSchema = z.object({
+
+  notes: longTextSchema,
+
+});
+export const updateLeadSourceSchema = z.object({
+
+  source: sourceSchema,
+
+});
+
+export const updateLeadPrioritySchema = z.object({
+
+  priority: prioritySchema,
+
+});
+
+export const updateLeadPreferredTimeSchema = z.object({
+
+  preferred_contact_time: preferedTimeSchema,
+
+});
+
 
 export const updateLeadStatusSchema = z.object({
 

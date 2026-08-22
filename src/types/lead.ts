@@ -88,23 +88,24 @@ export interface AddLead {
   viber?: string;
 }
 export interface UpdateLead {
-  title: string;
-  source: Source;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
   suffix?: Suffix;
-  gender: Gender;
+  gender?: Gender;
   birth_date?: string | null;
   email?: string;
   phone?: string;
+}
+
+export interface LeadCareer {
   company_name?: string;
-  industry?: string;
   position?: string;  
   department?: string;
+  industry?: string;
   website?: string;
-  priority: Priority;
-  notes?: string;
-  preferred_contact_time: PreferredTime;
+}
+
+export interface LeadSocials {
   linkedin?: string;
   facebook?: string;
   instagram?: string;

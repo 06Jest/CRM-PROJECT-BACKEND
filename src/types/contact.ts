@@ -96,12 +96,10 @@ export interface UpdateContact {
   birth_date?: string | null;
   email?: string;
   phone?: string;
-  source?: Source;
-  status: ContactStatus;
-  priority: Priority;
-  notes?: string;
-  preferred_contact_time: PreferredTime;
-  
+  // source?: Source;
+  // priority: Priority;
+  // notes?: string;
+  // preferred_contact_time: PreferredTime;
 }
 
 export interface ContactCareer {
