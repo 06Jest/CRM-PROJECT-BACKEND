@@ -4,19 +4,17 @@ import type {
   Contact, 
   ContactCareer, 
   ContactListItem, 
+  ContactPersonal, 
   ContactSocials, 
-  ContactStatus, 
-  UpdateContact 
+  ContactStatus,  
 } from '../types/contact';
 
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
-
+import { PreferredTime, Priority, Source } from '../types/global';
 
 const tab = table.contacts;
-
 const fkey = 'contacts_owner_id_fkey';
-
 const selectAllWithOwner = `
   *,
   owner:organization_members!${fkey} (
@@ -28,10 +26,7 @@ const selectAllWithOwner = `
     )
   )
 `;
-
 const all = selectAllWithOwner;
-
-
 
 export const getContactsFromDB = async (
   orgId: string,
@@ -194,18 +189,18 @@ export const addContactFromLeadsToDB = async (
   return data;
 }
 
-export const updateContactFromDB = async (
+export const updateContactPersonalFromDB = async (
   id:string,
   orgId:string,
   memberId:string,
-  contact:UpdateContact,
+  personal:ContactPersonal,
   accessToken:string
 ):Promise<ContactListItem> => {
   const db = createSupabaseUserClient(accessToken);
   const {data,error} = await db
     .from(tab)
     .update({
-      ...contact,
+      ...personal,
       updated_by:memberId
     })
     .eq('id',id)
@@ -224,41 +219,6 @@ export const updateContactFromDB = async (
   return data;
 }
 
-export const updateContactStatusFromDB = async (
-  id:string,
-  orgId:string,
-  memberId:string,
-  status:ContactStatus,
-  accessToken:string
-):Promise<ContactListItem> => {
-
-
-  const db = createSupabaseUserClient(accessToken);
-
-
-  const {data,error} = await db
-    .from(tab)
-    .update({
-      status,
-      updated_by:memberId
-    })
-    .eq('id',id)
-    .eq('org_id',orgId)
-    .select(all)
-    .single();
-
-
-  if(error){
-    throw new AppError(
-      500,
-      `Failed to update Contact Status: ${error.message}`
-    );
-  }
-
-
-  return data;
-}
-
 export const updateContactSocialsFromDB = async (
   id:string,
   orgId:string,
@@ -266,11 +226,7 @@ export const updateContactSocialsFromDB = async (
   socials:ContactSocials,
   accessToken:string
 ):Promise<ContactListItem> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
   const {data,error} = await db
     .from(tab)
     .update({
@@ -282,15 +238,12 @@ export const updateContactSocialsFromDB = async (
     .select(all)
     .single();
 
-
   if(error){
     throw new AppError(
       500,
       `Failed to update Contact Socials: ${error.message}`
     );
   }
-
-
   return data;
 }
 
@@ -301,11 +254,7 @@ export const updateContactCareerFromDB = async (
   career:ContactCareer,
   accessToken:string
 ):Promise<ContactListItem> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
   const {data,error} = await db
     .from(tab)
     .update({
@@ -317,15 +266,140 @@ export const updateContactCareerFromDB = async (
     .select(all)
     .single();
 
-
   if(error){
     throw new AppError(
       500,
       `Failed to update Contact Career: ${error.message}`
     );
   }
+  return data;
+}
 
+export const updateContactStatusFromDB = async (
+  id:string,
+  orgId:string,
+  memberId:string,
+  status:ContactStatus,
+  accessToken:string
+):Promise<ContactListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+  const {data,error} = await db
+    .from(tab)
+    .update({
+      status,
+      updated_by:memberId
+    })
+    .eq('id',id)
+    .eq('org_id',orgId)
+    .select(all)
+    .single();
 
+  if(error){
+    throw new AppError(
+      500,
+      `Failed to update Contact Status: ${error.message}`
+    );
+  }
+  return data;
+}
+
+export const updateContactSourceFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  source: Source,
+  accessToken: string
+) : Promise<ContactListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .update({
+        source: source,
+        updated_by: memberId
+      })
+      .eq('id', id)
+      .eq('org_id', orgId)
+      .select(all)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to update Contact Source: ${error.message}`);
+    }
+  return data;
+}
+
+export const updateContactPriorityFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  priority: Priority,
+  accessToken: string
+) : Promise<ContactListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .update({
+        priority: priority,
+        updated_by: memberId
+      })
+      .eq('id', id)
+      .eq('org_id', orgId)
+      .select(all)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to update Contact Priority: ${error.message}`);
+    }
+  return data;
+}
+
+export const updateContactNotesFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  notes: string,
+  accessToken: string
+) : Promise<ContactListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .update({
+        notes: notes,
+        updated_by: memberId
+      })
+      .eq('id', id)
+      .eq('org_id', orgId)
+      .select(all)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to update Contact Notes: ${error.message}`);
+    }
+  return data;
+}
+
+export const updateContactPreferredTmeFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  preferredTime: PreferredTime,
+  accessToken: string
+) : Promise<ContactListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .update({
+        preferred_contact_time: preferredTime,
+        updated_by: memberId
+      })
+      .eq('id', id)
+      .eq('org_id', orgId)
+      .select(all)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to update Contact prefered time: ${error.message}`);
+    }
   return data;
 }
 
@@ -335,11 +409,7 @@ export const deleteContactFromDB = async (
   memberId:string,
   accessToken:string
 ):Promise<string> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
   const {error} = await db
     .from(tab)
     .update({
@@ -349,15 +419,12 @@ export const deleteContactFromDB = async (
     .eq('id',id)
     .eq('org_id',orgId);
 
-
   if(error){
     throw new AppError(
       500,
       `Failed to delete Contact: ${error.message}`
     );
   }
-
-
   return id;
 }
 
@@ -367,11 +434,7 @@ export const deleteBulkContactsFromDB = async (
   memberId:string,
   accessToken:string
 ):Promise<string[]> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
   const {error} = await db
     .from(tab)
     .update({
@@ -381,14 +444,11 @@ export const deleteBulkContactsFromDB = async (
     .in('id',ids)
     .eq('org_id',orgId);
 
-
   if(error){
     throw new AppError(
       500,
       `Failed to delete Contacts: ${error.message}`
     );
   }
-
-
   return ids;
 }

@@ -1,12 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import {
-  updateLeadFromDB,
   addLeadToDB,
   getLeadsFromDB,
   deleteLeadFromDB,
   updateLeadStatusFromDB,
   getLeadByIDFromDB,
   getLeadsListsFromDB,
+  updateLeadSocialsFromDB,
+  updateLeadCareerFromDB,
+  updateLeadSourceFromDB,
+  updateLeadPriorityFromDB,
+  updateLeadNotesFromDB,
+  updateLeadPersonalFromDB,
+  updateLeadPreferredTimeFromDB,
 } from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -123,14 +129,14 @@ export const addLead = async (
   }
 };
 
-export const updateLead = async (
+export const updateLeadPersonal = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
-    const lead = req.body;
+    const personal = req.body;
 
     const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
@@ -140,17 +146,234 @@ export const updateLead = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await updateLeadFromDB(
+    const data = await updateLeadPersonalFromDB(
       id,
       orgId,
       memberId,
-      lead,
+      personal,
       accessToken
     );
 
     return res.status(200).json({
       success: true,
       message: "Update Lead successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadSocials = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const socials = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+    const data = await updateLeadSocialsFromDB(
+      id,
+      orgId,
+      memberId,
+      socials,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success:true,
+      message:"Update Contact successful",
+      data,
+    });
+
+  } catch(err){
+    next(err);
+  }
+};
+
+
+
+export const updateLeadCareer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+
+    const career = req.body;
+
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+    const data = await updateLeadCareerFromDB(
+      id,
+      orgId,
+      memberId,
+      career,
+      accessToken
+    );
+
+
+    return res.status(200).json({
+      success:true,
+      message:"Update Contact successful",
+      data,
+    });
+
+  } catch(err){
+    next(err);
+  }
+};
+
+export const updateLeadSource = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { source } = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateLeadSourceFromDB(
+      id,
+      orgId,
+      memberId,
+      source,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact source successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadPriority = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { priority } = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateLeadPriorityFromDB(
+      id,
+      orgId,
+      memberId,
+      priority,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact priority successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadNotes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { notes } = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateLeadNotesFromDB(
+      id,
+      orgId,
+      memberId,
+      notes,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact Notes successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadPreferredTime = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { preferredTime } = req.body;
+    const memberId = req.user?.member_id
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateLeadPreferredTimeFromDB(
+      id,
+      orgId,
+      memberId,
+      preferredTime,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact Preferred contact time successful",
       data,
     });
   } catch (err) {

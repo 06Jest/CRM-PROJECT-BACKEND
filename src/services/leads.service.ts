@@ -1,7 +1,8 @@
 import { createSupabaseUserClient } from '../config/supabase';
-import type { AddLead, Lead, LeadListItem, LeadStatus, UpdateLead } from '../types/lead';
+import type { AddLead, Lead, LeadPersonal, LeadCareer, LeadListItem, LeadSocials, LeadStatus } from '../types/lead';
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
+import { PreferredTime, Priority, Source } from '../types/global';
 
 const tab = table.leads;
 const fkey = 'leads_owner_id_fkey';
@@ -100,18 +101,18 @@ export const addLeadToDB = async (
   return data;
 }
 
-export const updateLeadFromDB = async (
+export const updateLeadPersonalFromDB = async (
   id: string,
   orgId: string,
   memberId: string,
-  lead: UpdateLead,
+  personal: LeadPersonal,
   accessToken: string
 ) : Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
     const { data, error } = await db
       .from(tab)
       .update([{
-        ...lead,
+        ...personal,
         updated_by: memberId
       }])
       .eq('id', id)
@@ -122,6 +123,63 @@ export const updateLeadFromDB = async (
     if (error) {
       throw new AppError(500, `Failed to update Lead: ${error.message}`);
     }
+  return data;
+}
+
+
+export const updateLeadSocialsFromDB = async (
+  id:string,
+  orgId:string,
+  memberId:string,
+  socials:LeadSocials,
+  accessToken:string
+):Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+  const {data,error} = await db
+    .from(tab)
+    .update({
+      ...socials,
+      updated_by:memberId
+    })
+    .eq('id',id)
+    .eq('org_id',orgId)
+    .select(all)
+    .single();
+
+  if(error){
+    throw new AppError(
+      500,
+      `Failed to update Contact Socials: ${error.message}`
+    );
+  }
+  return data;
+}
+
+export const updateLeadCareerFromDB = async (
+  id:string,
+  orgId:string,
+  memberId:string,
+  career:LeadCareer,
+  accessToken:string
+):Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+  const {data,error} = await db
+    .from(tab)
+    .update({
+      ...career,
+      updated_by:memberId
+    })
+    .eq('id',id)
+    .eq('org_id',orgId)
+    .select(all)
+    .single();
+
+  if(error){
+    throw new AppError(
+      500,
+      `Failed to update Contact Career: ${error.message}`
+    );
+  }
   return data;
 }
 
@@ -146,6 +204,106 @@ export const updateLeadStatusFromDB = async (
 
     if (error) {
       throw new AppError(500, `Failed to update Lead Status: ${error.message}`);
+    }
+  return data;
+}
+
+export const updateLeadSourceFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  source: Source,
+  accessToken: string
+) : Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .update({
+        source: source,
+        updated_by: memberId
+      })
+      .eq('id', id)
+      .eq('org_id', orgId)
+      .select(all)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to update Lead Source: ${error.message}`);
+    }
+  return data;
+}
+
+export const updateLeadPriorityFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  priority: Priority,
+  accessToken: string
+) : Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .update({
+        priority: priority,
+        updated_by: memberId
+      })
+      .eq('id', id)
+      .eq('org_id', orgId)
+      .select(all)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to update Lead Priority: ${error.message}`);
+    }
+  return data;
+}
+
+export const updateLeadNotesFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  notes: string,
+  accessToken: string
+) : Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .update({
+        notes: notes,
+        updated_by: memberId
+      })
+      .eq('id', id)
+      .eq('org_id', orgId)
+      .select(all)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to update Lead Notes: ${error.message}`);
+    }
+  return data;
+}
+
+export const updateLeadPreferredTimeFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  preferredTime: PreferredTime,
+  accessToken: string
+) : Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .update({
+        preferred_contact_time: preferredTime,
+        updated_by: memberId  
+      })
+      .eq('id', id)
+      .eq('org_id', orgId)
+      .select(all)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to update Lead Preferred contact time: ${error.message}`);
     }
   return data;
 }

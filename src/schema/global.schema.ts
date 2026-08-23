@@ -40,7 +40,7 @@ export const noteVisibilitySchema = z.enum(NOTE_VISIBILITIES);
 
 export const noteTargetTypeSchema = z.enum(NOTE_TARGET_TYPES);
 
-export const preferedTimeSchema = z.enum(PREFERRED_CONTACT_TIMES);
+export const preferredTimeSchema = z.enum(PREFERRED_CONTACT_TIMES);
 
 export const emailStatusSchema = z.enum(EMAIL_STATUSES);
 
