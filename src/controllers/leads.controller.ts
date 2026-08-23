@@ -11,8 +11,8 @@ import {
   updateLeadSourceFromDB,
   updateLeadPriorityFromDB,
   updateLeadNotesFromDB,
-  updateLeadPreferredTmeFromDB,
   updateLeadPersonalFromDB,
+  updateLeadPreferredTimeFromDB,
 } from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -347,14 +347,14 @@ export const updateLeadNotes = async (
   }
 };
 
-export const updateLeadPreferedTme = async (
+export const updateLeadPreferredTime = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
-    const { preferedTime } = req.body;
+    const { preferredTime } = req.body;
     const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
@@ -363,11 +363,11 @@ export const updateLeadPreferedTme = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await updateLeadPreferredTmeFromDB(
+    const data = await updateLeadPreferredTimeFromDB(
       id,
       orgId,
       memberId,
-      preferedTime,
+      preferredTime,
       accessToken
     );
 

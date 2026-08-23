@@ -460,7 +460,7 @@ export const updateContactPreferredTime = async (
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
-    const { preferedTime } = req.body;
+    const { preferredTime } = req.body;
     const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
@@ -473,7 +473,7 @@ export const updateContactPreferredTime = async (
       id,
       orgId,
       memberId,
-      preferedTime,
+      preferredTime,
       accessToken
     );
 

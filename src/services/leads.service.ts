@@ -283,7 +283,7 @@ export const updateLeadNotesFromDB = async (
   return data;
 }
 
-export const updateLeadPreferredTmeFromDB = async (
+export const updateLeadPreferredTimeFromDB = async (
   id: string,
   orgId: string,
   memberId: string,
@@ -295,7 +295,7 @@ export const updateLeadPreferredTmeFromDB = async (
       .from(tab)
       .update({
         preferred_contact_time: preferredTime,
-        updated_by: memberId
+        updated_by: memberId  
       })
       .eq('id', id)
       .eq('org_id', orgId)
@@ -303,7 +303,7 @@ export const updateLeadPreferredTmeFromDB = async (
       .single()
 
     if (error) {
-      throw new AppError(500, `Failed to update Lead Notes: ${error.message}`);
+      throw new AppError(500, `Failed to update Lead Preferred contact time: ${error.message}`);
     }
   return data;
 }

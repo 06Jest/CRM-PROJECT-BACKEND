@@ -16,7 +16,7 @@ import {
   socialUsernameSchema,
   messagingNumberSchema,
   industrySchema,
-  preferedTimeSchema,
+  preferredTimeSchema,
   websiteSchema,
   longTextSchema,
  } from "./global.schema";
@@ -58,7 +58,7 @@ export const addContactSchema = z.object({
 
   priority: prioritySchema,
 
-  preferred_contact_time: preferedTimeSchema,
+  preferred_contact_time: preferredTimeSchema,
 
   linkedin: socialUsernameSchema.nullable().optional(),
 
@@ -141,6 +141,7 @@ export const updateContactNotesSchema = z.object({
   notes: longTextSchema,
 
 });
+
 export const updateContactSourceSchema = z.object({
 
   source: sourceSchema,
@@ -155,7 +156,7 @@ export const updateContactPrioritySchema = z.object({
 
 export const updateContactPreferredTimeSchema = z.object({
 
-  preferred_contact_time: preferedTimeSchema,
+  preferredTime: preferredTimeSchema,
 
 });
 

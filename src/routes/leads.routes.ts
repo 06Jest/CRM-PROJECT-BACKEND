@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateUser,  requireActiveMembership,  verifyToken } from '../middleware/auth.middleware';
-import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateLeadNotes, updateLeadSource, updateLeadPriority, updateLeadPreferedTme, updateLeadPersonal, updateLeadCareer, updateLeadSocials  } from '../controllers/leads.controller';
+import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateLeadNotes, updateLeadSource, updateLeadPriority, updateLeadPersonal, updateLeadCareer, updateLeadSocials, updateLeadPreferredTime  } from '../controllers/leads.controller';
 import { validateBody } from '../middleware/validate';
 import { addLeadSchema, updateCareerSchema, updateLeadNotesSchema, updateLeadPreferredTimeSchema, updateLeadPrioritySchema, updateLeadSchema, updateLeadSourceSchema, updateLeadStatusSchema, updateSocialsSchema } from '../schema/leads.schema';
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
@@ -85,12 +85,12 @@ router.patch(
   '/update/preferred-time/:id',
   updateLimiter, 
   validateBody(updateLeadPreferredTimeSchema), 
-  updateLeadPreferedTme
+  updateLeadPreferredTime
 );
 
 
 router.delete(
-  '/delete-lead/:id',
+  '/delete/:id',
   deleteLimiter,  
   deleteLead
 );

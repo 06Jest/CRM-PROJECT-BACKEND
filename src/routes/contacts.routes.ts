@@ -55,7 +55,7 @@ router.post(
 );
 
 router.patch(
-  '/update/:id', 
+  '/update/personal/:id', 
   updateLimiter, 
   validateBody(updateContactSchema), 
   updateContactPersonal
