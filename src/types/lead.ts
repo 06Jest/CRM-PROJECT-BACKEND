@@ -87,7 +87,7 @@ export interface AddLead {
   telegram?: string;
   viber?: string;
 }
-export interface UpdateLead {
+export interface LeadPersonal {
   first_name?: string;
   last_name?: string;
   suffix?: Suffix;

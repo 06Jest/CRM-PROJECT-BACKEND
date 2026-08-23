@@ -4,9 +4,9 @@ import type {
   Contact, 
   ContactCareer, 
   ContactListItem, 
+  ContactPersonal, 
   ContactSocials, 
-  ContactStatus, 
-  UpdateContact 
+  ContactStatus,  
 } from '../types/contact';
 
 import { AppError } from '../middleware/error.middleware';
@@ -189,18 +189,18 @@ export const addContactFromLeadsToDB = async (
   return data;
 }
 
-export const updateContactFromDB = async (
+export const updateContactPersonalFromDB = async (
   id:string,
   orgId:string,
   memberId:string,
-  contact:UpdateContact,
+  personal:ContactPersonal,
   accessToken:string
 ):Promise<ContactListItem> => {
   const db = createSupabaseUserClient(accessToken);
   const {data,error} = await db
     .from(tab)
     .update({
-      ...contact,
+      ...personal,
       updated_by:memberId
     })
     .eq('id',id)

@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
 import {
-  updateContactFromDB,
   addContactToDB,
   addContactFromLeadsToDB,
   getContactsFromDB,
@@ -15,6 +14,7 @@ import {
   updateContactPriorityFromDB,
   updateContactNotesFromDB,
   updateContactPreferredTmeFromDB,
+  updateContactPersonalFromDB,
 } from "../services/contacts.service";
 
 import { AppError } from "../middleware/error.middleware";
@@ -228,16 +228,14 @@ export const addContactFromLeads = async (
 
 
 
-export const updateContact = async (
+export const updateContactPersonal = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
-
-    const contact = req.body;
-
+    const personal = req.body;
     const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
@@ -250,11 +248,11 @@ export const updateContact = async (
       );
     }
 
-    const data = await updateContactFromDB(
+    const data = await updateContactPersonalFromDB(
       id,
       orgId,
       memberId,
-      contact,
+      personal,
       accessToken
     );
 

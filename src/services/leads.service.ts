@@ -1,5 +1,5 @@
 import { createSupabaseUserClient } from '../config/supabase';
-import type { AddLead, Lead, LeadCareer, LeadListItem, LeadSocials, LeadStatus, UpdateLead } from '../types/lead';
+import type { AddLead, Lead, LeadPersonal, LeadCareer, LeadListItem, LeadSocials, LeadStatus } from '../types/lead';
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
 import { PreferredTime, Priority, Source } from '../types/global';
@@ -101,18 +101,18 @@ export const addLeadToDB = async (
   return data;
 }
 
-export const updateLeadFromDB = async (
+export const updateLeadPersonalFromDB = async (
   id: string,
   orgId: string,
   memberId: string,
-  lead: UpdateLead,
+  personal: LeadPersonal,
   accessToken: string
 ) : Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
     const { data, error } = await db
       .from(tab)
       .update([{
-        ...lead,
+        ...personal,
         updated_by: memberId
       }])
       .eq('id', id)

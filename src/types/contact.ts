@@ -88,7 +88,7 @@ export interface AddContact {
   viber?: string;
 }
 
-export interface UpdateContact {
+export interface ContactPersonal {
   first_name?: string;
   last_name?: string;
   suffix?: Suffix;
@@ -96,10 +96,6 @@ export interface UpdateContact {
   birth_date?: string | null;
   email?: string;
   phone?: string;
-  // source?: Source;
-  // priority: Priority;
-  // notes?: string;
-  // preferred_contact_time: PreferredTime;
 }
 
 export interface ContactCareer {

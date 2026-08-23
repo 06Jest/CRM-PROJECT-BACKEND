@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import {
-  updateLeadFromDB,
   addLeadToDB,
   getLeadsFromDB,
   deleteLeadFromDB,
@@ -13,6 +12,7 @@ import {
   updateLeadPriorityFromDB,
   updateLeadNotesFromDB,
   updateLeadPreferredTmeFromDB,
+  updateLeadPersonalFromDB,
 } from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -129,14 +129,14 @@ export const addLead = async (
   }
 };
 
-export const updateLead = async (
+export const updateLeadPersonal = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
-    const lead = req.body;
+    const personal = req.body;
 
     const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
@@ -146,11 +146,11 @@ export const updateLead = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await updateLeadFromDB(
+    const data = await updateLeadPersonalFromDB(
       id,
       orgId,
       memberId,
-      lead,
+      personal,
       accessToken
     );
 
