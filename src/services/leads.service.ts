@@ -33,7 +33,6 @@ export const getLeadsFromDB = async (
   if (error) {
     throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
   }
-
   return data ?? [];
 }
 
@@ -53,6 +52,26 @@ export const getLeadsListsFromDB = async (
       throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
     }
   return data ?? [];
+}
+
+export const getLeadListByIDFromDB = async (
+  leadId: string,
+  orgId: string, 
+  accessToken: string
+): Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+    const { data, error } = await db
+      .from(tab)
+      .select(all)
+      .eq('org_id', orgId)
+      .eq('id', leadId)
+      .is('deleted_at', null)
+      .single()
+
+    if (error) {
+      throw new AppError(500, `Failed to fetch Lead: ${error.message}`);
+    }
+  return data;
 }
 
 export const getLeadByIDFromDB = async (

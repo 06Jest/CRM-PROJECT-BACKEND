@@ -6,17 +6,12 @@ import type {
   DealStage,
   UpdateDeal,
 } from "../types/deal";
-
 import { AppError } from "../middleware/error.middleware";
 import { table } from "../config/tables";
 
-
 const tab = table.deals;
-
-
 const ownerFkey = "deals_owner_id_fkey";
 const contactFkey = "deals_contact_id_fkey";
-
 
 const selectAll = `
   *,
@@ -37,57 +32,59 @@ const selectAll = `
   )
 `;
 
-
 export const getDealsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<Deal[]> => {
-
   const db = createSupabaseUserClient(accessToken);
-
-
   const { data, error } = await db
     .from(tab)
     .select("*")
     .eq("org_id", orgId)
     .is("deleted_at", null);
 
-
-
   if (error) {
     throw new AppError(
       500,
       `Failed to fetch deals: ${error.message}`
     );
   }
-
-
   return data ?? [];
 };
-
-
-
-
-
-
 
 export const getDealsListsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DealListItem[]> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { data, error } = await db
     .from(tab)
     .select(selectAll)
     .eq("org_id", orgId)
     .is("deleted_at", null);
 
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch deals: ${error.message}`
+    );
+  }
+  return (data ?? []) as DealListItem[];
+};
 
+export const getDealListByIDFromDB = async (
+  dealId: string,
+  orgId: string,
+  accessToken: string
+): Promise<DealListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+  const { data, error } = await db
+    .from(tab)
+    .select(selectAll)
+    .eq("org_id", orgId)
+    .eq('id', dealId)
+    .is("deleted_at", null)
+    .single();
 
   if (error) {
     throw new AppError(
@@ -95,29 +92,38 @@ export const getDealsListsFromDB = async (
       `Failed to fetch deals: ${error.message}`
     );
   }
-
-
-  return (data ?? []) as DealListItem[];
+  return data ;
 };
 
+export const getDealsListsByContactIDFromDB = async (
+  contactId: string,
+  orgId: string,
+  accessToken: string
+): Promise<DealListItem[]> => {
+  const db = createSupabaseUserClient(accessToken);
+  const { data, error } = await db
+    .from(tab)
+    .select(selectAll)
+    .eq("org_id", orgId)
+    .eq('contact_id', contactId)
+    .is("deleted_at", null)
+    .maybeSingle();
 
-
-
-
-
-
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch deals: ${error.message}`
+    );
+  }
+  return (data ?? []) as DealListItem[] ;
+};
 
 export const getDealsByIDFromDB = async (
   id: string,
   orgId: string,
   accessToken: string
 ): Promise<DealListItem> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { data, error } = await db
     .from(tab)
     .select(selectAll)
@@ -126,25 +132,14 @@ export const getDealsByIDFromDB = async (
     .is("deleted_at", null)
     .single();
 
-
-
   if (error) {
     throw new AppError(
       500,
       `Failed to fetch deal: ${error.message}`
     );
   }
-
-
   return data as DealListItem;
 };
-
-
-
-
-
-
-
 
 export const addDealToDB = async (
   orgId: string,
@@ -152,12 +147,7 @@ export const addDealToDB = async (
   deal: AddDeal,
   accessToken: string
 ): Promise<DealListItem> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { data, error } = await db
     .from(tab)
     .insert({
@@ -169,20 +159,14 @@ export const addDealToDB = async (
     .select(selectAll)
     .single();
 
-
-
   if (error) {
     throw new AppError(
       500,
       `Failed to add deal: ${error.message}`
     );
   }
-
-
   return data as DealListItem;
 };
-
-
 
 export const getOpenDealsByContactIDFromDB = async (
   contactId: string,
@@ -190,7 +174,6 @@ export const getOpenDealsByContactIDFromDB = async (
   accessToken: string
 ) => {
   const db = createSupabaseUserClient(accessToken);
-
   const { data, error } = await db
     .from("deals")
     .select("*")
@@ -205,12 +188,8 @@ export const getOpenDealsByContactIDFromDB = async (
       `Failed to fetch open deals: ${error.message}`
     );
   }
-
   return data ?? [];
 };
-
-
-
 
 export const updateDealFromDB = async (
   id: string,
@@ -219,24 +198,18 @@ export const updateDealFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DealListItem> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
 
   const { data, error } = await db
     .from(tab)
     .update({
       ...deal,
-      updated_by:memberId,
+      updated_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
     .select(selectAll)
     .single();
-
-
 
   if (error) {
     throw new AppError(
@@ -244,17 +217,8 @@ export const updateDealFromDB = async (
       `Failed to update deal: ${error.message}`
     );
   }
-
-
   return data as DealListItem;
 };
-
-
-
-
-
-
-
 
 export const updateDealStageFromDB = async (
   id: string,
@@ -263,24 +227,17 @@ export const updateDealStageFromDB = async (
   stage: DealStage,
   accessToken: string
 ): Promise<DealListItem> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { data, error } = await db
     .from(tab)
     .update({
       stage,
-      updated_by:memberId,
+      updated_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
     .select(selectAll)
     .single();
-
-
 
   if (error) {
     throw new AppError(
@@ -288,17 +245,8 @@ export const updateDealStageFromDB = async (
       `Failed to update deal stage: ${error.message}`
     );
   }
-
-
   return data as DealListItem;
 };
-
-
-
-
-
-
-
 
 export const closeDealFromDB = async (
   id: string,
@@ -307,26 +255,19 @@ export const closeDealFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DealListItem> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { data, error } = await db
     .from(tab)
     .update({
       stage: outcome,
-      updated_by:memberId,
-      close_date:new Date().toISOString(),
-      closed_by:memberId,
+      updated_by: memberId,
+      close_date: new Date().toISOString(),
+      closed_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId)
     .select(selectAll)
     .single();
-
-
 
   if (error) {
     throw new AppError(
@@ -334,40 +275,25 @@ export const closeDealFromDB = async (
       `Failed to close deal: ${error.message}`
     );
   }
-
-
   return data as DealListItem;
 };
-
-
-
-
-
-
-
 
 export const deleteDealFromDB = async (
   id: string,
   memberId: string,
-  orgId:string,
-  accessToken:string
+  orgId: string,
+  accessToken: string
 ): Promise<string> => {
-
-
   const db = createSupabaseUserClient(accessToken);
-
-
 
   const { error } = await db
     .from(tab)
     .update({
-      deleted_at:new Date().toISOString(),
-      deleted_by:memberId,
+      deleted_at: new Date().toISOString(),
+      deleted_by: memberId,
     })
     .eq("id", id)
     .eq("org_id", orgId);
-
-
 
   if (error) {
     throw new AppError(
@@ -376,88 +302,55 @@ export const deleteDealFromDB = async (
     );
   }
 
-
   return id;
 };
-
-
-
-
-
-
-
 
 export const deleteAllDealsByContactIDFromDB = async (
-  id:string,
-  orgId:string,
-  memberId:string,
-  accessToken:string
-):Promise<string> => {
-
-
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { error } = await db
     .from(tab)
     .update({
-      deleted_at:new Date().toISOString(),
-      deleted_by:memberId,
+      deleted_at: new Date().toISOString(),
+      deleted_by: memberId,
     })
-    .eq("contact_id",id)
-    .eq("org_id",orgId);
+    .eq("contact_id", id)
+    .eq("org_id", orgId);
 
-
-
-  if(error){
+  if (error) {
     throw new AppError(
       500,
       `Failed to delete deals: ${error.message}`
     );
   }
-
-
   return id;
 };
 
-
-
-
-
-
-
-
 export const deleteAllDealsByBulkContactsFromDB = async (
-  ids:string[],
-  orgId:string,
-  memberId:string,
-  accessToken:string
-):Promise<string[]> => {
-
-
+  ids: string[],
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string[]> => {
   const db = createSupabaseUserClient(accessToken);
-
-
-
   const { error } = await db
     .from(tab)
     .update({
-      deleted_at:new Date().toISOString(),
-      deleted_by:memberId,
+      deleted_at: new Date().toISOString(),
+      deleted_by: memberId,
     })
-    .in("contact_id",ids)
-    .eq("org_id",orgId);
+    .in("contact_id", ids)
+    .eq("org_id", orgId);
 
-
-
-  if(error){
+  if (error) {
     throw new AppError(
       500,
       `Failed to delete deals: ${error.message}`
     );
   }
-
-
   return ids;
 };

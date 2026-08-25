@@ -64,9 +64,7 @@ export const getCustomersListsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<CustomerListItem[]> => {
-
   const db = createSupabaseUserClient(accessToken);
-
   const { data, error } = await db
     .from(tab)
     .select(all)
@@ -79,8 +77,30 @@ export const getCustomersListsFromDB = async (
       `Failed to fetch customers: ${error.message}`
     );
   }
-
   return data as CustomerListItem[];
+};
+
+
+export const getCustomerListByIDFromDB = async (
+  customerId: string,
+  orgId: string,
+  accessToken: string
+): Promise<CustomerListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+  const { data, error } = await db
+    .from(tab)
+    .select(all)
+    .eq('org_id', orgId)
+    .eq('id', customerId)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch customers: ${error.message}`
+    );
+  }
+  return data as CustomerListItem;
 };
 
 
@@ -181,9 +201,7 @@ export const updateCustomerStatusFromDB = async (
   status: CustomerStatus,
   accessToken: string
 ): Promise<CustomerListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
-
   const { data, error } = await db
     .from(tab)
     .update({
@@ -201,7 +219,6 @@ export const updateCustomerStatusFromDB = async (
       `Failed to update customer status: ${error.message}`
     );
   }
-
   return data as CustomerListItem;
 };
 

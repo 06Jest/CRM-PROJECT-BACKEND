@@ -3,6 +3,7 @@ import {
   deleteBulkCustomersFromDB,
   deleteCustomerFromDB,
   getCustomerByIDFromDB,
+  getCustomerListByIDFromDB,
   getCustomersFromDB,
   getCustomersListsFromDB,
   updateCustomerNotesFromDB,
@@ -11,7 +12,7 @@ import {
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
 import { addActivityToDB } from "../services/activities.service";
-import { getContactByIDFromDB, updateContactStatusFromDB } from "../services/contacts.service";
+import { updateContactStatusFromDB } from "../services/contacts.service";
 
 export const getCustomers = async (
   req: Request,
@@ -63,6 +64,36 @@ export const getCustomersLists = async (
       success: true,
       message: "Customers fetch successful",
       data: customers,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCustomerListByID = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
+    }
+
+    const customer = await getCustomerListByIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer fetch successful",
+      data: customer,
     });
   } catch (err) {
     next(err);

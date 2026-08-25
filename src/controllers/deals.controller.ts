@@ -9,6 +9,8 @@ import {
   getDealsListsFromDB,
   closeDealFromDB,
   getOpenDealsByContactIDFromDB,
+  getDealListByIDFromDB,
+  getDealsListsByContactIDFromDB,
 } from "../services/deals.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -71,6 +73,66 @@ export const getDealsLists = async (
       success: true,
       message: "Deals fetch successful",
       data: deals,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getDealsListsByContactID = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
+    }
+
+    const deals = await getDealsListsByContactIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Deals fetch successful",
+      data: deals,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getDealListByID = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
+    }
+
+    const deal = await getDealListByIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Deal fetch successful",
+      data: deal,
     });
   } catch (err) {
     next(err);
@@ -184,7 +246,6 @@ export const updateDealStage = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { stage } = req.body;
-
     const memberId = req.user?.member_id
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
