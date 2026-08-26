@@ -97,7 +97,7 @@ export const createWorkspaceInDB = async (
   const { data, error } = await db
     .from(tab)
     .insert({
-      name: dto.name,
+      name: dto.name.trim(),
       slug: generateSlug(dto.name),
       type: dto.type,
       industry: dto.industry ?? null,
@@ -108,11 +108,19 @@ export const createWorkspaceInDB = async (
     .single();
 
   if (error) {
+    if (error.code === "23505") {
+      throw new AppError(
+        409,
+        "A workspace with this name already exists."
+      );
+    }
+
     throw new AppError(
       500,
       `Failed to create workspace: ${error.message}`
     );
   }
+
   return data;
 };
 
