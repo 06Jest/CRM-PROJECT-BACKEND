@@ -73,6 +73,7 @@ export const signInWithAuth = async (
   return data;
 };
 
+
 export const updateLastLogin = async (userId: string) => {
   const { error } = await supabaseAdmin
     .from(table.profile)

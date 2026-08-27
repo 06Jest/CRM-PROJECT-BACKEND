@@ -29,6 +29,7 @@ import { signInSchema } from "../schema/auth.schema";
 import { setAuthCookies } from "../services/cookies.service";
 import type { RequestMeta, TokenPair } from "../types/auth";
 import { getMembershipForAuthFromDB } from "../services/organization.members.service";
+import { supabaseAdmin } from "../config/supabase";
 
 
 export const metaFromRequest = (
@@ -181,6 +182,97 @@ export const signUp = async (
     });
 
   } catch(err) {
+    next(err);
+  }
+};
+
+export const oauthLogin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const meta = metaFromRequest(req);
+
+    const authorization = req.headers.authorization;
+    console.log("=== OAUTH REQUEST ===");
+    console.log("Authorization:", req.headers.authorization);
+    console.log("Origin:", req.headers.origin);
+    console.log("Headers:", req.headers);
+
+    if (!authorization?.startsWith("Bearer ")) {
+      throw new AppError(
+        401,
+        "Supabase access token missing"
+      );
+    }
+
+    const supabaseAccessToken =
+      authorization.replace("Bearer ", "");
+
+    const {
+      data: { user },
+      error,
+    } = await supabaseAdmin.auth.getUser(
+      supabaseAccessToken
+    );
+
+    if (error || !user) {
+      throw new AppError(
+        401,
+        "Invalid OAuth session"
+      );
+    }
+
+    if (!user.email) {
+      throw new AppError(
+        400,
+        "Email is required"
+      );
+    }
+
+    let profile =
+      await getProfileIfExistFromDB(user.id);
+
+    let needsOnboarding = false;
+
+    if (!profile) {
+      profile =
+        await createProfileToDB({
+          id: user.id,
+          email: user.email,
+        });
+
+      needsOnboarding = true;
+    } else {
+      needsOnboarding =
+        !profile.onboarding_completed;
+
+      if (!needsOnboarding) {
+        profile =
+          await getProfileByIdForAuthFromDB(
+            profile.id
+          );
+      }
+    }
+
+    await issueSession(
+      res,
+      profile,
+      meta
+    );
+
+    await updateLastLogin(user.id);
+
+    res.status(200).json({
+      success: true,
+      message: "OAuth login successful",
+      profile,
+      needsOnboarding,
+    });
+
+  } catch (err) {
+    console.error("OAUTH LOGIN ERROR:", err);
     next(err);
   }
 };

@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   changePassword,
   signOut,
+  oauthLogin,
 } from "../controllers/auth.controller";
 
 import {
@@ -35,6 +36,8 @@ router.post(
   validateBody(signUpSchema),
   signUp
 );
+
+router.post("/oauth", loginLimiter, oauthLogin);
 
 router.post(
   "/signin",

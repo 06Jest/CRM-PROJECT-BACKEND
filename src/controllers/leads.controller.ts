@@ -13,6 +13,7 @@ import {
   updateLeadNotesFromDB,
   updateLeadPersonalFromDB,
   updateLeadPreferredTimeFromDB,
+  getLeadListByIDFromDB,
 } from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -74,6 +75,37 @@ export const getLeadsLists = async (
     next(err);
   }
 };
+
+export const getLeadListByID = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
+    }
+
+    const lead = await getLeadListByIDFromDB(
+      id,
+      orgId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Lead fetch successful",
+      data: lead,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 export const addLead = async (
   req: Request,

@@ -39,6 +39,7 @@ export interface DisplayProfile {
     status: ProfileStatus;
     created_at: string;
     onboarding_completed: boolean;
+    onboarding_step: number;
     last_login?: string;
     job_title?: string;
     membership?: {

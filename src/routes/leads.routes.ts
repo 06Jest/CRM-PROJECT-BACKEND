@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateUser,  requireActiveMembership,  verifyToken } from '../middleware/auth.middleware';
-import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateLeadNotes, updateLeadSource, updateLeadPriority, updateLeadPersonal, updateLeadCareer, updateLeadSocials, updateLeadPreferredTime  } from '../controllers/leads.controller';
+import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateLeadNotes, updateLeadSource, updateLeadPriority, updateLeadPersonal, updateLeadCareer, updateLeadSocials, updateLeadPreferredTime, getLeadListByID  } from '../controllers/leads.controller';
 import { validateBody } from '../middleware/validate';
 import { addLeadSchema, updateCareerSchema, updateLeadNotesSchema, updateLeadPreferredTimeSchema, updateLeadPrioritySchema, updateLeadSchema, updateLeadSourceSchema, updateLeadStatusSchema, updateSocialsSchema } from '../schema/leads.schema';
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
@@ -20,6 +20,12 @@ router.get(
   '/show-lists', 
   readLimiter, 
   getLeadsLists
+);
+
+router.get(
+  '/view-list/:id', 
+  readLimiter, 
+  getLeadListByID
 );
 
 

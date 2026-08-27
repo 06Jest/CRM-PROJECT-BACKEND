@@ -41,7 +41,7 @@ export const SUFFIXES = [
   "XII",
 ] as const;
 
-export type Suffix = (typeof SUFFIXES)[number] | null;
+export type Suffix = (typeof SUFFIXES)[number] | null | '';
 
 export const GENDERS = [
   "Male",

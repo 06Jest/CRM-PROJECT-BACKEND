@@ -48,7 +48,6 @@ export interface Lead {
 }
 
 export interface LeadListItem extends Lead{
-
   owner: {
     id: string;
     profile: {

@@ -13,7 +13,8 @@ import {
   updateContactSource,
   updateContactPriority,
   updateContactPreferredTime,
-  updateContactPersonal
+  updateContactPersonal,
+  getContactListByID
 } from '../controllers/contacts.controller';
 import { validateBody } from '../middleware/validate';
 import { addContactSchema, updateCareerSchema, updateContactNotesSchema, updateContactPreferredTimeSchema, updateContactPrioritySchema, updateContactSchema, updateContactSourceSchema, updateSocialsSchema } from '../schema/contacts.schema';
@@ -35,6 +36,12 @@ router.get(
   '/show-lists',
   readLimiter, 
   getContactsLists
+);
+
+router.get(
+  '/view-list/:id',
+  readLimiter, 
+  getContactListByID
 );
 
 
