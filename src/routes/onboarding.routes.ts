@@ -35,7 +35,7 @@ router.post(
 
 
 router.post(
-  "/workspace",
+  "/workspace", 
   validateBody(createWorkspaceSchema),
   createWorkspaceController
 );

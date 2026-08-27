@@ -195,6 +195,10 @@ export const oauthLogin = async (
     const meta = metaFromRequest(req);
 
     const authorization = req.headers.authorization;
+    console.log("=== OAUTH REQUEST ===");
+    console.log("Authorization:", req.headers.authorization);
+    console.log("Origin:", req.headers.origin);
+    console.log("Headers:", req.headers);
 
     if (!authorization?.startsWith("Bearer ")) {
       throw new AppError(
@@ -268,6 +272,7 @@ export const oauthLogin = async (
     });
 
   } catch (err) {
+    console.error("OAUTH LOGIN ERROR:", err);
     next(err);
   }
 };

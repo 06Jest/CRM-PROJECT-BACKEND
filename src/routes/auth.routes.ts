@@ -37,7 +37,7 @@ router.post(
   signUp
 );
 
-router.post("/oauth", oauthLogin);
+router.post("/oauth", loginLimiter, oauthLogin);
 
 router.post(
   "/signin",
