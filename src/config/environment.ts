@@ -59,7 +59,12 @@ export const config = {
       resend: {
         key: process.env.RESEND_API_KEY,
       } 
-  }
+  },
+  IMAGEKIT: {
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+  },
 };
 
 
@@ -73,7 +78,10 @@ const requiredEnvVars = [
   'JWT_REFRESH_SECRET',
   'JWT_REFRESH_EXPIRES_DAYS',
   'JWT_REFRESH_REUSE_SECONDS',
-  'RESEND_API_KEY'
+  'RESEND_API_KEY',
+  'IMAGEKIT_PRIVATE_KEY',
+  'IMAGEKIT_PUBLIC_KEY',
+  'IMAGEKIT_URL_ENDPOINT',
 ];
 
 const missingEnvVars = requiredEnvVars.filter(
