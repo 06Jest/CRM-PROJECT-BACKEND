@@ -23,4 +23,8 @@ export const table = {
   },
   calls: config.SUPABASE.TABLE.calls || 'calls',
   sms: config.SUPABASE.TABLE.sms || 'sms',
+  ai: {
+    conversations: config.SUPABASE.TABLE.ai.conversations || 'ai_conversations',
+    messages: config.SUPABASE.TABLE.ai.messages || 'ai_messages',
+  },
 };

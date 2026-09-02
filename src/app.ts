@@ -22,6 +22,7 @@ import callsRoutes from './routes/calls.routes';
 import smsRoutes from './routes/sms.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import activitiesRoutes from './routes/activities.routes'
+import aiRoutes from "./ai/ai.routes";
 import feedbackRoutes from './routes/feedback.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import healthRoutes from './routes/health';
@@ -72,9 +73,12 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/chat', chatsRoutes);
 app.use('/api/calls', callsRoutes); 
 
+app.use("/api/ai", aiRoutes);
+
 app.use('/api/health', healthRoutes);
 
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json'}));
+
 
 
 

@@ -34,6 +34,10 @@ export const config = {
       },
       calls:process.env.TABLE_CALLS,
       sms:process.env.TABLE_SMS,
+      ai: {
+        conversations: process.env.TABLE_AI_CONVERSATIONS,
+        messages: process.env.TABLE_AI_MESSAGES,
+      },
     },
   },
 
@@ -65,6 +69,15 @@ export const config = {
     publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
     urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
   },
+  GEMINI: {
+    apiKey: process.env.GEMINI_API_KEY,
+  },
+  AI: {
+    models: (process.env.AI_MODELS || 'gemini-3.6-flash')
+      .split(',')
+      .map(model => model.trim())
+      .filter(Boolean),
+  },
 };
 
 
@@ -82,6 +95,7 @@ const requiredEnvVars = [
   'IMAGEKIT_PRIVATE_KEY',
   'IMAGEKIT_PUBLIC_KEY',
   'IMAGEKIT_URL_ENDPOINT',
+  'GEMINI_API_KEY',
 ];
 
 const missingEnvVars = requiredEnvVars.filter(
