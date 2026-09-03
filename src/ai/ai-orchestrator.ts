@@ -9,6 +9,7 @@ import modelRouter from "./router/model.registry";
 
 export class AIOrchestrator {
   async run(request: AIRequest): Promise<AIResponse> {
+    console.log(" AI ORCHESTRATOR HIT");
     const agent = agentRegistry.get(request.agentId);
 
     const { profileId, orgId, role } = request.context;
@@ -27,6 +28,7 @@ export class AIOrchestrator {
       },
     ];
 
+    console.log("AI MODEL:", agent.model);
     const response = await modelRouter.generate({
       models: [agent.model],
       systemPrompt: agent.systemPrompt,

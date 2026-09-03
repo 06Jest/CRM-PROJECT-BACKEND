@@ -8,6 +8,7 @@ import { aiRequestSchema } from "./validation/ai.validation";
 import { aiOrchestrator } from "./ai-orchestrator";
 import { AppError } from "../middleware/error.middleware";
 import { AIConversationService } from "./services/ai-conversation.service";
+import { AIAgentService } from "./services/ai-agent.service";
 
 export async function chatWithAI(
   req: Request,
@@ -34,8 +35,14 @@ export async function chatWithAI(
       );
     }
 
+    const agentService =
+      new AIAgentService(
+        accessToken
+      );
+
     if (input.orgId) {
-      const currentOrgId = req.user?.org_id;
+      const currentOrgId =
+        req.user?.org_id;
 
       if (!currentOrgId) {
         throw new AppError(
@@ -44,13 +51,22 @@ export async function chatWithAI(
         );
       }
 
-      if (input.orgId !== currentOrgId) {
+      if (
+        input.orgId !== currentOrgId
+      ) {
         throw new AppError(
           403,
           "You cannot use this organization context"
         );
       }
     }
+
+    const agent =
+      await agentService.getAuthorizedAgent({
+        agentId: input.agentId,
+        profileId,
+        orgId: input.orgId,
+      });
 
     const conversationService =
       new AIConversationService(
@@ -66,8 +82,11 @@ export async function chatWithAI(
       conversation =
         await conversationService.createConversation({
           profileId,
-          orgId: input.orgId,
-          agentId: input.agentId,
+          orgId:
+            agent.scope === "organization"
+              ? input.orgId
+              : undefined,
+          agentId: agent.id,
         });
     }
 
@@ -79,6 +98,16 @@ export async function chatWithAI(
         await conversationService.getConversation(
           input.conversationId
         );
+
+      if (
+        conversation.agent_id !==
+        input.agentId
+      ) {
+        throw new AppError(
+          400,
+          "The conversation does not belong to the requested AI agent"
+        );
+      }
 
       if (
         conversation.profile_id !==
@@ -104,6 +133,12 @@ export async function chatWithAI(
           );
         }
       }
+
+      await agentService.getAuthorizedAgent({
+        agentId: conversation.agent_id,
+        profileId,
+        orgId: conversation.org_id ?? undefined,
+      });
     }
 
     const conversationId =

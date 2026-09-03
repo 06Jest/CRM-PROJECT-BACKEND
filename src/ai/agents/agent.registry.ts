@@ -1,11 +1,13 @@
 import { AIAgent } from "../types/ai.types";
-import { crmAssistantAgent } from "./crm-assistant.agent";
+import { personalAssistantAgent } from "./personal-assistant.agent";
+import { organizationAssistantAgent } from "./organization-assistant.agent";
 
 class AgentRegistry {
   private agents: Map<string, AIAgent> = new Map();
 
   constructor() {
-    this.register(crmAssistantAgent);
+    this.register(personalAssistantAgent);
+    this.register(organizationAssistantAgent);
   }
 
   register(agent: AIAgent): void {
