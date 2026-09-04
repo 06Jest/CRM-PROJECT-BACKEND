@@ -1,15 +1,15 @@
 import router from "./model.registry";
 
 async function testRouter() {
-  // console.log("Registered models:");
+  console.log("Registered models:");
 
-  // for (const model of router.getModels()) {
-  //   console.log({
-  //     id: model.id,
-  //     provider: model.provider,
-  //     metadata: model.metadata,
-  //   });
-  // }
+  for (const model of router.getModels()) {
+    console.log({
+      id: model.id,
+      provider: model.provider,
+      metadata: model.metadata,
+    });
+  }
 
   console.log("\n");
 

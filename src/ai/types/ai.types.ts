@@ -48,6 +48,11 @@ export interface AIRequestContext {
 export interface AIResponse {
   message: string;
   conversationId?: string;
+  confirmation?: {
+    required: true;
+    confirmationId: string;
+    toolCall: AIToolCall;
+  };
 }
 
 export interface AIModelReference {
@@ -109,4 +114,14 @@ export interface AIMessage {
   toolCallId?: string;
   toolName?: string;
   thoughtSignature?: string;
+}
+
+export interface AIPendingConfirmation {
+  confirmationId: string;
+  profileId: string;
+  orgId?: string;
+  conversationId?: string;
+  agentId: string;
+  toolCall: AIToolCall;
+  expiresAt: string;
 }

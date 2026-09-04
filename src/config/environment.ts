@@ -37,6 +37,7 @@ export const config = {
       ai: {
         conversations: process.env.TABLE_AI_CONVERSATIONS,
         messages: process.env.TABLE_AI_MESSAGES,
+        confirmations: process.env.TABLE_AI_CONFIRMATIONS,
       },
     },
   },

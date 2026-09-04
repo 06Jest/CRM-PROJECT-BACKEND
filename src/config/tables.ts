@@ -26,5 +26,6 @@ export const table = {
   ai: {
     conversations: config.SUPABASE.TABLE.ai.conversations || 'ai_conversations',
     messages: config.SUPABASE.TABLE.ai.messages || 'ai_messages',
+    confirmations: config.SUPABASE.TABLE.ai.confirmations || 'ai_confirmations',
   },
 };

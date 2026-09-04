@@ -4,10 +4,20 @@ import {
 } from "../types/ai.types";
 
 export interface AIToolDefinition extends AITool {
+  requiredRoles?: Array<"owner" | "manager" | "agent">;
+  requiresConfirmation?: boolean;
+
   execute(
     arguments_: Record<string, unknown>,
     context: AIRequestContext
   ): Promise<unknown>;
+}
+
+export class AIToolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AIToolError";
+  }
 }
 
 export class AIToolRegistry {
