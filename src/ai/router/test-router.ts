@@ -1,6 +1,18 @@
 import router from "./model.registry";
 
 async function testRouter() {
+  console.log("Registered models:");
+
+  for (const model of router.getModels()) {
+    console.log({
+      id: model.id,
+      provider: model.provider,
+      metadata: model.metadata,
+    });
+  }
+
+  console.log("\n");
+
   console.log("Testing Gemini...");
 
   const geminiResponse = await router.generate(

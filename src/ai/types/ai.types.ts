@@ -16,6 +16,15 @@ export interface AIRequest {
   context: AIRequestContext;
 }
 
+export interface AIModelMetadata {
+  contextWindow: number;
+  maxOutputTokens: number;
+  supportsStreaming: boolean;
+  supportsToolCalling: boolean;
+  supportsStructuredOutput: boolean;
+  isLocal: boolean;
+}
+
 export interface AIRequestContext {
   profileId: string;
   orgId?: string;

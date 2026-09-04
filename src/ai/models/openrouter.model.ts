@@ -1,6 +1,7 @@
 import { OpenRouter } from "@openrouter/sdk";
 
 import {
+  AIModelMetadata,
   AIModelRequest,
   AIModelResponse,
 } from "../types/ai.types";
@@ -11,7 +12,14 @@ import { config } from "../../config/environment";
 export class OpenRouterModel implements AIModel {
   id: string;
   provider = "openrouter" as const;
-
+  metadata: AIModelMetadata = {
+    contextWindow: 0,
+    maxOutputTokens: 0,
+    supportsStreaming: false,
+    supportsToolCalling: false,
+    supportsStructuredOutput: false,
+    isLocal: false,
+  };
   private client: OpenRouter;
 
   constructor(modelId: string) {

@@ -41,4 +41,5 @@ router.register(cloudflareModel);
 router.register(openRouterModel);
 router.register(qwen35);
 
+export { router };
 export default router;

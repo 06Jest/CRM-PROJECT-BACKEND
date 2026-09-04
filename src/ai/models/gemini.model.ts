@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 import {
+  AIModelMetadata,
   AIModelRequest,
   AIModelResponse,
 } from "../types/ai.types";
@@ -11,7 +12,14 @@ import { config } from "../../config/environment";
 export class GeminiModel implements AIModel {
   id: string;
   provider = "gemini" as const;
-
+  metadata: AIModelMetadata = {
+    contextWindow: 0,
+    maxOutputTokens: 0,
+    supportsStreaming: false,
+    supportsToolCalling: false,
+    supportsStructuredOutput: false,
+    isLocal: false,
+  };
   private client: GoogleGenAI;
 
   constructor(modelId: string) {

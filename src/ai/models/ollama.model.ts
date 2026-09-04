@@ -1,4 +1,5 @@
 import {
+  AIModelMetadata,
   AIModelRequest,
   AIModelResponse,
 } from "../types/ai.types";
@@ -17,7 +18,14 @@ interface OllamaChatResponse {
 export class OllamaModel implements AIModel {
   id: string;
   provider = "local" as const;
-
+  metadata: AIModelMetadata = {
+    contextWindow: 0,
+    maxOutputTokens: 0,
+    supportsStreaming: false,
+    supportsToolCalling: false,
+    supportsStructuredOutput: false,
+    isLocal: true,
+  };
   constructor(modelId: string) {
     this.id = modelId;
   }

@@ -1,6 +1,7 @@
 import { Mistral } from "@mistralai/mistralai";
 
 import {
+  AIModelMetadata,
   AIModelRequest,
   AIModelResponse,
 } from "../types/ai.types";
@@ -11,7 +12,14 @@ import { config } from "../../config/environment";
 export class MistralModel implements AIModel {
   id: string;
   provider = "mistral" as const;
-
+  metadata: AIModelMetadata = {
+    contextWindow: 0,
+    maxOutputTokens: 0,
+    supportsStreaming: false,
+    supportsToolCalling: false,
+    supportsStructuredOutput: false,
+    isLocal: false,
+  };
   private client: Mistral;
 
   constructor(modelId: string) {

@@ -1,4 +1,5 @@
 import {
+  AIModelMetadata,
   AIModelRequest,
   AIModelResponse,
   AIProvider,
@@ -7,7 +8,7 @@ import {
 export interface AIModel {
   id: string;
   provider: AIProvider;
-
+  metadata: AIModelMetadata;
   generate(
     request: AIModelRequest
   ): Promise<AIModelResponse>;

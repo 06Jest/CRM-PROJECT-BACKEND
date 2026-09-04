@@ -14,6 +14,24 @@ export class ModelRouter implements AIModelRouter {
     this.models.set(model.id, model);
   }
 
+  getModel(modelId: string): AIModel {
+    const model = this.models.get(modelId);
+
+    if (!model) {
+      throw new Error(`AI model not found: ${modelId}`);
+    }
+
+    return model;
+  }
+
+  getModelMetadata(modelId: string) {
+    return this.getModel(modelId).metadata;
+  }
+
+  getModels(): AIModel[] {
+    return Array.from(this.models.values());
+  }
+
   async generate(
     modelReference: AIModelReference,
     request: AIModelRequest
