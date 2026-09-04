@@ -10,7 +10,7 @@ import { config } from "../../config/environment";
 
 export class GeminiModel implements AIModel {
   id: string;
-  provider = "google";
+  provider = "gemini" as const;
 
   private client: GoogleGenAI;
 
@@ -18,7 +18,7 @@ export class GeminiModel implements AIModel {
     this.id = modelId;
 
     this.client = new GoogleGenAI({
-      apiKey: config.GEMINI.apiKey,
+      apiKey: config.AI.providers.gemini.apiKey,
     });
   }
 

@@ -1,12 +1,7 @@
 import { GeminiModel } from "./gemini.model";
-import { config } from "../../config/environment";
 
 async function testGemini() {
-  const modelId = config.AI.models[0];
-
-  if (!modelId) {
-    throw new Error("No AI model configured");
-  }
+  const modelId = "gemini-3.6-flash";
 
   const gemini = new GeminiModel(modelId);
 

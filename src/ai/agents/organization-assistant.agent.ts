@@ -7,7 +7,10 @@ export const organizationAssistantAgent: AIAgent = {
     "An AI assistant that helps organization members understand and manage their organization's CRM.",
   type: "built_in",
   scope: "organization",
-  model: "gemini-3.6-flash",
+  model: {
+    id: "gemini-3.6-flash",
+    provider: "gemini",
+  },
   systemPrompt: `
 You are the uniThread Organization Assistant.
 

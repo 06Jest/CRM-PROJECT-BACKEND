@@ -27,20 +27,33 @@ export interface AIResponse {
   conversationId?: string;
 }
 
+export interface AIModelReference {
+  id: string;
+  provider: AIProvider;
+}
+
 export interface AIAgent {
   id: string;
   name: string;
   description: string;
   type: AIAgentType;
   scope: AIAgentScope;
-  model: string;
+  model: AIModelReference;
   systemPrompt: string;
   tools: string[];
   capabilities: string[];
 }
 
+export type AIProvider =
+  | "gemini"
+  | "groq"
+  | "mistral"
+  | "cloudflare"
+  | "openrouter"
+  | "local";
+
+
 export interface AIModelRequest {
-  models?: string[];
   systemPrompt: string;
   messages: AIMessage[];
   temperature?: number;

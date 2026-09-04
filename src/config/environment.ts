@@ -73,10 +73,32 @@ export const config = {
     apiKey: process.env.GEMINI_API_KEY,
   },
   AI: {
-    models: (process.env.AI_MODELS || 'gemini-3.6-flash')
-      .split(',')
-      .map(model => model.trim())
-      .filter(Boolean),
+    providers: {
+      gemini: {
+        apiKey: process.env.GEMINI_API_KEY,
+      },
+
+      groq: {
+        apiKey: process.env.GROQ_API_KEY,
+      },
+
+      mistral: {
+        apiKey: process.env.MISTRAL_API_KEY,
+      },
+
+      cloudflare: {
+        apiToken: process.env.CLOUDFLARE_API_TOKEN,
+        accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+      },
+
+      openrouter: {
+        apiKey: process.env.OPENROUTER_API_KEY,
+      },
+
+      local: {
+        baseUrl: process.env.LOCAL_AI_BASE_URL,
+      },
+    },
   },
 };
 
@@ -96,6 +118,10 @@ const requiredEnvVars = [
   'IMAGEKIT_PUBLIC_KEY',
   'IMAGEKIT_URL_ENDPOINT',
   'GEMINI_API_KEY',
+  'GROQ_API_KEY',
+  'MISTRAL_API_KEY',
+  'CLOUDFLARE_API_TOKEN',
+  'OPENROUTER_API_KEY',
 ];
 
 const missingEnvVars = requiredEnvVars.filter(

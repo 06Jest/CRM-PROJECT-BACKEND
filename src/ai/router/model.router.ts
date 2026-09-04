@@ -1,11 +1,11 @@
 import {
+  AIModelReference,
   AIModelRequest,
   AIModelResponse,
 } from "../types/ai.types";
 
 import { AIModel } from "../models/ai-model.interface";
 import { AIModelRouter } from "./ai-model-router";
-import { config } from "../../config/environment";
 
 export class ModelRouter implements AIModelRouter {
   private models: Map<string, AIModel> = new Map();
@@ -15,41 +15,32 @@ export class ModelRouter implements AIModelRouter {
   }
 
   async generate(
+    modelReference: AIModelReference,
     request: AIModelRequest
   ): Promise<AIModelResponse> {
-    const modelIds = request.models?.length
-      ? request.models
-      : config.AI.models;
+    const model = this.models.get(modelReference.id);
 
-    let lastError: unknown;
-
-    for (const modelId of modelIds) {
-      const model = this.models.get(modelId);
-
-      if (!model) {
-        lastError = new Error(
-          `AI model is not registered: ${modelId}`
-        );
-
-        console.error(
-          `AI model is not registered: ${modelId}`
-        );
-
-        continue;
-      }
-
-      try {
-        return await model.generate(request);
-      } catch (error) {
-        lastError = error;
-
-        console.error(
-          `AI model failed: ${modelId}`,
-          error
-        );
-      }
+    if (!model) {
+      throw new Error(
+        `AI model not found: ${modelReference.id}`
+      );
     }
 
-    throw lastError ?? new Error("No AI model available");
+    if (model.provider !== modelReference.provider) {
+      throw new Error(
+        `AI model provider mismatch: expected ${modelReference.provider}, got ${model.provider}`
+      );
+    }
+
+    try {
+      return await model.generate(request);
+    } catch (error) {
+      console.error(
+        `AI model failed: ${model.id}`,
+        error
+      );
+
+      throw error;
+    }
   }
 }

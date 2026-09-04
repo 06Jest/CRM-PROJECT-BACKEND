@@ -1,12 +1,12 @@
 import {
+  AIModelReference,
   AIModelRequest,
   AIModelResponse,
 } from "../types/ai.types";
 
-import { AIModel } from "../models/ai-model.interface";
-
 export interface AIModelRouter {
   generate(
+    modelReference: AIModelReference,
     request: AIModelRequest
   ): Promise<AIModelResponse>;
 }

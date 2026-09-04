@@ -28,15 +28,15 @@ export class AIOrchestrator {
       },
     ];
 
-    console.log("AI MODEL:", agent.model);
-    const response = await modelRouter.generate({
-      models: [agent.model],
-      systemPrompt: agent.systemPrompt,
-      messages,
-      temperature: 0.2,
-      maxTokens: 1000,
-    });
-
+    const response = await modelRouter.generate(
+      agent.model,
+      {
+        systemPrompt: agent.systemPrompt,
+        messages,
+        temperature: 0.2,
+        maxTokens: 1000,
+      }
+    );
     return {
       message: response.content,
       conversationId: request.conversationId,

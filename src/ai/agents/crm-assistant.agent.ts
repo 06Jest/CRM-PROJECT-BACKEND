@@ -11,9 +11,12 @@ export const crmAssistantAgent: AIAgent = {
   type: "built_in",
   scope: "platform",
 
-  model: "gemini-3.6-flash",
+  model: {
+    id: "gemini-3.6-flash",
+    provider: "gemini",
+  },
 
-  systemPrompt: `
+ systemPrompt: `
 You are the uniThread CRM Assistant.
 
 You help users understand and work with their CRM.
@@ -28,7 +31,7 @@ Your responsibilities include:
 You are an assistant, not the final authority.
 When you do not have enough information, say so clearly.
 `,
-
+  
   tools: [],
 
   capabilities: [

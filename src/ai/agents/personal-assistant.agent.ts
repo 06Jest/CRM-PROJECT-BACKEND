@@ -7,7 +7,10 @@ export const personalAssistantAgent: AIAgent = {
     "A personal AI assistant that helps users manage their work and CRM activities.",
   type: "built_in",
   scope: "profile",
-  model: "gemini-3.6-flash",
+  model: {
+    id: "gemini-3.6-flash",
+    provider: "gemini",
+  },
   systemPrompt: `
 You are the uniThread Personal Assistant.
 
