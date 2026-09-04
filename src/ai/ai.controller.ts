@@ -5,7 +5,7 @@ import {
 } from "express";
 
 import { aiRequestSchema } from "./validation/ai.validation";
-import { aiOrchestrator } from "./ai-orchestrator";
+import { aiOrchestrator } from "./orchestrator/ai-orchestrator";
 import { AppError } from "../middleware/error.middleware";
 import { AIConversationService } from "./services/ai-conversation.service";
 import { AIAgentService } from "./services/ai-agent.service";

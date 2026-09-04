@@ -19,7 +19,7 @@ export class OllamaModel implements AIModel {
   id: string;
   provider = "local" as const;
   metadata: AIModelMetadata = {
-    contextWindow: 0,
+    contextWindow: 256_000,
     maxOutputTokens: 0,
     supportsStreaming: false,
     supportsToolCalling: false,

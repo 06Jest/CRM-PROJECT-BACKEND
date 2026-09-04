@@ -312,7 +312,6 @@ export async function revokeRefreshToken(rawToken: string): Promise<void> {
 
 
   if (error) {
-    console.error(error);
     throw new RefreshTokenError(`Failed to revoke token: ${error.message}`);
   }
 }

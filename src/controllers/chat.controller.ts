@@ -488,12 +488,6 @@ export const markConversationAsRead = async (
       );
     }
 
-    console.log("MARK AS READ:", {
-      conversationId,
-      memberId,
-      profileId: req.user?.sub,
-    });
-
 
     await markConversationAsReadFromDB(
       conversationId,

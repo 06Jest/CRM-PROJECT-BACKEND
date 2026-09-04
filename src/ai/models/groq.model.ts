@@ -13,8 +13,8 @@ export class GroqModel implements AIModel {
   id: string;
   provider = "groq" as const;
   metadata: AIModelMetadata = {
-    contextWindow: 0,
-    maxOutputTokens: 0,
+    contextWindow: 131_072,
+    maxOutputTokens: 32_768,
     supportsStreaming: false,
     supportsToolCalling: false,
     supportsStructuredOutput: false,

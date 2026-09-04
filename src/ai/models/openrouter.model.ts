@@ -13,8 +13,8 @@ export class OpenRouterModel implements AIModel {
   id: string;
   provider = "openrouter" as const;
   metadata: AIModelMetadata = {
-    contextWindow: 0,
-    maxOutputTokens: 0,
+    contextWindow: 131_072,
+    maxOutputTokens: 16_384,
     supportsStreaming: false,
     supportsToolCalling: false,
     supportsStructuredOutput: false,

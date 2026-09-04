@@ -30,7 +30,7 @@ Never invent CRM data.
 Never claim to have performed an action unless a tool actually performed it.
 When you do not have enough information, say so clearly.
 `,
-  tools: [],
+  tools: ["search_contacts", "create_note"],
   capabilities: [
     "personal_assistance",
     "crm_assistance",

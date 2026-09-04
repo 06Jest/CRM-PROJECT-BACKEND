@@ -1,29 +1,39 @@
-import { AITool } from "./ai-tool.interface";
+import {
+  AITool,
+  AIRequestContext,
+} from "../types/ai.types";
 
-class ToolRegistry {
-  private tools: Map<string, AITool> = new Map();
+export interface AIToolDefinition extends AITool {
+  execute(
+    arguments_: Record<string, unknown>,
+    context: AIRequestContext
+  ): Promise<unknown>;
+}
 
-  register(tool: AITool): void {
-    this.tools.set(tool.id, tool);
+export class AIToolRegistry {
+  private tools = new Map<string, AIToolDefinition>();
+
+  register(tool: AIToolDefinition): void {
+    this.tools.set(tool.name, tool);
   }
 
-  get(toolId: string): AITool {
-    const tool = this.tools.get(toolId);
+  get(name: string): AIToolDefinition {
+    const tool = this.tools.get(name);
 
     if (!tool) {
-      throw new Error(`AI tool is not registered: ${toolId}`);
+      throw new Error(`AI tool not found: ${name}`);
     }
 
     return tool;
   }
 
-  has(toolId: string): boolean {
-    return this.tools.has(toolId);
+  getAll(): AIToolDefinition[] {
+    return Array.from(this.tools.values());
   }
 
-  getAll(): AITool[] {
-    return Array.from(this.tools.values());
+  has(name: string): boolean {
+    return this.tools.has(name);
   }
 }
 
-export const toolRegistry = new ToolRegistry();
+export const toolRegistry = new AIToolRegistry();

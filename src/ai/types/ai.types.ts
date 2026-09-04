@@ -25,10 +25,24 @@ export interface AIModelMetadata {
   isLocal: boolean;
 }
 
+export interface AIToolParameter {
+  type: string;
+  description?: string;
+  enum?: string[];
+}
+
+export interface AITool {
+  name: string;
+  description: string;
+  parameters: Record<string, AIToolParameter>;
+}
+
 export interface AIRequestContext {
   profileId: string;
   orgId?: string;
+  memberId?: string;
   role: string;
+  accessToken?: string;
 }
 
 export interface AIResponse {
@@ -65,14 +79,22 @@ export type AIProvider =
 export interface AIModelRequest {
   systemPrompt: string;
   messages: AIMessage[];
+  tools?: AITool[];
   temperature?: number;
   maxTokens?: number;
+}
+
+export interface AIToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  thoughtSignature?: string;
 }
 
 export interface AIModelResponse {
   content: string;
   model: string;
-
+  toolCalls?: AIToolCall[];
   usage?: {
     inputTokens?: number;
     outputTokens?: number;
@@ -83,4 +105,8 @@ export interface AIModelResponse {
 export interface AIMessage {
   role: "system" | "user" | "assistant" | "tool";
   content: string;
+  toolCalls?: AIToolCall[];
+  toolCallId?: string;
+  toolName?: string;
+  thoughtSignature?: string;
 }

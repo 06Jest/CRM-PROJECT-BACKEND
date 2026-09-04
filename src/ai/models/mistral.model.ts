@@ -13,7 +13,7 @@ export class MistralModel implements AIModel {
   id: string;
   provider = "mistral" as const;
   metadata: AIModelMetadata = {
-    contextWindow: 0,
+    contextWindow: 256_000,
     maxOutputTokens: 0,
     supportsStreaming: false,
     supportsToolCalling: false,
