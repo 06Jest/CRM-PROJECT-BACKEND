@@ -81,15 +81,11 @@ export async function chatWithAI(
      * Create a new conversation
      */
     if (!input.conversationId) {
-      conversation =
-        await conversationService.createConversation({
-          profileId,
-          orgId:
-            agent.scope === "organization"
-              ? input.orgId
-              : undefined,
-          agentId: agent.id,
-        });
+      conversation = await conversationService.createConversation({
+        profileId,
+        orgId: input.orgId,
+        agentId: agent.id,
+      });
     }
 
     /*
@@ -229,17 +225,17 @@ export async function confirmAIAction(
     const executionService =
       new AIConfirmationExecutionService();
 
+      console.log("CONFIRMATION CONTEXT:", {
+        profileId,
+        orgId: req.user?.org_id,
+        memberId,
+        role,
+      });
     const result =
       await executionService.execute(
         confirmationId,
         {
           profileId,
-          ...(req.user?.org_id
-            ? {
-                orgId:
-                  req.user.org_id,
-              }
-            : {}),
           ...(memberId
             ? { memberId }
             : {}),

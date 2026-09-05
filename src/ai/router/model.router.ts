@@ -10,6 +10,14 @@ import { AIModelRouter } from "./ai-model-router";
 export class ModelRouter implements AIModelRouter {
   private models: Map<string, AIModel> = new Map();
 
+  private fallbackModels: string[] = [
+    "gemini-3.6-flash",
+    "@cf/zai-org/glm-4.7-flash",
+    "mistral-small-latest",
+    "openai/gpt-oss-120b",
+    "openrouter/free",
+  ];
+
   register(model: AIModel): void {
     this.models.set(model.id, model);
   }
@@ -57,6 +65,31 @@ export class ModelRouter implements AIModelRouter {
         `AI model failed: ${model.id}`,
         error
       );
+
+      for (const fallbackModelId of this.fallbackModels) {
+        if (fallbackModelId === model.id) {
+          continue;
+        }
+
+        const fallbackModel = this.models.get(fallbackModelId);
+
+        if (!fallbackModel) {
+          continue;
+        }
+
+        try {
+          console.log(
+            `Trying fallback AI model: ${fallbackModel.id}`
+          );
+
+          return await fallbackModel.generate(request);
+        } catch (fallbackError) {
+          console.error(
+            `Fallback AI model failed: ${fallbackModel.id}`,
+            fallbackError
+          );
+        }
+      }
 
       throw error;
     }

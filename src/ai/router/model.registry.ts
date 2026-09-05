@@ -18,16 +18,16 @@ const groqModel = new GroqModel(
 );
 
 const mistralModel = new MistralModel(
-  "mistral-large-latest"
+  "mistral-small-latest"
 );
 
 const cloudflareModel = new CloudflareModel(
-  "@cf/meta/llama-3.1-8b-instruct",
+  "@cf/zai-org/glm-4.7-flash",
   config.AI.providers.cloudflare.accountId!
 );
 
 const openRouterModel = new OpenRouterModel(
-  "meta-llama/llama-3.3-70b-instruct"
+  "openai/gpt-oss-120b"
 );
 
 const qwen35 = new OllamaModel(

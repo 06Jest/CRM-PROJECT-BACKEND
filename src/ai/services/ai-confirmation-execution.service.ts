@@ -39,7 +39,8 @@ export class AIConfirmationExecutionService {
     const confirmation =
       await confirmationService.get(
         confirmationId,
-        context.profileId
+        context.profileId,
+        context.orgId
       );
 
     if (!confirmation) {
@@ -80,6 +81,13 @@ export class AIConfirmationExecutionService {
         );
       }
     }
+
+    const executionContext: AIRequestContext = {
+      ...context,
+      ...(confirmation.orgId
+        ? { orgId: confirmation.orgId }
+        : {}),
+    };
 
     /*
      * 4. Verify the tool still exists.
@@ -128,7 +136,7 @@ export class AIConfirmationExecutionService {
     try {
       result = await tool.execute(
         confirmation.toolCall.arguments,
-        context
+        executionContext
       );
     } catch (error) {
       if (error instanceof AIToolError) {

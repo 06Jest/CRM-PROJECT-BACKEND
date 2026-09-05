@@ -74,6 +74,11 @@ export const config = {
     apiKey: process.env.GEMINI_API_KEY,
   },
   AI: {
+    models: (process.env.AI_MODELS || "")
+      .split(",")
+      .map((model) => model.trim())
+      .filter(Boolean),
+
     providers: {
       gemini: {
         apiKey: process.env.GEMINI_API_KEY,
