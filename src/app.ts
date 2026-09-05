@@ -22,7 +22,7 @@ import callsRoutes from './routes/calls.routes';
 import smsRoutes from './routes/sms.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import activitiesRoutes from './routes/activities.routes'
-import aiRoutes from "./ai/ai.routes";
+import aiRoutes from "./ai/routes/ai.routes";
 import feedbackRoutes from './routes/feedback.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import healthRoutes from './routes/health';

@@ -63,7 +63,7 @@ export const createNoteTool: AIToolDefinition = {
   
   requiredRoles: ["owner", "manager", "agent"],
 
-  requiresConfirmation: false,
+  requiresConfirmation: true,
 
   parameters: {
     target_type: {

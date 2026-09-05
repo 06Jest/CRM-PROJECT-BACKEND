@@ -68,24 +68,15 @@ export class AIConfirmationService {
   }
 
   async get(
-  confirmationId: string,
-  profileId: string,
-  orgId?: string
-): Promise<AIPendingConfirmation | null> {
-  let query = this.db
-  .from(aiConfirmationTable)
-  .select("*")
-  .eq("id", confirmationId)
-  .eq("profile_id", profileId);
-
-  if (orgId) {
-    query = query.eq("org_id", orgId);
-  } else {
-    query = query.is("org_id", null);
-  }
-
-  const { data, error } 
-    = await query.maybeSingle();
+    confirmationId: string,
+    profileId: string
+  ): Promise<AIPendingConfirmation | null> {
+    const { data, error } = await this.db
+      .from(aiConfirmationTable)
+      .select("*")
+      .eq("id", confirmationId)
+      .eq("profile_id", profileId)
+      .maybeSingle();
 
     if (error) {
       throw new AppError(

@@ -24,8 +24,12 @@ export class AIOrchestrator {
       throw new Error("AI message cannot be empty.");
     }
 
-    if (request.message.length > 10_000) {
+    if (request.message.length > 5_000) {
       throw new Error("AI message is too long.");
+    }
+
+    if (!request.context.accessToken) {
+      throw new Error("AI access token context is required.");
     }
 
     if (!request.context.profileId?.trim()) {
@@ -34,9 +38,11 @@ export class AIOrchestrator {
 
     const agent = agentRegistry.get(request.agentId);
 
+    
+
     const confirmationService =
       new AIConfirmationService(
-        request.context.accessToken!
+        request.context.accessToken
       );
     
     if (

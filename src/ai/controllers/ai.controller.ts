@@ -4,11 +4,12 @@ import {
   NextFunction,
 } from "express";
 
-import { aiRequestSchema } from "./validation/ai.validation";
-import { aiOrchestrator } from "./orchestrator/ai-orchestrator";
-import { AppError } from "../middleware/error.middleware";
-import { AIConversationService } from "./services/ai-conversation.service";
-import { AIAgentService } from "./services/ai-agent.service";
+import { aiRequestSchema } from "../validation/ai.validation";
+import { aiOrchestrator } from "../orchestrator/ai-orchestrator";
+import { AppError } from "../../middleware/error.middleware";
+import { AIConversationService } from "../services/ai-conversation.service";
+import { AIAgentService } from "../services/ai-agent.service";
+import { AIConfirmationExecutionService } from "../services/ai-confirmation-execution.service";
 
 export async function chatWithAI(
   req: Request,
@@ -20,7 +21,8 @@ export async function chatWithAI(
       aiRequestSchema.parse(req.body);
 
     const profileId = req.user?.sub;
-    const role = req.user?.role;
+    const role = req.user?.user_metadata?.role;
+    const memberId = req.user?.member_id;
     const accessToken =
       req.cookies.accessToken;
 
@@ -169,7 +171,9 @@ export async function chatWithAI(
                   conversation.org_id,
               }
             : {}),
+          memberId: memberId ?? undefined,
           role,
+          accessToken,
         },
       });
 
@@ -182,6 +186,71 @@ export async function chatWithAI(
     return res.status(200).json({
       message: response.message,
       conversationId,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function confirmAIAction(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { confirmationId } = req.params;
+    const profileId = req.user?.sub;
+    const role = req.user?.user_metadata?.role;
+    const memberId = req.user?.member_id;
+    const accessToken =
+      req.cookies.accessToken;
+
+    if (
+      !profileId ||
+      !role ||
+      !accessToken
+    ) {
+      throw new AppError(
+        401,
+        "Unauthorized"
+      );
+    }
+
+    if (
+      !confirmationId ||
+      Array.isArray(confirmationId)
+    ) {
+      throw new AppError(
+        400,
+        "Invalid confirmation ID"
+      );
+    }
+
+    const executionService =
+      new AIConfirmationExecutionService();
+
+    const result =
+      await executionService.execute(
+        confirmationId,
+        {
+          profileId,
+          ...(req.user?.org_id
+            ? {
+                orgId:
+                  req.user.org_id,
+              }
+            : {}),
+          ...(memberId
+            ? { memberId }
+            : {}),
+          role,
+          accessToken,
+        }
+      );
+
+    return res.status(200).json({
+      success: true,
+      result,
     });
   } catch (error) {
     next(error);
