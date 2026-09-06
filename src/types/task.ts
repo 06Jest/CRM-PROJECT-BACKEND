@@ -69,7 +69,7 @@ export interface Task {
 
 export interface AddTask {
   title: string;
-  description: string;
+  description?: string;
   task_type: TaskType;
   target_type: TaskTargetType;
   target_id: string | null;

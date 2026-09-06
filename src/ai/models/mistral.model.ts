@@ -4,10 +4,42 @@ import {
   AIModelMetadata,
   AIModelRequest,
   AIModelResponse,
+  AITool,
 } from "../types/ai.types";
 
 import { AIModel } from "./ai-model.interface";
 import { config } from "../../config/environment";
+
+const mapToolsToMistral = (tools?: AITool[]) => {
+  if (!tools?.length) {
+    return undefined;
+  }
+
+  return tools.map((tool) => ({
+    type: "function" as const,
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: {
+        type: "object",
+        properties: Object.fromEntries(
+          Object.entries(tool.parameters).map(
+            ([name, parameter]) => [
+              name,
+              {
+                type: parameter.type,
+                description: parameter.description,
+                ...(parameter.enum
+                  ? { enum: parameter.enum }
+                  : {}),
+              },
+            ]
+          )
+        ),
+      },
+    },
+  }));
+};
 
 export class MistralModel implements AIModel {
   id: string;
@@ -16,7 +48,7 @@ export class MistralModel implements AIModel {
     contextWindow: 256_000,
     maxOutputTokens: 0,
     supportsStreaming: false,
-    supportsToolCalling: false,
+    supportsToolCalling: true,
     supportsStructuredOutput: false,
     isLocal: false,
   };
@@ -29,6 +61,7 @@ export class MistralModel implements AIModel {
       apiKey: config.AI.providers.mistral.apiKey,
     });
   }
+  
 
   async generate(
     request: AIModelRequest
@@ -50,24 +83,38 @@ export class MistralModel implements AIModel {
         ],
         temperature: request.temperature,
         maxTokens: request.maxTokens,
+        tools: mapToolsToMistral(request.tools),
       });
 
     const usage = response.usage;
 
     return {
-      content:
-        typeof response.choices?.[0]?.message?.content ===
-        "string"
-          ? response.choices[0].message.content
-          : "",
-      model: this.id,
-      usage: usage
-        ? {
-            inputTokens: usage.promptTokens,
-            outputTokens: usage.completionTokens,
-            totalTokens: usage.totalTokens,
-          }
-        : undefined,
-    };
+  content:
+    typeof response.choices?.[0]?.message?.content ===
+    "string"
+      ? response.choices[0].message.content
+      : "",
+
+  model: this.id,
+
+  toolCalls: response.choices?.[0]?.message?.toolCalls?.map(
+    (toolCall, index) => ({
+      id: toolCall.id ?? `call_${index}`,
+      name: toolCall.function.name,
+      arguments:
+        typeof toolCall.function.arguments === "string"
+          ? JSON.parse(toolCall.function.arguments)
+          : toolCall.function.arguments,
+    })
+  ),
+
+  usage: usage
+    ? {
+        inputTokens: usage.promptTokens,
+        outputTokens: usage.completionTokens,
+        totalTokens: usage.totalTokens,
+      }
+    : undefined,
+};
   }
 }

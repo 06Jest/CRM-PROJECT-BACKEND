@@ -88,22 +88,25 @@ export const getTaskByIDFromDB = async (
 
 
 export const addTaskToDB = async (
-  orgId: string,
-  memberId: string,
+  profileId: string,
+  orgId: string | undefined,
+  memberId: string | undefined,
   task: AddTask,
   accessToken: string
 ): Promise<TaskListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
+
+  const isPersonal = task.target_type === "personal";
 
   const { data, error } = await db
     .from(tab)
     .insert({
       ...task,
-      org_id: orgId,
-      author_id: memberId,
-      assigned_to: task.assigned_to ?? memberId,
-      updated_by: memberId,
+      profile_id: profileId,
+      org_id: orgId ?? null,
+      author_id: memberId ?? null,
+      assigned_to: isPersonal ? null : task.assigned_to ?? memberId,
+      updated_by: memberId ?? null,
     })
     .select(all)
     .single();
@@ -114,7 +117,6 @@ export const addTaskToDB = async (
 
   return data;
 };
-
 
 export const updateTaskFromDB = async (
   id: string,

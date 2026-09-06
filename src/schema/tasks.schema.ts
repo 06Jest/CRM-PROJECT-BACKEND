@@ -29,7 +29,7 @@ export const addTaskSchema = z.object({
 
   priority: taskPrioritySchema.optional(),
 
-  visibility: taskVisibilitySchema.optional().nullable()
+  visibility: taskVisibilitySchema.optional()
   
 });
 
@@ -48,7 +48,7 @@ export const updateTaskSchema = z.object({
 
   due_date: z.iso.datetime().optional().nullable(),
 
-  visibility: taskVisibilitySchema.optional().nullable(),
+  visibility: taskVisibilitySchema.optional(),
 
   priority: taskPrioritySchema.optional(),
 });

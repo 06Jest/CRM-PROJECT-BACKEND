@@ -78,7 +78,7 @@ async function testConfirmation() {
     agentId: "personal-assistant",
 
     message:
-      "Create a private personal note titled 'Confirmation Test' with the content 'This should require confirmation before being created.'",
+     "Create a personal task titled 'Review CRM Architecture' with the description 'Review the AI architecture and task tool implementation.'",
 
     context: {
       profileId,
@@ -98,15 +98,15 @@ async function testConfirmation() {
     process.exit(1);
   }
 
-  if (response.confirmation.toolCall.name !== "create_note") {
+  if (response.confirmation.toolCall.name !== "create_task") {
     console.error(
-      "\n❌ TEST FAILED: Expected create_note confirmation."
+      "\n❌ TEST FAILED: Expected create_task confirmation."
     );
     process.exit(1);
   }
 
   console.log(
-    "\n✅ TEST PASSED: AI requested confirmation before executing the tool."
+    "\n✅ TEST PASSED: AI requested create_task confirmation before executing the tool."
   );
 }
 

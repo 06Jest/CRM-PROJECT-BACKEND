@@ -21,7 +21,7 @@ async function testConfirmationExecution() {
     agentId: "personal-assistant",
 
     message:
-      "Create a private personal note titled 'Execution Test' with the content 'This note was created through the confirmation execution flow.'",
+  "Create a personal task titled 'Execution Test Task' with the description 'This task was created through the confirmation execution flow.'",
 
     context: {
       profileId,
