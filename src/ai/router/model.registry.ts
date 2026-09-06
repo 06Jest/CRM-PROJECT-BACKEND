@@ -14,7 +14,8 @@ const geminiFlash = new GeminiModel(
 );
 
 const groqModel = new GroqModel(
-  "llama-3.3-70b-versatile"
+  // "llama-3.3-70b-versatile"
+  "openai/gpt-oss-20b"
 );
 
 const mistralModel = new MistralModel(

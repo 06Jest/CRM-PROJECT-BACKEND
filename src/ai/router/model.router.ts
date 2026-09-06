@@ -13,6 +13,7 @@ export class ModelRouter implements AIModelRouter {
   private fallbackModels: string[] = [
     "gemini-3.6-flash",
     "@cf/zai-org/glm-4.7-flash",
+    "openai/gpt-oss-20b",
     "mistral-small-latest",
     "openai/gpt-oss-120b",
     "openrouter/free",

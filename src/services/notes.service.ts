@@ -116,23 +116,28 @@ export const getNoteByIDFromDB = async (
 };
 
 export const addNoteToDB = async (
-  orgId: string,
-  memberId: string,
+  profileId: string,
+  orgId: string | undefined,
+  memberId: string | undefined,
   note: AddNote,
   accessToken: string
 ): Promise<NoteListItem> => {
   const db = createSupabaseUserClient(accessToken);
+  
 
   const { data, error } = await db
     .from(tab)
     .insert({
       ...note,
-      org_id: orgId,
-      author_id: memberId,
-      updated_by: memberId,
+      profile_id: profileId,
+      org_id: orgId ?? null,
+      author_id: memberId ?? null,
+      updated_by: memberId ?? null,
     })
     .select(all)
     .single();
+
+    
 
   if (error) {
     throw new AppError(500, `Failed to add Note: ${error.message}`);

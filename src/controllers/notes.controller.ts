@@ -152,10 +152,11 @@ export const addNote = async (
     const orgId = req.user?.org_id;
     const memberId = req.user?.member_id
     const accessToken = req.cookies.accessToken;
+    const profileId = req.user?.profile_id;
 
     const note = req.body;
 
-    if (!orgId || !memberId || !accessToken) {
+    if (!profileId || !orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
@@ -168,6 +169,7 @@ export const addNote = async (
     );
 
     const data = await addNoteToDB(
+      profileId,
       orgId,
       memberId,
       note,

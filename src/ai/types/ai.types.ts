@@ -29,6 +29,7 @@ export interface AIToolParameter {
   type: string;
   description?: string;
   enum?: string[];
+  nullable?: boolean;
 }
 
 export interface AITool {

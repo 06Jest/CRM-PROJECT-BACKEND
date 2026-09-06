@@ -82,6 +82,7 @@ export const createNoteTool: AIToolDefinition = {
 
     target_id: {
       type: "string",
+      nullable: true,
       description:
         "The ID of the CRM record the note belongs to. Use null for personal notes.",
     },
@@ -112,21 +113,43 @@ export const createNoteTool: AIToolDefinition = {
 
     const args = parsed.data;
 
-    if (
-      args.target_type !== "personal" &&
-      args.target_id
-    ) {
+    if (args.target_type === "personal") {
+      if (args.target_id) {
+        throw new AIToolError(
+          "Personal notes cannot have a target_id."
+        );
+      }
+    } else {
+      if (!args.target_id) {
+        throw new AIToolError(
+          `A ${args.target_type} note requires a target_id.`
+        );
+      }
+
+      if (!context.orgId || !context.accessToken) {
+        throw new AIToolError(
+          "An organization context is required for CRM notes."
+        );
+      }
+
       await verifyTargetOwnership(
         args.target_type,
         args.target_id,
-        context.orgId!,
-        context.accessToken!
+        context.orgId,
+        context.accessToken
+      );
+    }
+
+    if (!context.accessToken) {
+      throw new AIToolError(
+        "An access token is required to create a note."
       );
     }
 
     return addNoteToDB(
-      context.orgId!,
-      context.memberId!,
+      context.profileId,
+      context.orgId,
+      context.memberId,
       {
         target_type: args.target_type,
         target_id: args.target_id ?? null,
@@ -134,7 +157,8 @@ export const createNoteTool: AIToolDefinition = {
         content: args.content,
         visibility: args.visibility,
       },
-      context.accessToken!
+      context.accessToken
     );
-},
+
+  },
 };

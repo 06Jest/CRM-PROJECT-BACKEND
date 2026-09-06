@@ -70,7 +70,7 @@ async function testRouter() {
     }
   );
 
-  console.log("Gemini tool response:", toolResponse);
+  console.dir(toolResponse, { depth: null });
 
 //   console.log("\nTesting Qwen 3.5 4B...");
 
