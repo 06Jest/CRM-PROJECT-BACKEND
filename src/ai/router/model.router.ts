@@ -16,7 +16,7 @@ export class ModelRouter implements AIModelRouter {
     "@cf/zai-org/glm-4.7-flash",
     "ministral-3b-2512",
     "openai/gpt-oss-120b",
-    "openrouter/free",
+    "qwen3.5:4b",
   ];
 
   register(model: AIModel): void {

@@ -4,10 +4,42 @@ import {
   AIModelMetadata,
   AIModelRequest,
   AIModelResponse,
+  AITool,
 } from "../types/ai.types";
 
 import { AIModel } from "./ai-model.interface";
 import { config } from "../../config/environment";
+
+const mapToolsToOpenRouter = (tools?: AITool[]) => {
+  if (!tools?.length) {
+    return undefined;
+  }
+
+  return tools.map((tool) => ({
+    type: "function" as const,
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: {
+        type: "object",
+        properties: Object.fromEntries(
+          Object.entries(tool.parameters).map(
+            ([name, parameter]) => [
+              name,
+              {
+                type: parameter.type,
+                description: parameter.description,
+                ...(parameter.enum
+                  ? { enum: parameter.enum }
+                  : {}),
+              },
+            ]
+          )
+        ),
+      },
+    },
+  }));
+};
 
 export class OpenRouterModel implements AIModel {
   id: string;
@@ -16,7 +48,7 @@ export class OpenRouterModel implements AIModel {
     contextWindow: 131_072,
     maxOutputTokens: 16_384,
     supportsStreaming: false,
-    supportsToolCalling: false,
+    supportsToolCalling: true,
     supportsStructuredOutput: false,
     isLocal: false,
   };
@@ -58,22 +90,32 @@ export class OpenRouterModel implements AIModel {
         ],
         temperature: request.temperature,
         maxTokens: request.maxTokens,
+        tools: mapToolsToOpenRouter(request.tools),
         stream: false,
       },
     });
 
   if ("choices" in response) {
-    const usage = response.usage;
 
-    const content =
-      response.choices?.[0]?.message?.content;
+    const message = response.choices?.[0]?.message;
+    const usage = response.usage;
 
     return {
       content:
-        typeof content === "string"
-          ? content
+        typeof message?.content === "string"
+          ? message.content
           : "",
       model: this.id,
+      toolCalls: message?.toolCalls?.map(
+        (toolCall, index) => ({
+          id: toolCall.id ?? `call_${index}`,
+          name: toolCall.function.name,
+          arguments:
+            typeof toolCall.function.arguments === "string"
+              ? JSON.parse(toolCall.function.arguments)
+              : toolCall.function.arguments,
+        })
+      ),
       usage: usage
         ? {
             inputTokens: usage.promptTokens,

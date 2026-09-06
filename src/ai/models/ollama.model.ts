@@ -2,6 +2,7 @@ import {
   AIModelMetadata,
   AIModelRequest,
   AIModelResponse,
+  AITool,
 } from "../types/ai.types";
 
 import { AIModel } from "./ai-model.interface";
@@ -10,10 +11,47 @@ import { config } from "../../config/environment";
 interface OllamaChatResponse {
   message?: {
     content?: string;
+    tool_calls?: {
+      function: {
+        name: string;
+        arguments: Record<string, unknown> | string;
+      };
+    }[];
   };
   prompt_eval_count?: number;
   eval_count?: number;
 }
+
+const mapToolsToOllama = (tools?: AITool[]) => {
+  if (!tools?.length) {
+    return undefined;
+  }
+
+  return tools.map((tool) => ({
+    type: "function" as const,
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: {
+        type: "object",
+        properties: Object.fromEntries(
+          Object.entries(tool.parameters).map(
+            ([name, parameter]) => [
+              name,
+              {
+                type: parameter.type,
+                description: parameter.description,
+                ...(parameter.enum
+                  ? { enum: parameter.enum }
+                  : {}),
+              },
+            ]
+          )
+        ),
+      },
+    },
+  }));
+};
 
 export class OllamaModel implements AIModel {
   id: string;
@@ -22,7 +60,7 @@ export class OllamaModel implements AIModel {
     contextWindow: 256_000,
     maxOutputTokens: 0,
     supportsStreaming: false,
-    supportsToolCalling: false,
+    supportsToolCalling: true,
     supportsStructuredOutput: false,
     isLocal: true,
   };
@@ -60,6 +98,7 @@ export class OllamaModel implements AIModel {
                 content: message.content,
               })),
           ],
+          tools: mapToolsToOllama(request.tools),
           stream: false,
           think: false,
           options: {
@@ -84,6 +123,17 @@ export class OllamaModel implements AIModel {
     return {
       content: data.message?.content ?? "",
       model: this.id,
+      toolCalls: data.message?.tool_calls?.map(
+        (toolCall, index) => ({
+          id: `call_${index}`,
+          name: toolCall.function.name,
+          arguments:
+            typeof toolCall.function.arguments === "string"
+              ? JSON.parse(toolCall.function.arguments)
+              : toolCall.function.arguments,
+        })
+      ),
+
       usage: {
         inputTokens: data.prompt_eval_count,
         outputTokens: data.eval_count,
