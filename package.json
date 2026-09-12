@@ -11,6 +11,8 @@
     "test:confirm-exec": "ts-node src/ai/services/test-confirmation-execution.ts",
     "test:splitter": "ts-node src/ai/rag/splitters/test-document-splitter.ts",
     "test:cloudflare-embedding": "ts-node src/ai/rag/embeddings/test-cloudflare-embedding.ts",
+    "test:similarity-search": "ts-node src/ai/rag/retrieval/test-similarity-search.ts",
+    "test:ingestion": "ts-node src/ai/rag/ingestion/test-document-ingestion.ts",
     "start": "node dist/index.js",
     "lint": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"

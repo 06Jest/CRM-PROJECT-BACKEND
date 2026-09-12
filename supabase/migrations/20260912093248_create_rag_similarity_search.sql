@@ -1,0 +1,42 @@
+create or replace function public.match_rag_chunks(
+  query_embedding extensions.vector(384),
+  match_count integer default 5,
+  filter_organization_id uuid default null,
+  filter_profile_id uuid default null
+)
+returns table (
+  id uuid,
+  document_id uuid,
+  content text,
+  chunk_index integer,
+  metadata jsonb,
+  similarity float
+)
+language sql
+stable
+set search_path = ''
+as $$
+  select
+    c.id,
+    c.document_id,
+    c.content,
+    c.chunk_index,
+    c.metadata,
+    1 - (
+      c.embedding OPERATOR(extensions.<=>) query_embedding
+    ) as similarity
+  from public.rag_chunks as c
+  inner join public.rag_documents as d
+    on d.id = c.document_id
+  where
+    (
+      filter_organization_id is null
+      or d.organization_id = filter_organization_id
+    )
+    and (
+      filter_profile_id is null
+      or d.profile_id = filter_profile_id
+    )
+  order by c.embedding OPERATOR(extensions.<=>) query_embedding
+  limit least(greatest(match_count, 1), 50);
+$$;
