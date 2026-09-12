@@ -16,7 +16,7 @@ export class GeminiModel implements AIModel {
     contextWindow: 1_048_576,
     maxOutputTokens: 65_536,
     supportsStreaming: false,
-    supportsToolCalling: false,
+    supportsToolCalling: true,
     supportsStructuredOutput: false,
     isLocal: false,
   };

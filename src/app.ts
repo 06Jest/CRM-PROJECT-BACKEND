@@ -27,6 +27,7 @@ import feedbackRoutes from './routes/feedback.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import healthRoutes from './routes/health';
 import cookieParser from 'cookie-parser';
+import mcpRoutes from './ai/mcp/routes/mcp.routes';
 
 const app = express();
 
@@ -74,9 +75,10 @@ app.use('/api/chat', chatsRoutes);
 app.use('/api/calls', callsRoutes); 
 
 app.use("/api/ai", aiRoutes);
+app.use("/api/mcp", mcpRoutes);
+
 
 app.use('/api/health', healthRoutes);
-
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json'}));
 
 
