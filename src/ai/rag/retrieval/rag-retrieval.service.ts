@@ -19,7 +19,11 @@ export class RagRetrievalService {
 
   async retrieve(
     query: string,
-    options: RagRetrievalOptions
+    options?: {
+      topK?: number;
+      minSimilarity?: number;
+      filter?: VectorSearchFilter;
+    }
   ): Promise<StoredRagChunk[]> {
     const normalizedQuery = query.trim();
 
@@ -31,9 +35,10 @@ export class RagRetrievalService {
       normalizedQuery
     );
 
-    return this.vectorStore.similaritySearch(queryEmbedding, {
-      topK: options.topK ?? ragConfig.topK,
-      filter: options.filter,
+     return this.vectorStore.similaritySearch(queryEmbedding, {
+      topK: options?.topK,
+      minSimilarity: options?.minSimilarity,
+      filter: options?.filter,
     });
   }
 }

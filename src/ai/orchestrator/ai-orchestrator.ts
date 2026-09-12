@@ -9,6 +9,7 @@ import modelRouter from "../router/model.registry";
 import { toolRegistry } from "../tools";
 import { AIToolError } from "../tools/tool.registry";
 import { AIConfirmationService } from "../services/ai-confirmation.service";
+import { ragContextService } from "../rag/rag.module";
 import crypto from "crypto";
 
 const MAX_TOOL_ROUNDS = 5;
@@ -66,10 +67,25 @@ export class AIOrchestrator {
       return toolRegistry.get(toolName);
     });
 
+    const ragContext = await ragContextService.prepare({
+      query: request.message,
+      ...(request.context.orgId
+        ? { organizationId: request.context.orgId }
+        : { profileId: request.context.profileId }),
+      topK: 5,
+      minSimilarity: 0.7,
+    });
+
+    const systemPrompt = [
+      agent.systemPrompt,
+      "",
+      ragContext.referenceSection,
+    ].join("\n");
+
     let response = await modelRouter.generate(
       agent.model,
       {
-        systemPrompt: agent.systemPrompt,
+        systemPrompt,
         messages,
         tools,
         temperature: 0.2,

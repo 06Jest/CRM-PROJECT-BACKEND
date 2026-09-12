@@ -5,6 +5,7 @@ export interface StoredRagChunk {
   content: string;
   metadata: RagChunk["metadata"];
   embedding: number[];
+  similarity?: number;
 }
 
 export interface VectorSearchFilter {
@@ -21,6 +22,7 @@ export interface VectorStore {
     queryEmbedding: number[],
     options?: {
       topK?: number;
+      minSimilarity?: number;
       filter?: VectorSearchFilter;
     }
   ): Promise<StoredRagChunk[]>;

@@ -3,6 +3,18 @@ import { RagRetrievalService } from "./rag-retrieval.service";
 import { SupabaseVectorStoreService } from "../vector-store/supabase-vector-store.service";
 
 async function main() {
+  const organizationId = process.env.TEST_ORG_ID;
+
+  if (!organizationId) {
+    throw new Error(
+      "Missing TEST_ORGANIZATION_ID environment variable."
+    );
+  }
+
+  const query =
+    process.argv.slice(2).join(" ").trim() ||
+    "What notes mention a customer's payment issue?";
+
   const embeddingService = new CloudflareEmbeddingService();
   const vectorStore = new SupabaseVectorStoreService();
 
@@ -11,24 +23,33 @@ async function main() {
     vectorStore
   );
 
-  const query = "What does uniThread help users manage?";
-
-  console.log("Running RAG retrieval...");
+  console.log("Searching RAG knowledge...");
+  console.log("Query:", query);
+  console.log("Organization:", organizationId);
 
   const results = await retrievalService.retrieve(query, {
     topK: 5,
+    minSimilarity: 0.7,
     filter: {
-      profileId: "f11a9833-263a-4f64-8845-f63426b2089b",
+      organizationId,
     },
   });
 
-  console.log(`Retrieved ${results.length} result(s).`);
+  console.log(`\nFound ${results.length} matching chunks:\n`);
 
   for (const [index, result] of results.entries()) {
-    console.log(`\nResult ${index + 1}`);
+    console.log(`--- Result ${index + 1} ---`);
+    console.log(
+      "Similarity:",
+      result.similarity?.toFixed(4) ?? "unavailable"
+    );
     console.log("Source ID:", result.metadata.sourceId);
-    console.log("Title:", result.metadata.title);
-    console.log("Content:", result.content);
+    console.log("Source type:", result.metadata.sourceType);
+    console.log("Title:", result.metadata.title ?? "(untitled)");
+    console.log("Chunk index:", result.metadata.chunkIndex);
+    console.log("Content:");
+    console.log(result.content);
+    console.log();
   }
 }
 

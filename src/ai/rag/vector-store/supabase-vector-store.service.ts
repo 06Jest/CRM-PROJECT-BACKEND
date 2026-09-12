@@ -47,28 +47,105 @@ export class SupabaseVectorStoreService implements VectorStore {
       );
     }
 
-    const { data: storedDocument, error: documentError } = await supabaseAdmin
-      .from("rag_documents")
-      .insert({
-        source_id: metadata.sourceId,
-        source_type: metadata.sourceType,
-        source_name: metadata.title ?? metadata.sourceId,
-        organization_id: metadata.organizationId ?? null,
-        profile_id: metadata.profileId ?? null,
-        title: metadata.title ?? null,
-        metadata: {},
-      })
-      .select("id")
-      .single();
+    const organizationId = metadata.organizationId ?? null;
+    const profileId = metadata.profileId ?? null;
 
-    if (documentError) {
+    /*
+    * Find the existing document for this source.
+    *
+    * A source is uniquely identified by:
+    * - source_id
+    * - source_type
+    * - organization_id OR profile_id
+    */
+    let documentQuery = supabaseAdmin
+      .from("rag_documents")
+      .select("id")
+      .eq("source_id", metadata.sourceId)
+      .eq("source_type", metadata.sourceType);
+
+    if (organizationId) {
+      documentQuery = documentQuery
+        .eq("organization_id", organizationId)
+        .is("profile_id", null);
+    } else {
+      documentQuery = documentQuery
+        .eq("profile_id", profileId)
+        .is("organization_id", null);
+    }
+
+    const {
+      data: existingDocument,
+      error: existingDocumentError,
+    } = await documentQuery.maybeSingle();
+
+    if (existingDocumentError) {
       throw new Error(
-        `Failed to store RAG document: ${documentError.message}`
+        `Failed to find existing RAG document: ${existingDocumentError.message}`
       );
     }
 
+    let documentId: string;
+
+    if (existingDocument) {
+      documentId = existingDocument.id;
+
+      const { error: updateDocumentError } = await supabaseAdmin
+        .from("rag_documents")
+        .update({
+          source_name: metadata.title ?? metadata.sourceId,
+          title: metadata.title ?? null,
+          metadata: {},
+          indexed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", documentId);
+
+      if (updateDocumentError) {
+        throw new Error(
+          `Failed to update RAG document: ${updateDocumentError.message}`
+        );
+      }
+
+      // Remove the old chunks before inserting the newly generated chunks.
+      const { error: deleteChunksError } = await supabaseAdmin
+        .from("rag_chunks")
+        .delete()
+        .eq("document_id", documentId);
+
+      if (deleteChunksError) {
+        throw new Error(
+          `Failed to replace existing RAG chunks: ${deleteChunksError.message}`
+        );
+      }
+    } else {
+      const { data: storedDocument, error: documentError } =
+        await supabaseAdmin
+          .from("rag_documents")
+          .insert({
+            source_id: metadata.sourceId,
+            source_type: metadata.sourceType,
+            source_name: metadata.title ?? metadata.sourceId,
+            organization_id: organizationId,
+            profile_id: profileId,
+            title: metadata.title ?? null,
+            metadata: {},
+            indexed_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+      if (documentError) {
+        throw new Error(
+          `Failed to store RAG document: ${documentError.message}`
+        );
+      }
+
+      documentId = storedDocument.id;
+    }
+
     const chunkRows = chunks.map((chunk) => ({
-      document_id: storedDocument.id,
+      document_id: documentId,
       content: chunk.content,
       chunk_index: chunk.metadata.chunkIndex,
       embedding: chunk.embedding,
@@ -82,7 +159,7 @@ export class SupabaseVectorStoreService implements VectorStore {
     }));
 
     if (chunkRows.length === 0) {
-      return storedDocument.id;
+      return documentId;
     }
 
     const { error: chunksError } = await supabaseAdmin
@@ -90,18 +167,12 @@ export class SupabaseVectorStoreService implements VectorStore {
       .insert(chunkRows);
 
     if (chunksError) {
-      // Prevent leaving an orphaned document if chunk insertion fails.
-      await supabaseAdmin
-        .from("rag_documents")
-        .delete()
-        .eq("id", storedDocument.id);
-
       throw new Error(
         `Failed to store RAG chunks: ${chunksError.message}`
       );
     }
 
-    return storedDocument.id;
+    return documentId;
   }
 
   async storeChunks(chunks: StoredRagChunk[]): Promise<void> {
@@ -118,6 +189,7 @@ export class SupabaseVectorStoreService implements VectorStore {
     queryEmbedding: number[],
     options?: {
       topK?: number;
+      minSimilarity?: number;
       filter?: VectorSearchFilter;
     }
   ): Promise<StoredRagChunk[]> {
@@ -129,7 +201,7 @@ export class SupabaseVectorStoreService implements VectorStore {
 
     const topK = Math.min(Math.max(options?.topK ?? 5, 1), 50);
     const filter = options?.filter;
-
+    const minSimilarity = options?.minSimilarity ?? 0;
     const organizationId = filter?.organizationId ?? null;
     const profileId = filter?.profileId ?? null;
 
@@ -157,18 +229,21 @@ export class SupabaseVectorStoreService implements VectorStore {
 
     const matchedChunks = (data ?? []) as MatchedRagChunk[];
 
-    return matchedChunks.map((chunk) => ({
-      id: chunk.id,
-      content: chunk.content,
-      metadata: {
-        sourceId: chunk.metadata.sourceId,
-        sourceType: chunk.metadata.sourceType,
-        organizationId: chunk.metadata.organizationId ?? undefined,
-        profileId: chunk.metadata.profileId ?? undefined,
-        title: chunk.metadata.title ?? undefined,
-        chunkIndex: chunk.chunk_index,
-      },
-      embedding: [],
-    }));
+    return matchedChunks
+      .filter((chunk) => chunk.similarity >= minSimilarity)
+      .map((chunk) => ({
+        id: chunk.id,
+        content: chunk.content,
+        metadata: {
+          sourceId: chunk.metadata.sourceId,
+          sourceType: chunk.metadata.sourceType,
+          organizationId: chunk.metadata.organizationId ?? undefined,
+          profileId: chunk.metadata.profileId ?? undefined,
+          title: chunk.metadata.title ?? undefined,
+          chunkIndex: chunk.chunk_index,
+        },
+        embedding: [],
+        similarity: chunk.similarity,
+      }));
   }
 }
