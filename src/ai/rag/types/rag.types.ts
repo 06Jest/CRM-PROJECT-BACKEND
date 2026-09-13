@@ -1,6 +1,9 @@
+export type RagScopeType = "platform" | "organization" | "profile";
+
 export interface RagDocumentMetadata {
   sourceId: string;
   sourceType: string;
+  scopeType: RagScopeType;
   organizationId?: string;
   profileId?: string;
   title?: string;

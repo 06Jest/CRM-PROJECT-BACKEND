@@ -10,13 +10,13 @@ import { toolRegistry } from "../tools";
 import { AIToolError } from "../tools/tool.registry";
 import { AIConfirmationService } from "../services/ai-confirmation.service";
 import { ragContextService } from "../rag/rag.module";
+import { ragCitationParserService } from "../rag/citations/rag-citation-parser.service";
 import crypto from "crypto";
 
 const MAX_TOOL_ROUNDS = 5;
 
 export class AIOrchestrator {
   async run(request: AIRequest): Promise<AIResponse> {
-
     if (!request.agentId?.trim()) {
       throw new Error("AI agent ID is required.");
     }
@@ -39,13 +39,10 @@ export class AIOrchestrator {
 
     const agent = agentRegistry.get(request.agentId);
 
-    
+    const confirmationService = new AIConfirmationService(
+      request.context.accessToken
+    );
 
-    const confirmationService =
-      new AIConfirmationService(
-        request.context.accessToken
-      );
-    
     if (
       agent.scope === "organization" &&
       !request.context.orgId
@@ -67,13 +64,26 @@ export class AIOrchestrator {
       return toolRegistry.get(toolName);
     });
 
+    const ragScope =
+      agent.scope === "platform"
+        ? {
+            scopeType: "platform" as const,
+          }
+        : agent.scope === "organization"
+          ? {
+              scopeType: "organization" as const,
+              organizationId: request.context.orgId,
+            }
+          : {
+              scopeType: "profile" as const,
+              profileId: request.context.profileId,
+            };
+
     const ragContext = await ragContextService.prepare({
       query: request.message,
-      ...(request.context.orgId
-        ? { organizationId: request.context.orgId }
-        : { profileId: request.context.profileId }),
+      ...ragScope,
       topK: 5,
-      minSimilarity: 0.7,
+      minSimilarity: 0.5,
     });
 
     const systemPrompt = [
@@ -93,7 +103,7 @@ export class AIOrchestrator {
       }
     );
 
-   if (response.toolCalls?.length) {
+    if (response.toolCalls?.length) {
       let toolRound = 0;
 
       while (response.toolCalls?.length) {
@@ -142,8 +152,7 @@ export class AIOrchestrator {
                 : {}),
               ...(request.conversationId
                 ? {
-                    conversationId:
-                      request.conversationId,
+                    conversationId: request.conversationId,
                   }
                 : {}),
               agentId: agent.id,
@@ -156,6 +165,8 @@ export class AIOrchestrator {
             return {
               message: `I need your confirmation before executing "${tool.name}".`,
               conversationId: request.conversationId,
+              sources: ragContext.context.sources,
+              citations: [],
               confirmation: {
                 required: true,
                 confirmationId,
@@ -192,7 +203,7 @@ export class AIOrchestrator {
         response = await modelRouter.generate(
           agent.model,
           {
-            systemPrompt: agent.systemPrompt,
+            systemPrompt,
             messages,
             tools,
             temperature: 0.2,
@@ -200,12 +211,18 @@ export class AIOrchestrator {
           }
         );
       }
-      
     }
+
+    const citations = ragCitationParserService.parse(
+      response.content,
+      ragContext.context.sources
+    );
 
     return {
       message: response.content,
       conversationId: request.conversationId,
+      sources: ragContext.context.sources,
+      citations,
     };
   }
 }

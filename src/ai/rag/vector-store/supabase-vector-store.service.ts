@@ -8,6 +8,7 @@ import type {
   VectorSearchFilter,
   VectorStore,
 } from "../retrieval/vector-store.interface";
+
 interface EmbeddedRagChunk {
   content: string;
   metadata: RagDocumentMetadata & {
@@ -24,6 +25,7 @@ interface MatchedRagChunk {
   metadata: {
     sourceId: string;
     sourceType: string;
+    scopeType: "platform" | "organization" | "profile";
     organizationId?: string | null;
     profileId?: string | null;
     title?: string | null;
@@ -41,37 +43,63 @@ export class SupabaseVectorStoreService implements VectorStore {
     const hasOrganizationId = Boolean(metadata.organizationId);
     const hasProfileId = Boolean(metadata.profileId);
 
-    if (hasOrganizationId === hasProfileId) {
-      throw new Error(
-        "A RAG document must belong to exactly one organization or profile."
-      );
+    if (metadata.scopeType === "platform") {
+      if (hasOrganizationId || hasProfileId) {
+        throw new Error(
+          "Platform RAG documents cannot have an organizationId or profileId."
+        );
+      }
+    }
+
+    if (metadata.scopeType === "organization") {
+      if (!hasOrganizationId || hasProfileId) {
+        throw new Error(
+          "Organization RAG documents require organizationId and cannot have profileId."
+        );
+      }
+    }
+
+    if (metadata.scopeType === "profile") {
+      if (!hasProfileId || hasOrganizationId) {
+        throw new Error(
+          "Profile RAG documents require profileId and cannot have organizationId."
+        );
+      }
     }
 
     const organizationId = metadata.organizationId ?? null;
     const profileId = metadata.profileId ?? null;
 
     /*
-    * Find the existing document for this source.
-    *
-    * A source is uniquely identified by:
-    * - source_id
-    * - source_type
-    * - organization_id OR profile_id
-    */
+     * Find the existing document for this source.
+     *
+     * A source is uniquely identified by:
+     * - source_id
+     * - source_type
+     * - scope_type
+     * - organization_id OR profile_id
+     *
+     * Platform documents have neither organization_id nor profile_id.
+     */
     let documentQuery = supabaseAdmin
       .from("rag_documents")
       .select("id")
       .eq("source_id", metadata.sourceId)
-      .eq("source_type", metadata.sourceType);
+      .eq("source_type", metadata.sourceType)
+      .eq("scope_type", metadata.scopeType);
 
     if (organizationId) {
       documentQuery = documentQuery
         .eq("organization_id", organizationId)
         .is("profile_id", null);
-    } else {
+    } else if (profileId) {
       documentQuery = documentQuery
         .eq("profile_id", profileId)
         .is("organization_id", null);
+    } else {
+      documentQuery = documentQuery
+        .is("organization_id", null)
+        .is("profile_id", null);
     }
 
     const {
@@ -93,6 +121,7 @@ export class SupabaseVectorStoreService implements VectorStore {
       const { error: updateDocumentError } = await supabaseAdmin
         .from("rag_documents")
         .update({
+          scope_type: metadata.scopeType,
           source_name: metadata.title ?? metadata.sourceId,
           title: metadata.title ?? null,
           metadata: {},
@@ -126,6 +155,7 @@ export class SupabaseVectorStoreService implements VectorStore {
             source_id: metadata.sourceId,
             source_type: metadata.sourceType,
             source_name: metadata.title ?? metadata.sourceId,
+            scope_type: metadata.scopeType,
             organization_id: organizationId,
             profile_id: profileId,
             title: metadata.title ?? null,
@@ -152,6 +182,7 @@ export class SupabaseVectorStoreService implements VectorStore {
       metadata: {
         sourceId: chunk.metadata.sourceId,
         sourceType: chunk.metadata.sourceType,
+        scopeType: chunk.metadata.scopeType,
         organizationId: chunk.metadata.organizationId ?? null,
         profileId: chunk.metadata.profileId ?? null,
         title: chunk.metadata.title ?? null,
@@ -202,21 +233,45 @@ export class SupabaseVectorStoreService implements VectorStore {
     const topK = Math.min(Math.max(options?.topK ?? 5, 1), 50);
     const filter = options?.filter;
     const minSimilarity = options?.minSimilarity ?? 0;
+
+    const scopeType = filter?.scopeType;
     const organizationId = filter?.organizationId ?? null;
     const profileId = filter?.profileId ?? null;
 
-    if (
-      (organizationId === null && profileId === null) ||
-      (organizationId !== null && profileId !== null)
-    ) {
+    if (!scopeType) {
       throw new Error(
-        "Similarity search requires exactly one organizationId or profileId."
+        "Similarity search requires an explicit scopeType."
       );
+    }
+
+    if (scopeType === "platform") {
+      if (organizationId !== null || profileId !== null) {
+        throw new Error(
+          "Platform similarity search cannot include organizationId or profileId."
+        );
+      }
+    }
+
+    if (scopeType === "organization") {
+      if (organizationId === null || profileId !== null) {
+        throw new Error(
+          "Organization similarity search requires organizationId and cannot include profileId."
+        );
+      }
+    }
+
+    if (scopeType === "profile") {
+      if (profileId === null || organizationId !== null) {
+        throw new Error(
+          "Profile similarity search requires profileId and cannot include organizationId."
+        );
+      }
     }
 
     const { data, error } = await supabaseAdmin.rpc("match_rag_chunks", {
       query_embedding: queryEmbedding,
       match_count: topK,
+      filter_scope_type: scopeType,
       filter_organization_id: organizationId,
       filter_profile_id: profileId,
     });
@@ -237,7 +292,9 @@ export class SupabaseVectorStoreService implements VectorStore {
         metadata: {
           sourceId: chunk.metadata.sourceId,
           sourceType: chunk.metadata.sourceType,
-          organizationId: chunk.metadata.organizationId ?? undefined,
+          scopeType: chunk.metadata.scopeType,
+          organizationId:
+            chunk.metadata.organizationId ?? undefined,
           profileId: chunk.metadata.profileId ?? undefined,
           title: chunk.metadata.title ?? undefined,
           chunkIndex: chunk.chunk_index,

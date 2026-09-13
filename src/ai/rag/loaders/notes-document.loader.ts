@@ -94,6 +94,7 @@ export class NotesDocumentLoader implements RagDocumentLoader {
       metadata: {
         sourceId: note.id,
         sourceType: "note",
+        scopeType: "organization",
         organizationId: note.org_id,
         title: note.title,
       },

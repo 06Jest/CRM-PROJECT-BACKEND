@@ -49,11 +49,30 @@ export interface AIRequestContext {
 export interface AIResponse {
   message: string;
   conversationId?: string;
+  sources?: AIResponseSource[];
+  citations?: AICitation[];
   confirmation?: {
     required: true;
     confirmationId: string;
     toolCall: AIToolCall;
   };
+}
+
+export interface AIResponseSource {
+  sourceId: string;
+  sourceType: string;
+  title?: string;
+  chunkIndex: number;
+  similarity?: number;
+}
+
+export interface AICitation {
+  sourceIndex: number;
+  sourceId: string;
+  sourceType: string;
+  title?: string;
+  chunkIndex: number;
+  similarity?: number;
 }
 
 export interface AIModelReference {

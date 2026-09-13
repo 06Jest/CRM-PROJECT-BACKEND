@@ -1,12 +1,13 @@
 import { aiOrchestrator } from "./ai-orchestrator";
 
 async function testRagOrchestrator() {
-  console.log("Testing AI orchestrator with RAG...\n");
+  console.log(
+    "Testing CRM assistant with platform-scoped RAG...\n"
+  );
 
   const accessToken = process.env.TEST_ACCESS_TOKEN;
   const memberId = process.env.TEST_MEMBER_ID;
   const profileId = process.env.TEST_PROFILE_ID;
-  const orgId = process.env.TEST_ORG_ID;
 
   if (!accessToken) {
     throw new Error(
@@ -26,18 +27,12 @@ async function testRagOrchestrator() {
     );
   }
 
-  if (!orgId) {
-    throw new Error(
-      "TEST_ORG_ID is missing from environment variables."
-    );
-  }
-
   const response = await aiOrchestrator.run({
-    agentId: "personal-assistant",
-    message: "What are Brightline Solutions' CRM requirements?",
+    agentId: "crm-assistant",
+    message:
+       "What features are currently planned or in development on the uniThread roadmap?",
     context: {
       profileId,
-      orgId,
       memberId,
       role: "owner",
       accessToken,
@@ -49,7 +44,7 @@ async function testRagOrchestrator() {
 }
 
 testRagOrchestrator().catch((error) => {
-  console.error("\n❌ RAG orchestrator test failed:");
+  console.error("\n❌ CRM assistant test failed:");
   console.error(error);
   process.exit(1);
 });
