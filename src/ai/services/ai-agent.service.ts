@@ -15,72 +15,96 @@ export class AIAgentService {
   }
 
   async getAuthorizedAgent({
-    agentId,
-    profileId,
-    orgId,
-  }: {
-    agentId: string;
-    profileId: string;
-    orgId?: string;
-  }): Promise<AIAgent> {
-    const agent = agentRegistry.get(agentId);
+  agentId,
+  profileId,
+  orgId,
+}: {
+  agentId: string;
+  profileId: string;
+  orgId?: string;
+}): Promise<AIAgent> {
+  const agent = agentRegistry.get(agentId);
+  console.log("[AIAgentService] Agent:", {
+  id: agent.id,
+  scope: agent.scope,
+});
 
-    if (agent.scope === "profile") {
-      if (agent.id !== "personal-assistant") {
-        throw new AppError(
-          403,
-          "You do not have access to this AI agent"
-        );
-      }
-
-      if (orgId) {
-        throw new AppError(
-          400,
-          "Organization context is not allowed for this AI agent"
-        );
-      }
-
-      return agent;
+  if (agent.scope === "profile") {
+    if (agent.id !== "personal-assistant") {
+      throw new AppError(
+        403,
+        "You do not have access to this AI agent"
+      );
     }
 
-    if (agent.scope === "organization") {
-      if (!orgId) {
-        throw new AppError(
-          400,
-          "Organization context is required for this AI agent"
-        );
-      }
-
-      const { data: membership, error } =
-        await this.db
-          .from("organization_members")
-          .select("id")
-          .eq("org_id", orgId)
-          .eq("profile_id", profileId)
-          .eq("status", "active")
-          .is("deleted_at", null)
-          .maybeSingle();
-
-      if (error) {
-        throw new AppError(
-          500,
-          `Failed to verify organization membership: ${error.message}`
-        );
-      }
-
-      if (!membership) {
-        throw new AppError(
-          403,
-          "You do not have access to this organization AI agent"
-        );
-      }
-
-      return agent;
+    if (orgId) {
+      throw new AppError(
+        400,
+        "Organization context is not allowed for this AI agent"
+      );
     }
 
-    throw new AppError(
-      400,
-      `Unsupported AI agent scope: ${agent.scope}`
-    );
+    return agent;
   }
+
+  if (agent.scope === "organization") {
+    if (!orgId) {
+      throw new AppError(
+        400,
+        "Organization context is required for this AI agent"
+      );
+    }
+
+    const {
+      data: membership,
+      error,
+    } = await this.db
+      .from("organization_members")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("profile_id", profileId)
+      .eq("status", "active")
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (error) {
+      throw new AppError(
+        500,
+        `Failed to verify organization membership: ${error.message}`
+      );
+    }
+
+    if (!membership) {
+      throw new AppError(
+        403,
+        "You do not have access to this organization AI agent"
+      );
+    }
+
+    return agent;
+  }
+
+  if (agent.scope === "platform") {
+    if (agent.id !== "crm-assistant") {
+      throw new AppError(
+        403,
+        "You do not have access to this AI agent"
+      );
+    }
+
+    if (orgId) {
+      throw new AppError(
+        400,
+        "Organization context is not allowed for this AI agent"
+      );
+    }
+
+    return agent;
+  }
+
+  throw new AppError(
+    400,
+    `Unsupported AI agent scope: ${agent.scope}`
+  );
+}
 }

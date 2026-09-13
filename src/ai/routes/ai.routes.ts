@@ -15,6 +15,13 @@ import {
 
 const router = Router();
 
+// router.post(
+//   "/public/chat",
+//   aiLimiter,
+//   chatWithAIpublic
+// );
+
+
 router.use(verifyToken);
 
 router.use(authenticateUser);
