@@ -21,6 +21,17 @@ export class AIConfirmationExecutionService {
       );
     }
 
+    if (
+      !context.profileId ||
+      !context.role ||
+      !context.accessToken
+    ) {
+      throw new AppError(
+        401,
+        "Authentication context is required."
+      );
+    }
+
     if (!context.accessToken) {
       throw new AppError(
         401,

@@ -4,13 +4,46 @@ import {
   NextFunction,
 } from "express";
 
-import { aiRequestSchema } from "../validation/ai.validation";
+import { aiRequestSchema, publicAIRequestSchema } from "../validation/ai.validation";
 import { aiOrchestrator } from "../orchestrator/ai-orchestrator";
 import { AppError } from "../../middleware/error.middleware";
 import { AIConversationService } from "../services/ai-conversation.service";
 import { AIAgentService } from "../services/ai-agent.service";
 import { AIConfirmationExecutionService } from "../services/ai-confirmation-execution.service";
 import { AIQuotaService } from "../services/ai-quota.service";
+
+
+export async function chatWithAIPublic(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const input = publicAIRequestSchema.parse(req.body);
+
+    const response = await aiOrchestrator.run({
+      agentId: "crm-assistant",
+      message: input.message,
+      conversationId: input.conversationId,
+      history: [],
+      context: {
+        // No profileId
+        // No orgId
+        // No memberId
+        // No accessToken
+        isPublic: true,
+      },
+    });
+
+    return res.status(200).json({
+      message: response.message,
+      sources: response.sources,
+      citations: response.citations,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function chatWithAI(
   req: Request,

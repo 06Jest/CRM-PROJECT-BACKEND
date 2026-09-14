@@ -39,11 +39,12 @@ export interface AITool {
 }
 
 export interface AIRequestContext {
-  profileId: string;
+  profileId?: string;
   orgId?: string;
   memberId?: string;
-  role: string;
+  role?: string;
   accessToken?: string;
+  isPublic?: boolean;
 }
 
 export interface AIResponse {

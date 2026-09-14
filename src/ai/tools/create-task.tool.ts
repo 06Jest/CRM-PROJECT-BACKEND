@@ -140,6 +140,11 @@ export const createTaskTool: AIToolDefinition = {
         "Invalid arguments for create_task."
       );
     }
+    if (!context.profileId) {
+      throw new AIToolError(
+        "A profile context is required to create a note."
+      );
+    }
 
     const args = parsed.data;
 

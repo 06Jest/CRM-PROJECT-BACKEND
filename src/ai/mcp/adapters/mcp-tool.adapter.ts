@@ -7,9 +7,13 @@ import { AIRequestContext } from "../../types/ai.types";
 type OrganizationRole = "owner" | "manager" | "agent";
 
 const isOrganizationRole = (
-  role: string
+  role: string | undefined
 ): role is OrganizationRole => {
-  return role === "owner" || role === "manager" || role === "agent";
+  return (
+    role === "owner" ||
+    role === "manager" ||
+    role === "agent"
+  );
 };
 
 export interface McpToolCallResult {

@@ -110,6 +110,11 @@ export const createNoteTool: AIToolDefinition = {
     if (!parsed.success) {
       throw new AIToolError("Invalid arguments for create_note.");
     }
+    if (!context.profileId) {
+      throw new AIToolError(
+        "A profile context is required to create a note."
+      );
+    }
 
     const args = parsed.data;
 

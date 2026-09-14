@@ -10,16 +10,17 @@ import { aiLimiter } from "../../middleware/rate.limit.middleware";
 
 import {
   chatWithAI,
+  chatWithAIPublic,
   confirmAIAction,
 } from "../controllers/ai.controller";
 
 const router = Router();
 
-// router.post(
-//   "/public/chat",
-//   aiLimiter,
-//   chatWithAIpublic
-// );
+router.post(
+  "/public/chat",
+  aiLimiter,
+  chatWithAIPublic
+);
 
 
 router.use(verifyToken);
