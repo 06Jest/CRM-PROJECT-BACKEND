@@ -1,0 +1,2 @@
+ALTER TABLE public.ai_usage
+ENABLE ROW LEVEL SECURITY;
