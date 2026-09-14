@@ -104,23 +104,33 @@ export class GeminiModel implements AIModel {
       },
     });
 
-    return {
-      content: response.text ?? "",
-      model: this.id,
-      toolCalls: response.functionCalls?.map((call, index) => {
-        const part = response.candidates?.[0]?.content?.parts?.find(
-          (part) =>
-            part.functionCall?.name === call.name &&
-            part.functionCall?.id === call.id
-        );
+   return {
+    content: response.text ?? "",
+    model: this.id,
+    toolCalls: response.functionCalls?.map((call, index) => {
+      const part = response.candidates?.[0]?.content?.parts?.find(
+        (part) =>
+          part.functionCall?.name === call.name &&
+          part.functionCall?.id === call.id
+      );
 
-        return {
-          id: call.id ?? `call_${index}`,
-          name: call.name ?? "",
-          arguments: call.args ?? {},
-          thoughtSignature: part?.thoughtSignature,
-        };
-      }),
-    };
+      return {
+        id: call.id ?? `call_${index}`,
+        name: call.name ?? "",
+        arguments: call.args ?? {},
+        thoughtSignature: part?.thoughtSignature,
+      };
+    }),
+    usage: response.usageMetadata
+      ? {
+          inputTokens:
+            response.usageMetadata.promptTokenCount,
+          outputTokens:
+            response.usageMetadata.candidatesTokenCount,
+          totalTokens:
+            response.usageMetadata.totalTokenCount,
+        }
+      : undefined,
+  };
   }
 }

@@ -82,8 +82,8 @@ export class AIOrchestrator {
     const ragContext = await ragContextService.prepare({
       query: request.message,
       ...ragScope,
-      topK: 5,
-      minSimilarity: 0.5,
+      topK: 7,
+      minSimilarity: 0.7,
     });
 
     const systemPrompt = [

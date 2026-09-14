@@ -10,6 +10,7 @@ import { AppError } from "../../middleware/error.middleware";
 import { AIConversationService } from "../services/ai-conversation.service";
 import { AIAgentService } from "../services/ai-agent.service";
 import { AIConfirmationExecutionService } from "../services/ai-confirmation-execution.service";
+import { AIQuotaService } from "../services/ai-quota.service";
 
 export async function chatWithAI(
   req: Request,
@@ -17,75 +18,40 @@ export async function chatWithAI(
   next: NextFunction
 ) {
   try {
-    const input =
-      aiRequestSchema.parse(req.body);
+    const input = aiRequestSchema.parse(req.body);
 
     const profileId = req.user?.sub;
     const role = req.user?.user_metadata?.role;
     const memberId = req.user?.member_id;
-    const accessToken =
-      req.cookies.accessToken;
+    const orgId = req.user?.org_id ?? undefined;
+    const accessToken = req.cookies.accessToken;
 
-    if (
-      !profileId ||
-      !role ||
-      !accessToken
-    ) {
-      throw new AppError(
-        401,
-        "Unauthorized"
-      );
+    if (!profileId || !role || !accessToken) {
+      throw new AppError(401, "Unauthorized");
     }
 
-    const agentService =
-      new AIAgentService(
-        accessToken
-      );
-
-    if (input.orgId) {
-      const currentOrgId =
-        req.user?.org_id;
-
-      if (!currentOrgId) {
-        throw new AppError(
-          403,
-          "Organization context is not available"
-        );
-      }
-
-      if (
-        input.orgId !== currentOrgId
-      ) {
-        throw new AppError(
-          403,
-          "You cannot use this organization context"
-        );
-      }
-    }
-
-    const agent =
-      await agentService.getAuthorizedAgent({
-        agentId: input.agentId,
-        profileId,
-        orgId: input.orgId,
-      });
-
+    const quotaService = new AIQuotaService();
+    const agentService = new AIAgentService(accessToken);
     const conversationService =
-      new AIConversationService(
-        accessToken
-      );
+      new AIConversationService(accessToken);
 
     let conversation;
 
-    /*
-     * Create a new conversation
-     */
+
+
     if (!input.conversationId) {
-      conversation = await conversationService.createConversation({
+      const agent = await agentService.getAuthorizedAgent({
+        agentId: input.agentId,
         profileId,
-        orgId: input.orgId,
-        agentId: agent.id,
+        orgId,
       });
+
+      conversation =
+        await conversationService.createConversation({
+          profileId,
+          orgId,
+          agentId: agent.id,
+        });
     }
 
     /*
@@ -117,21 +83,20 @@ export async function chatWithAI(
         );
       }
 
-      if (conversation.org_id) {
-        const currentOrgId =
-          req.user?.org_id;
-
-        if (
-          !currentOrgId ||
-          conversation.org_id !== currentOrgId
-        ) {
-          throw new AppError(
-            403,
-            "You cannot access this organization conversation"
-          );
-        }
+      if (
+        conversation.org_id &&
+        conversation.org_id !== orgId
+      ) {
+        throw new AppError(
+          403,
+          "You cannot access this organization conversation"
+        );
       }
 
+      /*
+       * Recheck whether the authenticated user
+       * is authorized to use this conversation's agent.
+       */
       await agentService.getAuthorizedAgent({
         agentId: conversation.agent_id,
         profileId,
@@ -139,14 +104,31 @@ export async function chatWithAI(
       });
     }
 
-    const conversationId =
-      conversation.id;
+    const conversationId = conversation.id;
 
     const history =
       await conversationService.getMessageHistory(
         conversationId
       );
 
+    /*
+     * Consume quota before saving the user message.
+     */
+    const quota =
+      await quotaService.consumeAuthenticatedPrompt(
+        profileId
+      );
+
+    if (!quota.allowed) {
+      throw new AppError(
+        429,
+        "You have reached your AI prompt limit. Please try again after your quota resets."
+      );
+    }
+
+    /*
+     * Save the user message only after quota validation.
+     */
     await conversationService.createMessage({
       conversationId,
       role: "user",
@@ -161,18 +143,16 @@ export async function chatWithAI(
         history,
         context: {
           profileId,
-          ...(conversation.org_id
-            ? {
-                orgId:
-                  conversation.org_id,
-              }
-            : {}),
+          orgId: conversation.org_id ?? undefined,
           memberId: memberId ?? undefined,
           role,
           accessToken,
         },
       });
 
+    /*
+     * Save the assistant response.
+     */
     await conversationService.createMessage({
       conversationId,
       role: "assistant",
@@ -182,6 +162,15 @@ export async function chatWithAI(
     return res.status(200).json({
       message: response.message,
       conversationId,
+      sources: response.sources,
+      citations: response.citations,
+      confirmation: response.confirmation,
+      quota: {
+        promptsUsed: quota.promptsUsed,
+        promptsRemaining: quota.promptsRemaining,
+        limit: quota.limit,
+        windowExpiresAt: quota.windowExpiresAt,
+      },
     });
   } catch (error) {
     next(error);
@@ -195,21 +184,14 @@ export async function confirmAIAction(
 ) {
   try {
     const { confirmationId } = req.params;
+
     const profileId = req.user?.sub;
     const role = req.user?.user_metadata?.role;
     const memberId = req.user?.member_id;
-    const accessToken =
-      req.cookies.accessToken;
+    const accessToken = req.cookies.accessToken;
 
-    if (
-      !profileId ||
-      !role ||
-      !accessToken
-    ) {
-      throw new AppError(
-        401,
-        "Unauthorized"
-      );
+    if (!profileId || !role || !accessToken) {
+      throw new AppError(401, "Unauthorized");
     }
 
     if (
@@ -225,12 +207,6 @@ export async function confirmAIAction(
     const executionService =
       new AIConfirmationExecutionService();
 
-      console.log("CONFIRMATION CONTEXT:", {
-        profileId,
-        orgId: req.user?.org_id,
-        memberId,
-        role,
-      });
     const result =
       await executionService.execute(
         confirmationId,

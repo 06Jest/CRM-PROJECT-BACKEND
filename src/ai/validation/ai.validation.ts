@@ -14,11 +14,6 @@ export const aiRequestSchema = z.object({
     .string()
     .uuid("Invalid conversation ID")
     .optional(),
-
-  orgId: z
-    .string()
-    .uuid("Invalid organization ID")
-    .optional(),
 });
 
 export type AIRequestInput = z.infer<typeof aiRequestSchema>;
