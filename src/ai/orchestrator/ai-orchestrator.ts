@@ -29,19 +29,21 @@ export class AIOrchestrator {
       throw new Error("AI message is too long.");
     }
 
-    if (!request.context.accessToken) {
-      throw new Error("AI access token context is required.");
-    }
+    if (!request.context.isPublic) {
+      if (!request.context.accessToken) {
+        throw new Error("AI access token context is required.");
+      }
 
-    if (!request.context.profileId?.trim()) {
-      throw new Error("AI profile context is required.");
+      if (!request.context.profileId?.trim()) {
+        throw new Error("AI profile context is required.");
+      }
     }
 
     const agent = agentRegistry.get(request.agentId);
 
-    const confirmationService = new AIConfirmationService(
-      request.context.accessToken
-    );
+    const confirmationService = request.context.isPublic
+      ? null
+      : new AIConfirmationService(request.context.accessToken!);
 
     if (
       agent.scope === "organization" &&
@@ -142,11 +144,17 @@ export class AIOrchestrator {
           }
 
           if (tool.requiresConfirmation) {
+            if (!confirmationService) {
+              throw new Error(
+                `Public AI cannot execute tool "${tool.name}".`
+              );
+            }
+
             const confirmationId = crypto.randomUUID();
 
             await confirmationService.create({
               confirmationId,
-              profileId: request.context.profileId,
+              profileId: request.context.profileId!,
               ...(request.context.orgId
                 ? { orgId: request.context.orgId }
                 : {}),

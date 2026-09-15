@@ -2,7 +2,6 @@ import { Router } from "express";
 
 import {
   authenticateUser,
-  requireActiveMembership,
   verifyToken,
 } from "../../middleware/auth.middleware";
 
@@ -12,6 +11,8 @@ import {
   chatWithAI,
   chatWithAIPublic,
   confirmAIAction,
+  getAIConversation,
+  getAIConversations,
 } from "../controllers/ai.controller";
 
 const router = Router();
@@ -37,5 +38,17 @@ router.post(
   "/confirmations/:confirmationId/confirm",
   confirmAIAction
 );
+
+
+router.get(
+  "/conversations",
+  getAIConversations
+);
+
+router.get(
+  "/conversations/:conversationId",
+  getAIConversation
+);
+
 
 export default router;

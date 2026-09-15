@@ -36,6 +36,43 @@ export class AIConversationService {
     return data;
   }
 
+  async getConversations({
+    profileId,
+    orgId,
+  }: {
+    profileId: string;
+    orgId?: string;
+  }) {
+    let query = this.db
+      .from(aiConversationTable)
+      .select(
+        "id, profile_id, org_id, agent_id, title, created_at, updated_at"
+      )
+      .eq("profile_id", profileId);
+
+    if (orgId) {
+      query = query.or(
+        `org_id.is.null,org_id.eq.${orgId}`
+      );
+    } else {
+      query = query.is("org_id", null);
+    }
+
+    const { data, error } = await query
+      .order("updated_at", {
+        ascending: false,
+      });
+
+    if (error) {
+      throw new AppError(
+        500,
+        `Failed to load AI conversations: ${error.message}`
+      );
+    }
+
+    return data ?? [];
+  }
+
   async createConversation({
     profileId,
     orgId,
@@ -93,6 +130,35 @@ export class AIConversationService {
       throw new AppError(
         500,
         `Failed to create AI message: ${
+          error?.message ?? "Unknown error"
+        }`
+      );
+    }
+
+    return data;
+  }
+
+  async updateConversationTitle({
+    conversationId,
+    title,
+  }: {
+    conversationId: string;
+    title: string;
+  }) {
+    const { data, error } = await this.db
+      .from(aiConversationTable)
+      .update({
+        title,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", conversationId)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new AppError(
+        500,
+        `Failed to update AI conversation title: ${
           error?.message ?? "Unknown error"
         }`
       );

@@ -96,3 +96,5 @@ export class ModelRouter implements AIModelRouter {
     }
   }
 }
+
+export const modelRouter = new ModelRouter();

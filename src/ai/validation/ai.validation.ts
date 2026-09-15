@@ -6,10 +6,6 @@ export const publicAIRequestSchema = z.object({
     .min(1, "Message is required")
     .max(10000, "Message is too long"),
 
-  conversationId: z
-    .string()
-    .uuid("Invalid conversation ID")
-    .optional(),
 });
 
 export type PublicAIRequestInput = z.infer<
