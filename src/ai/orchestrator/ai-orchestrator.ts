@@ -226,10 +226,22 @@ export class AIOrchestrator {
       ragContext.context.sources
     );
 
+    const cleanedMessage =
+      ragCitationParserService.cleanResponseText(response.content);
+
+    const uniqueSources = Array.from(
+      new Map(
+        ragContext.context.sources.map((source) => [
+          source.sourceId,
+          source,
+        ])
+      ).values()
+    );
+
     return {
-      message: response.content,
+      message: cleanedMessage,
       conversationId: request.conversationId,
-      sources: ragContext.context.sources,
+      sources: uniqueSources,
       citations,
     };
   }

@@ -12,7 +12,7 @@ export interface RagCitation {
 export class RagCitationParserService {
   parse(
     responseText: string,
-    sources: RagContextSource[]
+    sources: RagContextSource[],
   ): RagCitation[] {
     const citationPattern = /\[Source\s+(\d+)\]/gi;
     const citedIndexes = new Set<number>();
@@ -31,12 +31,14 @@ export class RagCitationParserService {
       }
     }
 
-    return Array.from(citedIndexes)
+    const uniqueCitations = new Map<string, RagCitation>();
+
+    Array.from(citedIndexes)
       .sort((a, b) => a - b)
-      .map((sourceIndex) => {
+      .forEach((sourceIndex) => {
         const source = sources[sourceIndex - 1];
 
-        return {
+        const citation: RagCitation = {
           sourceIndex,
           sourceId: source.sourceId,
           sourceType: source.sourceType,
@@ -48,7 +50,26 @@ export class RagCitationParserService {
             ? { similarity: source.similarity }
             : {}),
         };
+
+        // Deduplicate citations referring to the same source.
+        if (!uniqueCitations.has(citation.sourceId)) {
+          uniqueCitations.set(citation.sourceId, citation);
+        }
       });
+
+    return Array.from(uniqueCitations.values());
+  }
+
+  cleanResponseText(responseText: string): string {
+    return responseText
+      .replace(/\[Source\s+\d+\]/gi, "")
+      .replace(/\[Sources?\s*:\s*[^\]]+\]/gi, "")
+      .replace(/\[Citation\s+\d+\]/gi, "")
+      .replace(/\[Document\s+\d+\]/gi, "")
+      .replace(/[ \t]{2,}/g, " ")
+      .replace(/ +([.,!?;:])/g, "$1")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
   }
 }
 
