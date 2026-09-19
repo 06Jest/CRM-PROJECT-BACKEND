@@ -18,6 +18,7 @@ export type CustomerStatus = typeof CUSTOMER_STATUSES[number];
 
 export interface Customer {
   display_id: string;
+  assigned_to?: string | null;
   id: string;
   contact_id: string;
   notes?: string;
@@ -30,7 +31,7 @@ export interface Customer {
   updated_by: string | null;
 }
 
-export interface CustomerListItem extends Customer{
+export interface CustomerListItem extends Customer {
   owner: {
     id: string;
     profile: {
@@ -38,8 +39,16 @@ export interface CustomerListItem extends Customer{
       last_name: string;
       avatar_url?: string | null;
     }
-  },
-   contact: {
+  };
+  assigned?: {
+    id: string;
+    profile: {
+      first_name: string;
+      last_name: string;
+      avatar_url?: string | null;
+    }
+  } | null;
+  contact: {
     id: string;
     first_name: string;
     last_name: string;

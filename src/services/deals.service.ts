@@ -23,6 +23,14 @@ const selectAll = `
       avatar_url
     )
   ),
+  assigned:organization_members!deals_assigned_to_fkey (
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  ),
   contact:contacts!${contactFkey} (
     id,
     first_name,

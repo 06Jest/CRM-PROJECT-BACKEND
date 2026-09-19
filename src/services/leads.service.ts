@@ -7,6 +7,8 @@ import { deleteImageKitFile } from './imagekit.service';
 
 const tab = table.leads;
 const fkey = 'leads_owner_id_fkey';
+const assignedFkey = 'leads_assigned_to_fkey';
+
 const selectAllWithOwner = `
     *, 
     owner:organization_members!${fkey} (
@@ -16,7 +18,15 @@ const selectAllWithOwner = `
         last_name,
         avatar_url
       )
-    )`
+    ),
+    assigned:organization_members!${assignedFkey} (
+      id,
+      profile:profiles(
+        first_name,
+        last_name,
+        avatar_url
+      )
+    )`;
 
 const all = selectAllWithOwner;
 

@@ -282,6 +282,7 @@ export const updateDealStage = async (
         await addCustomerToDB(
           orgId,
           memberId,
+          contact.assigned_to ?? null,
           contact.id,
           accessToken
         );

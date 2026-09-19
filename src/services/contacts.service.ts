@@ -20,7 +20,15 @@ const selectAllWithOwner = `
   *,
   owner:organization_members!${fkey} (
     id,
-     profile:profiles(
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  ),
+  assigned:organization_members!contacts_assigned_to_fkey (
+    id,
+    profile:profiles(
       first_name,
       last_name,
       avatar_url

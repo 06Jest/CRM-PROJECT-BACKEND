@@ -15,6 +15,7 @@ export type DealStage = typeof DEAL_STAGES[number];
 export interface Deal {
   id: string;
   display_id: string;
+  assigned_to?: string | null;
   contact_id: string;
   title: string;
   stage: DealStage;
@@ -31,7 +32,6 @@ export interface Deal {
 }
 
 export interface DealListItem extends Deal {
-
   owner: {
     id: string;
     profile: {
@@ -39,8 +39,15 @@ export interface DealListItem extends Deal {
       last_name: string;
       avatar_url?: string | null;
     }
-  },
-
+  };
+  assigned?: {
+    id: string;
+    profile: {
+      first_name: string;
+      last_name: string;
+      avatar_url?: string | null;
+    }
+  } | null;
   contact: {
     id: string;
     first_name: string;
@@ -48,11 +55,11 @@ export interface DealListItem extends Deal {
     email: string | null;
     phone: string | null;
   } | null;
-
 }
 
 export interface AddDeal {
   contact_id: string;
+  assigned_to?: string | null;
   title: string;
   stage: DealStage;
   notes?: string;

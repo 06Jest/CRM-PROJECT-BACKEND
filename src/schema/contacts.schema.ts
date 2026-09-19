@@ -47,6 +47,8 @@ export const addContactSchema = z.object({
 
   source: sourceSchema.optional(),
 
+  assigned_to: uuidSchema.optional().nullable().or(z.literal("")),
+
   industry: industrySchema.optional(),
 
   company_name: companyNameSchema.optional(),

@@ -22,6 +22,14 @@ const selectAllWithOwner = `
       avatar_url
     )
   ),
+  assigned:organization_members!customers_assigned_to_fkey(
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  ),
   contact:contacts!${contactfkey}(
     id,
     first_name,
@@ -134,6 +142,7 @@ export const getCustomerByIDFromDB = async (
 export const addCustomerToDB = async (
   orgId: string,
   memberId: string,
+  assigned_to: string | null,
   contactId: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
@@ -142,11 +151,12 @@ export const addCustomerToDB = async (
 
   const { data, error } = await db
     .from(tab)
-    .insert({
-      contact_id: contactId,
-      status: 'Active',
-      org_id: orgId,
-      owner_id: memberId
+    .insert({ 
+      contact_id: contactId, 
+      status: 'Active', 
+      org_id: orgId, 
+      owner_id: memberId,
+      assigned_to,
     })
     .select(all)
     .single();
