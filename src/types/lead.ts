@@ -13,8 +13,11 @@ export type LeadStatus = typeof LEAD_STATUSES[number];
 
 export interface Lead {
   id: string;
+  display_id: string;
   source: Source;
   status: LeadStatus;
+  avatar_file_id?: string | null;
+  avatar_url?: string | null;
   first_name: string;
   last_name: string;
   suffix?: Suffix;
@@ -92,6 +95,8 @@ export interface LeadPersonal {
   birth_date?: string | null;
   email?: string;
   phone?: string;
+  avatar_file_id?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface LeadCareer {

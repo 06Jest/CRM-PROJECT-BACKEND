@@ -14,6 +14,7 @@ import {
   updateLeadPersonalFromDB,
   updateLeadPreferredTimeFromDB,
   getLeadListByIDFromDB,
+  updateLeadAvatarFromDB,
 } from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -406,6 +407,42 @@ export const updateLeadPreferredTime = async (
     return res.status(200).json({
       success: true,
       message: "Update Contact Preferred contact time successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadAvatar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { avatar_file_id, avatar_url } = req.body;
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateLeadAvatarFromDB(
+      id,
+      orgId,
+      memberId,
+      avatar_file_id ?? null,
+      avatar_url ?? null,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Lead Avatar successful",
       data,
     });
   } catch (err) {

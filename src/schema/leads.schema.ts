@@ -18,11 +18,16 @@ import {
   websiteSchema,
   longTextSchema,
   preferredTimeSchema,
+  avatarSchema,
  } from "./global.schema";
 
 
 
 export const addLeadSchema = z.object({
+
+  avatar_url: avatarSchema.optional().nullable(),
+
+  avatar_file_id: z.string().optional().nullable(),
 
   source: sourceSchema,
 
@@ -147,6 +152,13 @@ export const updateLeadPreferredTimeSchema = z.object({
 
 });
 
+export const updateLeadAvatarSchema = z.object({
+  
+  avatar_url: avatarSchema.optional().nullable(),
+
+  avatar_file_id: z.string().optional().nullable(),
+
+});
 
 export const updateLeadStatusSchema = z.object({
 

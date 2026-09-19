@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { authenticateUser,  requireActiveMembership,  verifyToken } from '../middleware/auth.middleware';
-import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateLeadNotes, updateLeadSource, updateLeadPriority, updateLeadPersonal, updateLeadCareer, updateLeadSocials, updateLeadPreferredTime, getLeadListByID  } from '../controllers/leads.controller';
+import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateLeadNotes, updateLeadSource, updateLeadPriority, updateLeadPersonal, updateLeadCareer, updateLeadSocials, updateLeadPreferredTime, getLeadListByID, updateLeadAvatar  } from '../controllers/leads.controller';
 import { validateBody } from '../middleware/validate';
-import { addLeadSchema, updateCareerSchema, updateLeadNotesSchema, updateLeadPreferredTimeSchema, updateLeadPrioritySchema, updateLeadSchema, updateLeadSourceSchema, updateLeadStatusSchema, updateSocialsSchema } from '../schema/leads.schema';
+import { addLeadSchema, updateCareerSchema, updateLeadAvatarSchema, updateLeadNotesSchema, updateLeadPreferredTimeSchema, updateLeadPrioritySchema, updateLeadSchema, updateLeadSourceSchema, updateLeadStatusSchema, updateSocialsSchema } from '../schema/leads.schema';
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
 
 const router = Router();
@@ -57,6 +57,13 @@ router.patch(
   updateLimiter, 
   validateBody(updateSocialsSchema), 
   updateLeadSocials
+);
+
+router.patch(
+  "/update/avatar/:id",
+  updateLimiter,
+  validateBody(updateLeadAvatarSchema),
+  updateLeadAvatar
 );
 
 router.patch(

@@ -14,6 +14,7 @@ export type DealStage = typeof DEAL_STAGES[number];
 
 export interface Deal {
   id: string;
+  display_id: string;
   contact_id: string;
   title: string;
   stage: DealStage;

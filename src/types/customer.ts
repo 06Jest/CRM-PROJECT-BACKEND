@@ -17,6 +17,7 @@ export const CUSTOMER_STATUSES = [
 export type CustomerStatus = typeof CUSTOMER_STATUSES[number];
 
 export interface Customer {
+  display_id: string;
   id: string;
   contact_id: string;
   notes?: string;

@@ -3,6 +3,7 @@ import type { AddLead, Lead, LeadPersonal, LeadCareer, LeadListItem, LeadSocials
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
 import { PreferredTime, Priority, Source } from '../types/global';
+import { deleteImageKitFile } from './imagekit.service';
 
 const tab = table.leads;
 const fkey = 'leads_owner_id_fkey';
@@ -201,6 +202,58 @@ export const updateLeadCareerFromDB = async (
   }
   return data;
 }
+
+export const updateLeadAvatarFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  avatarFileId: string | null,
+  avatarUrl: string | null,
+  accessToken: string
+): Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data: lead, error: fetchError } = await db
+    .from(tab)
+    .select('avatar_file_id')
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .single();
+
+  if (fetchError) {
+    throw new AppError(
+      500,
+      `Failed to fetch Lead Avatar: ${fetchError.message}`
+    );
+  }
+
+  const oldAvatarFileId = lead?.avatar_file_id;
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      avatar_file_id: avatarFileId,
+      avatar_url: avatarUrl,
+      updated_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Lead Avatar: ${error.message}`
+    );
+  }
+
+  if (oldAvatarFileId && oldAvatarFileId !== avatarFileId) {
+    await deleteImageKitFile(oldAvatarFileId);
+  }
+
+  return data;
+};
 
 export const updateLeadStatusFromDB = async (
   id: string,
