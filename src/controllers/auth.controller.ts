@@ -233,10 +233,26 @@ export const oauthLogin = async (
     let needsOnboarding = false;
 
     if (!profile) {
+      const fullName =
+        user.user_metadata?.full_name ?? "";
+
+      const nameParts =
+        fullName.trim().split(/\s+/);
+
+      const firstName =
+        nameParts[0] ?? "";
+
+      const lastName =
+        nameParts.slice(1).join(" ");
+
       profile =
         await createProfileToDB({
           id: user.id,
           email: user.email,
+          first_name: firstName,
+          last_name: lastName,
+          avatar_url:
+            user.user_metadata?.avatar_url ?? null,
         });
 
       needsOnboarding = true;
@@ -270,7 +286,7 @@ export const oauthLogin = async (
   } catch (err) {
     next(err);
   }
-};
+};  
 
 export const signIn = async (
   req: Request,

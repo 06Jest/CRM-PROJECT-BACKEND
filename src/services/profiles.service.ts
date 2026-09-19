@@ -9,6 +9,7 @@ import type {
   ProfileStatus
 } from '../types/profile';
 import type { OnboardingStep, Roles } from '../types/global';
+import { deleteImageKitFile } from "./imagekit.service";
 import { table } from '../config/tables';
 
 const tab = table.profile;
@@ -133,11 +134,14 @@ export const createProfileToDB = async (
   const {data,error}=await db
     .from(tab)
     .insert({
-      id:dto.id,
-      email:dto.email,
-      status:"pending",
-      onboarding_completed:false,
-      onboarding_step:0
+      id: dto.id,
+      email: dto.email,
+      first_name: dto.first_name ?? null,
+      last_name: dto.last_name ?? null,
+      avatar_url: dto.avatar_url ?? null,
+      status: "pending",
+      onboarding_completed: false,
+      onboarding_step: 0,
     })
     .select()
     .single();
@@ -289,19 +293,37 @@ export const updateProfileFromDB = async (
 
 export const updateProfileAvatarFromDB = async (
   userId: string,
-  avatar_url: string,
+  avatar_url: string | null,
+  avatar_file_id: string | null,
   accessToken: string
-): Promise<string> => {
-
+): Promise<{
+  avatar_url: string | null;
+  avatar_file_id: string | null;
+}> => {
   const db = createSupabaseUserClient(accessToken);
+
+  const { data: existingProfile, error: existingError } =
+    await db
+      .from(tab)
+      .select("avatar_url, avatar_file_id")
+      .eq("id", userId)
+      .single();
+
+  if (existingError) {
+    throw new AppError(
+      500,
+      `Failed to fetch existing profile avatar: ${existingError.message}`
+    );
+  }
 
   const { data, error } = await db
     .from(tab)
     .update({
-      avatar_url
+      avatar_url,
+      avatar_file_id,
     })
     .eq("id", userId)
-    .select("avatar_url")
+    .select("avatar_url, avatar_file_id")
     .single();
 
   if (error) {
@@ -310,7 +332,24 @@ export const updateProfileAvatarFromDB = async (
       `Failed to update profile avatar: ${error.message}`
     );
   }
-  return data.avatar_url;
+
+  const oldFileId = existingProfile.avatar_file_id;
+
+  if (oldFileId && oldFileId !== avatar_file_id) {
+    try {
+      await deleteImageKitFile(oldFileId);
+    } catch (err) {
+      console.error(
+        `Failed to delete old ImageKit avatar ${oldFileId}:`,
+        err
+      );
+    }
+  }
+
+  return {
+    avatar_url: data.avatar_url,
+    avatar_file_id: data.avatar_file_id,
+  };
 };
 
 export const updateProfileStatusFromDB = async (

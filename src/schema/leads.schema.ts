@@ -11,7 +11,6 @@ import {
   positionSchema,
   suffixSchema,
   prioritySchema,
-  titleSchema,
   leadStatusSchema,
   industrySchema,
   socialUsernameSchema,
@@ -24,8 +23,6 @@ import {
 
 
 export const addLeadSchema = z.object({
-
-  title: titleSchema,
 
   source: sourceSchema,
 

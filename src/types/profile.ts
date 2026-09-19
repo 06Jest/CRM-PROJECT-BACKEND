@@ -21,39 +21,41 @@ export interface Profile {
   onboarding_completed: boolean;
   job_title?: string; 
   status: ProfileStatus;
-  avatar_url?: string;  
+  avatar_url?: string | null;
+  avatar_file_id?: string | null;
   created_at?: string;
   deleted_at?: string;
   last_login?: string;
 }
 
 export interface DisplayProfile {
+  id: string;
+  avatar_url?: string | null;
+  avatar_file_id?: string | null;
+  first_name?: string;
+  last_name?: string;
+  display_name?: string;
+  email: string;
+  display_id?: string;
+  position?: string;
+  status: ProfileStatus;
+  created_at: string;
+  onboarding_completed: boolean;
+  onboarding_step: number;
+  last_login?: string;
+  job_title?: string;
+  membership?: {
     id: string;
-    avatar_url?: string;
-    first_name?: string;
-    last_name?: string;
-    display_name?: string;
-    email: string;
-    display_id?: string;
-    position?: string;
-    status: ProfileStatus;
+    display_id: string;
+    role: Roles;
+    status: string;
     created_at: string;
-    onboarding_completed: boolean;
-    onboarding_step: number;
-    last_login?: string;
-    job_title?: string;
-    membership?: {
+    org?: {
       id: string;
       display_id: string;
-      role: Roles;
-      status: string;
-      created_at: string;
-      org?: {
-        id: string;
-        display_id: string;
-        name: string;
-        logo_url?: string;
-        type: OrganizationType;
+      name: string;
+      logo_url?: string;
+      type: OrganizationType;
     };
   };
 }
@@ -76,6 +78,9 @@ export interface AddProfileDTO {
 export type CreateInitialProfileDTO = {
   id: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string | null;
 };
 
 export interface CompleteProfileDTO {

@@ -8,6 +8,7 @@
     "test:router": "ts-node src/ai/router/test-router.ts",
     "test:model": "ts-node src/ai/models/test-model.ts",
     "test:orchestrator": "ts-node src/ai/orchestrator/test-orchestrator.ts",
+    "ingest:knowledge": "ts-node src/ai/rag/scripts/ingest-knowledge.ts",
     "start": "node dist/index.js",
     "lint": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"

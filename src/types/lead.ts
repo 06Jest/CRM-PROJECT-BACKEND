@@ -13,7 +13,6 @@ export type LeadStatus = typeof LEAD_STATUSES[number];
 
 export interface Lead {
   id: string;
-  title: string;
   source: Source;
   status: LeadStatus;
   first_name: string;
@@ -60,7 +59,6 @@ export interface LeadListItem extends Lead{
 
 
 export interface AddLead {
-  title: string;
   source: Source;
   first_name: string;
   last_name: string;
