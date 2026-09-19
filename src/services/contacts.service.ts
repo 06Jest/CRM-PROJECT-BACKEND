@@ -12,6 +12,7 @@ import type {
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
 import { PreferredTime, Priority, Source } from '../types/global';
+import { deleteImageKitFile } from './imagekit.service';
 
 const tab = table.contacts;
 const fkey = 'contacts_owner_id_fkey';
@@ -288,6 +289,58 @@ export const updateContactCareerFromDB = async (
   }
   return data;
 }
+
+export const updateContactAvatarFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  avatarFileId: string | null,
+  avatarUrl: string | null,
+  accessToken: string
+): Promise<ContactListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data: contact, error: fetchError } = await db
+    .from(tab)
+    .select('avatar_file_id')
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .single();
+
+  if (fetchError) {
+    throw new AppError(
+      500,
+      `Failed to fetch Contact Avatar: ${fetchError.message}`
+    );
+  }
+
+  const oldAvatarFileId = contact?.avatar_file_id;
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      avatar_file_id: avatarFileId,
+      avatar_url: avatarUrl,
+      updated_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Contact Avatar: ${error.message}`
+    );
+  }
+
+  if (oldAvatarFileId && oldAvatarFileId !== avatarFileId) {
+    await deleteImageKitFile(oldAvatarFileId);
+  }
+
+  return data;
+};
 
 export const updateContactStatusFromDB = async (
   id:string,

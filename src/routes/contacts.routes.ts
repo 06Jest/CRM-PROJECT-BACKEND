@@ -14,10 +14,11 @@ import {
   updateContactPriority,
   updateContactPreferredTime,
   updateContactPersonal,
-  getContactListByID
+  getContactListByID,
+  updateContactAvatar
 } from '../controllers/contacts.controller';
 import { validateBody } from '../middleware/validate';
-import { addContactSchema, updateCareerSchema, updateContactNotesSchema, updateContactPreferredTimeSchema, updateContactPrioritySchema, updateContactSchema, updateContactSourceSchema, updateSocialsSchema } from '../schema/contacts.schema';
+import { addContactSchema, updateCareerSchema, updateContactAvatarSchema, updateContactNotesSchema, updateContactPreferredTimeSchema, updateContactPrioritySchema, updateContactSchema, updateContactSourceSchema, updateSocialsSchema } from '../schema/contacts.schema';
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
 
 
@@ -83,6 +84,13 @@ router.patch(
 );
 
 router.patch(
+  '/update/avatar/:id',
+  updateLimiter,
+  validateBody(updateContactAvatarSchema),
+  updateContactAvatar
+);
+
+router.patch(
   '/update/notes/:id',
   updateLimiter,
   validateBody(updateContactNotesSchema),
@@ -110,6 +118,12 @@ router.patch(
   updateContactPreferredTime
 );
 
+router.delete(
+  '/delete/bulk',
+  deleteLimiter, 
+  deleteBulkContacts
+);
+
 
 router.delete(
   '/delete/:id',
@@ -117,11 +131,6 @@ router.delete(
   deleteContact
 );
 
-router.delete(
-  '/delete/bulk',
-  deleteLimiter, 
-  deleteBulkContacts
-);
 
 export default router;
 

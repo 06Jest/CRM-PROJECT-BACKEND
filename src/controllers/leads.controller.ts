@@ -484,6 +484,8 @@ export const updateLeadStatus = async (
     if (status === "Qualified") {
       const contact: AddContact = {
         lead_id: leadData.id,
+        avatar_file_id: leadData.avatar_file_id,
+        avatar_url: leadData.avatar_url,
         first_name: leadData.first_name,
         last_name: leadData.last_name,
         suffix: leadData.suffix,
