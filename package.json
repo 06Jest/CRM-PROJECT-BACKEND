@@ -1,6 +1,6 @@
 {
   "name": "crm-project-backend",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node --files src/index.ts",
