@@ -8,6 +8,7 @@ import {
   changePassword,
   signOut,
   oauthLogin,
+  demoLogin,
 } from "../controllers/auth.controller";
 
 import {
@@ -44,6 +45,12 @@ router.post(
   loginLimiter,
   validateBody(signInSchema),
   signIn
+);
+
+router.post(
+  "/demo-login",
+  loginLimiter,
+  demoLogin
 );
 
 router.patch(

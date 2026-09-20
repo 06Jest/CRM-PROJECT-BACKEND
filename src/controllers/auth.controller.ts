@@ -288,6 +288,78 @@ export const oauthLogin = async (
   }
 };  
 
+
+export const demoLogin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const meta = metaFromRequest(req);
+
+    const auth = await signInWithAuth({
+      email: process.env.DEMO_EMAIL!,
+      password: process.env.DEMO_PASSWORD!,
+    });
+
+    if (!auth?.user) {
+      throw new AppError(
+        401,
+        "Demo login failed"
+      );
+    }
+
+    const userId = auth.user.id;
+    const userEmail = auth.user.email;
+
+    if (!userEmail) {
+      throw new AppError(
+        400,
+        "Demo account email is required"
+      );
+    }
+
+    let profile =
+      await getProfileIfExistFromDB(userId);
+
+    if (!profile) {
+      throw new AppError(
+        404,
+        "Demo account profile not found"
+      );
+    }
+
+    if (!profile.onboarding_completed) {
+      throw new AppError(
+        403,
+        "Demo account is not fully configured"
+      );
+    }
+
+    profile =
+      await getProfileByIdForAuthFromDB(
+        profile.id
+      );
+
+    await issueSession(
+      res,
+      profile,
+      meta
+    );
+
+    await updateLastLogin(userId);
+
+    res.status(200).json({
+      success: true,
+      message: "Demo login successful",
+      profile,
+      needsOnboarding: false,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const signIn = async (
   req: Request,
   res: Response,
