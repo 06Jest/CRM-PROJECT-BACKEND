@@ -15,7 +15,9 @@ import {
   updateContactPreferredTime,
   updateContactPersonal,
   getContactListByID,
-  updateContactAvatar
+  updateContactAvatar,
+  archiveContact,
+  archiveBulkContacts
 } from '../controllers/contacts.controller';
 import { validateBody } from '../middleware/validate';
 import { addContactSchema, updateCareerSchema, updateContactAvatarSchema, updateContactNotesSchema, updateContactPreferredTimeSchema, updateContactPrioritySchema, updateContactSchema, updateContactSourceSchema, updateSocialsSchema } from '../schema/contacts.schema';
@@ -118,12 +120,23 @@ router.patch(
   updateContactPreferredTime
 );
 
+router.patch(
+  '/archive/bulk',
+  updateLimiter,
+  archiveBulkContacts
+);
+
+router.patch(
+  '/archive/:id',
+  updateLimiter,
+  archiveContact
+);
+
 router.delete(
   '/delete/bulk',
   deleteLimiter, 
   deleteBulkContacts
 );
-
 
 router.delete(
   '/delete/:id',

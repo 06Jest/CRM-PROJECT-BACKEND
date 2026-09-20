@@ -286,6 +286,36 @@ export const closeDealFromDB = async (
   return data as DealListItem;
 };
 
+export const archiveDealFromDB = async (
+  id: string,
+  memberId: string,
+  orgId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive deal: ${error.message}`
+    );
+  }
+
+  return id;
+};
+
 export const deleteDealFromDB = async (
   id: string,
   memberId: string,

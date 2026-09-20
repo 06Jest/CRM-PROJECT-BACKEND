@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
-import { getDeals, addDeal, updateDeal, deleteDeal, updateDealStage, getDealsLists, getDealListByID, getDealsListsByContactID} from './../controllers/deals.controller'
+import { getDeals, addDeal, updateDeal, deleteDeal, updateDealStage, getDealsLists, getDealListByID, getDealsListsByContactID, archiveDeal} from './../controllers/deals.controller'
 import { validateBody } from '../middleware/validate';
 import { addDealSchema, updateDealSchema, updateDealStageSchema } from '../schema/deal.schema';
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
@@ -56,6 +56,12 @@ router.patch(
   updateLimiter, 
   validateBody(updateDealStageSchema), 
   updateDealStage
+);
+
+router.patch(
+  '/archive/:id',
+  updateLimiter,
+  archiveDeal
 );
 
 router.delete(

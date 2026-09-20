@@ -39,31 +39,36 @@ export const getLeadsFromDB = async (
   const { data, error } = await db
     .from(tab)
     .select("*")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("is_archived", false);
 
   if (error) {
     throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
   }
+
   return data ?? [];
-}
+};
 
 export const getLeadsListsFromDB = async (
   orgId: string, 
   accessToken: string
 ): Promise<LeadListItem[]> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .select(all)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-      .order('first_name', { ascending: true })
 
-    if (error) {
-      throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
-    }
+  const { data, error } = await db
+    .from(tab)
+    .select(all)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .eq('is_archived', false)
+    .order('first_name', { ascending: true });
+
+  if (error) {
+    throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
+  }
+
   return data ?? [];
-}
+};
 
 export const getLeadListByIDFromDB = async (
   leadId: string,
@@ -389,6 +394,93 @@ export const updateLeadPreferredTimeFromDB = async (
     }
   return data;
 }
+
+export const archiveLeadFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive Lead: ${error.message}`
+    );
+  }
+
+  return id;
+};
+
+export const archiveBulkLeadsFromDB = async (
+  ids: string[],
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string[]> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .in("id", ids)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive Leads: ${error.message}`
+    );
+  }
+
+  return ids;
+};
+
+export const deleteBulkLeadsFromDB = async (
+  ids: string[],
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string[]> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: memberId,
+    })
+    .in("id", ids)
+    .eq("org_id", orgId);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to delete Leads: ${error.message}`
+    );
+  }
+
+  return ids;
+};
 
 export const deleteLeadFromDB = async (
   id: string,

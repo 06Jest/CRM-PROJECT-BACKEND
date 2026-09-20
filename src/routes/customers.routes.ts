@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
 
 import { validateBody } from '../middleware/validate';
-import { deleteBulkCustomers, deleteCustomer, getCustomerListByID, getCustomers, getCustomersLists, updateCustomerNotes, updateCustomerStatus } from '../controllers/customers.controller';
+import { archiveBulkCustomers, archiveCustomer, deleteBulkCustomers, deleteCustomer, getCustomerListByID, getCustomers, getCustomersLists, updateCustomerNotes, updateCustomerStatus } from '../controllers/customers.controller';
 import { updateCustomerNotesSchema, updateCustomerStatusSchema } from '../schema/customer.schema';
 import { deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
 
@@ -46,10 +46,16 @@ router.patch(
   updateCustomerStatus
 );
 
-router.delete(
-  '/delete/:id',
-  deleteLimiter, 
-  deleteCustomer
+router.patch(
+  '/archive/bulk',
+  updateLimiter,
+  archiveBulkCustomers
+);
+
+router.patch(
+  '/archive/:id',
+  updateLimiter,
+  archiveCustomer
 );
 
 router.delete(
@@ -57,6 +63,14 @@ router.delete(
   deleteLimiter, 
   deleteBulkCustomers
 );
+
+router.delete(
+  '/delete/:id',
+  deleteLimiter, 
+  deleteCustomer
+);
+
+
 
 export default router;
 

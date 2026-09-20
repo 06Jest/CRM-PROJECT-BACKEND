@@ -37,6 +37,7 @@ export interface Lead {
   linkedin?: string;
   facebook?: string;
   instagram?: string;
+  is_archived: boolean;
   tiktok?: string;
   x?: string;
   whatsapp?: string;

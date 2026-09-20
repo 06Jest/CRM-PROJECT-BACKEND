@@ -290,6 +290,66 @@ export const deleteBulkCustomersFromDB = async (
   return ids;
 };
 
+export const archiveCustomerFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .eq('is_archived', false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive customer: ${error.message}`
+    );
+  }
+
+  return id;
+};
+
+export const archiveBulkCustomersFromDB = async (
+  ids: string[],
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string[]> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .in('id', ids)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .eq('is_archived', false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive customers: ${error.message}`
+    );
+  }
+
+  return ids;
+};
+
 
 export const deleteCustomerByContactIDFromDB = async (
   id: string,
