@@ -14,6 +14,10 @@ import {
   updateLeadPersonalFromDB,
   updateLeadPreferredTimeFromDB,
   getLeadListByIDFromDB,
+  updateLeadAvatarFromDB,
+  archiveLeadFromDB,
+  archiveBulkLeadsFromDB,
+  deleteBulkLeadsFromDB,
 } from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -413,6 +417,42 @@ export const updateLeadPreferredTime = async (
   }
 };
 
+export const updateLeadAvatar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { avatar_file_id, avatar_url } = req.body;
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateLeadAvatarFromDB(
+      id,
+      orgId,
+      memberId,
+      avatar_file_id ?? null,
+      avatar_url ?? null,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Lead Avatar successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const updateLeadStatus = async (
   req: Request,
   res: Response,
@@ -447,6 +487,8 @@ export const updateLeadStatus = async (
     if (status === "Qualified") {
       const contact: AddContact = {
         lead_id: leadData.id,
+        avatar_file_id: leadData.avatar_file_id,
+        avatar_url: leadData.avatar_url,
         first_name: leadData.first_name,
         last_name: leadData.last_name,
         suffix: leadData.suffix,
@@ -502,6 +544,78 @@ export const updateLeadStatus = async (
   }
 };
 
+export const archiveLead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await archiveLeadFromDB(
+      id,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Lead successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const archiveBulkLeads = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ids = req.body.ids;
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!ids || !Array.isArray(ids)) {
+      throw new AppError(400, "Leads required");
+    }
+
+    const validIds = ids.map((id) => uuidSchema.parse(id));
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await archiveBulkLeadsFromDB(
+      validIds,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Leads successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const deleteLead = async (
   req: Request,
   res: Response,
@@ -543,6 +657,58 @@ export const deleteLead = async (
     return res.status(200).json({
       success: true,
       message: "Delete Lead successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteBulkLeads = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ids = req.body.ids;
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!ids || !Array.isArray(ids)) {
+      throw new AppError(400, "Leads required");
+    }
+
+    const validIds = ids.map((id) => uuidSchema.parse(id));
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await deleteBulkLeadsFromDB(
+      validIds,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    await addActivityToDB(
+      orgId,
+      memberId,
+      {
+        type: "lead",
+        action: "deleted",
+        title: "Removed leads",
+        target_name: `${validIds.length} leads`,
+        description: `Removed ${validIds.length} leads`,
+      },
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Delete Leads successful",
       data,
     });
   } catch (err) {

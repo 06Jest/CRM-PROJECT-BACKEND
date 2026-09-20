@@ -12,6 +12,7 @@ import {
   deleteNoteFromDB,
   getNotesFromDB,
   isPinnedNoteFromDB,
+  archiveNoteFromDB,
 } from "../services/notes.service";
 import { ensureResourceLimit } from "../services/plans.service";
 import { table } from "../config/tables";
@@ -324,6 +325,39 @@ export const deletePrivateNote = async (
   }
 };
 
+
+export const archiveNote = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !memberId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await archiveNoteFromDB(
+      id,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Note successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const deleteNote = async (
   req: Request,

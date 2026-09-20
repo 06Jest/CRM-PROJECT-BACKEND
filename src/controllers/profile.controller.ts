@@ -103,34 +103,28 @@ export const updateProfileAvatar = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.sub
+    const userId = req.user?.sub;
     const accessToken = req.cookies.accessToken;
 
-    if(!userId || !accessToken){
-      throw new AppError(
-        401,
-        "Unauthorized"
-      );
+    if (!userId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
     }
 
-    const avatar =
-      await updateProfileAvatarFromDB(
-        userId,
-        req.body,
-        accessToken
-      );
+    const { avatar_url, avatar_file_id } = req.body;
 
+    const avatar = await updateProfileAvatarFromDB(
+      userId,
+      avatar_url ?? null,
+      avatar_file_id ?? null,
+      accessToken
+    );
 
     res.status(200).json({
-      success:true,
-      message:"Profile avatar updated successfully",
-      data:{
-        avatar_url:avatar
-      }
+      success: true,
+      message: "Profile avatar updated successfully",
+      data: avatar,
     });
-
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };

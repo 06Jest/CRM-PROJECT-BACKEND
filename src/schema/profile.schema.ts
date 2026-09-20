@@ -28,7 +28,7 @@ export const updateProfileSchema = z.object({
   last_name: NameSchema
     .optional(),
 
-  display_name: NameSchema.optional(),
+  display_name: NameSchema.or(z.literal("")).optional().nullable(),
 
   job_title: positionSchema.optional().nullable(),
 
@@ -37,7 +37,9 @@ export const updateProfileSchema = z.object({
 
 export const updateProfileAvatarSchema = z.object({
 
- avatar_url: avatarSchema.optional().nullable(),
+  avatar_url: avatarSchema.optional().nullable(),
+
+  avatar_file_id: z.string().optional().nullable(),
 
 });
 

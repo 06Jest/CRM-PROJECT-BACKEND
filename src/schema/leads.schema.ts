@@ -11,7 +11,6 @@ import {
   positionSchema,
   suffixSchema,
   prioritySchema,
-  titleSchema,
   leadStatusSchema,
   industrySchema,
   socialUsernameSchema,
@@ -19,15 +18,21 @@ import {
   websiteSchema,
   longTextSchema,
   preferredTimeSchema,
+  avatarSchema,
+  uuidSchema,
  } from "./global.schema";
 
 
 
 export const addLeadSchema = z.object({
 
-  title: titleSchema,
+  avatar_url: avatarSchema.optional().nullable(),
+
+  avatar_file_id: z.string().optional().nullable(),
 
   source: sourceSchema,
+
+  assigned_to: uuidSchema.optional().nullable().or(z.literal("")),
 
   first_name: NameSchema,
 
@@ -150,6 +155,13 @@ export const updateLeadPreferredTimeSchema = z.object({
 
 });
 
+export const updateLeadAvatarSchema = z.object({
+
+  avatar_url: avatarSchema.optional().nullable(),
+
+  avatar_file_id: z.string().optional().nullable(),
+
+});
 
 export const updateLeadStatusSchema = z.object({
 

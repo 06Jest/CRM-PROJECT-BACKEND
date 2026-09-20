@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import {
+  archiveBulkCustomersFromDB,
+  archiveCustomerFromDB,
   deleteBulkCustomersFromDB,
   deleteCustomerFromDB,
   getCustomerByIDFromDB,
@@ -217,6 +219,39 @@ export const updateCustomerStatus = async (
   }
 };
 
+export const archiveCustomer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await archiveCustomerFromDB(
+      id,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Customer successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const deleteCustomer = async (
   req: Request,
   res: Response,
@@ -260,6 +295,51 @@ export const deleteCustomer = async (
     return res.status(200).json({
       success: true,
       message: "Delete Customer successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const archiveBulkCustomers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ids = req.body.ids;
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new AppError(
+        400,
+        "Customer ids required"
+      );
+    }
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
+    }
+
+    const validIds = ids.map((id) => uuidSchema.parse(id));
+
+    const data = await archiveBulkCustomersFromDB(
+      validIds,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Customers successful",
       data,
     });
   } catch (err) {

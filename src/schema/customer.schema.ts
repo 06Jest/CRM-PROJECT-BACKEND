@@ -8,7 +8,9 @@ import {
 
 export const addCustomerSchema = z.object({
 
-  contact_id: uuidSchema
+  contact_id: uuidSchema,
+
+  assigned_to: uuidSchema.optional().nullable().or(z.literal("")),
 
 })
 

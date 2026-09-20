@@ -13,6 +13,10 @@ export type ContactStatus = typeof CONTACT_STATUSES[number];
 
 export interface Contact {
   id: string;
+  display_id: string;
+  assigned_to?: string | null;
+  avatar_file_id?: string | null;
+  avatar_url?: string | null;
   lead_id?:string;
   owner_id: string;
   org_id: string;
@@ -48,20 +52,29 @@ export interface Contact {
 }
 
 export interface ContactListItem extends Contact {
-
   owner: {
-      id: string;
-      profile: {
-        first_name: string;
-        last_name: string;
-        avatar_url?: string | null;
-      }
+    id: string;
+    profile: {
+      first_name: string;
+      last_name: string;
+      avatar_url?: string | null;
+    };
   };
-
+  assigned?: {
+    id: string;
+    profile: {
+      first_name: string;
+      last_name: string;
+      avatar_url?: string | null;
+    };
+  } | null;
 }
 
 export interface AddContact {
   lead_id?:string;
+  assigned_to?: string | null;
+  avatar_file_id?: string | null;
+  avatar_url?: string | null;
   first_name: string;
   last_name: string;
   suffix?: Suffix;

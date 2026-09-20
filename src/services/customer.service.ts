@@ -22,6 +22,14 @@ const selectAllWithOwner = `
       avatar_url
     )
   ),
+  assigned:organization_members!customers_assigned_to_fkey(
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  ),
   contact:contacts!${contactfkey}(
     id,
     first_name,
@@ -134,6 +142,7 @@ export const getCustomerByIDFromDB = async (
 export const addCustomerToDB = async (
   orgId: string,
   memberId: string,
+  assigned_to: string | null,
   contactId: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
@@ -142,11 +151,12 @@ export const addCustomerToDB = async (
 
   const { data, error } = await db
     .from(tab)
-    .insert({
-      contact_id: contactId,
-      status: 'Active',
-      org_id: orgId,
-      owner_id: memberId
+    .insert({ 
+      contact_id: contactId, 
+      status: 'Active', 
+      org_id: orgId, 
+      owner_id: memberId,
+      assigned_to,
     })
     .select(all)
     .single();
@@ -274,6 +284,66 @@ export const deleteBulkCustomersFromDB = async (
     throw new AppError(
       500,
       `Failed to delete customers: ${error.message}`
+    );
+  }
+
+  return ids;
+};
+
+export const archiveCustomerFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .eq('is_archived', false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive customer: ${error.message}`
+    );
+  }
+
+  return id;
+};
+
+export const archiveBulkCustomersFromDB = async (
+  ids: string[],
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string[]> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .in('id', ids)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .eq('is_archived', false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive customers: ${error.message}`
     );
   }
 

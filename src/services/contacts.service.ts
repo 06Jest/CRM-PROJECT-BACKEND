@@ -12,6 +12,7 @@ import type {
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
 import { PreferredTime, Priority, Source } from '../types/global';
+import { deleteImageKitFile } from './imagekit.service';
 
 const tab = table.contacts;
 const fkey = 'contacts_owner_id_fkey';
@@ -19,7 +20,15 @@ const selectAllWithOwner = `
   *,
   owner:organization_members!${fkey} (
     id,
-     profile:profiles(
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  ),
+  assigned:organization_members!contacts_assigned_to_fkey (
+    id,
+    profile:profiles(
       first_name,
       last_name,
       avatar_url
@@ -289,6 +298,58 @@ export const updateContactCareerFromDB = async (
   return data;
 }
 
+export const updateContactAvatarFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  avatarFileId: string | null,
+  avatarUrl: string | null,
+  accessToken: string
+): Promise<ContactListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data: contact, error: fetchError } = await db
+    .from(tab)
+    .select('avatar_file_id')
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .single();
+
+  if (fetchError) {
+    throw new AppError(
+      500,
+      `Failed to fetch Contact Avatar: ${fetchError.message}`
+    );
+  }
+
+  const oldAvatarFileId = contact?.avatar_file_id;
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      avatar_file_id: avatarFileId,
+      avatar_url: avatarUrl,
+      updated_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Contact Avatar: ${error.message}`
+    );
+  }
+
+  if (oldAvatarFileId && oldAvatarFileId !== avatarFileId) {
+    await deleteImageKitFile(oldAvatarFileId);
+  }
+
+  return data;
+};
+
 export const updateContactStatusFromDB = async (
   id:string,
   orgId:string,
@@ -416,6 +477,66 @@ export const updateContactPreferredTmeFromDB = async (
     }
   return data;
 }
+
+export const archiveBulkContactsFromDB = async (
+  ids: string[],
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string[]> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .in('id', ids)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .eq('is_archived', false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive Contacts: ${error.message}`
+    );
+  }
+
+  return ids;
+};
+
+export const archiveContactFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .eq('is_archived', false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive Contact: ${error.message}`
+    );
+  }
+
+  return id;
+};
 
 export const deleteContactFromDB = async (
   id:string,

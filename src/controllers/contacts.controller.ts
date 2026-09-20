@@ -16,6 +16,9 @@ import {
   updateContactPreferredTmeFromDB,
   updateContactPersonalFromDB,
   getContactListByIDFromDB,
+  updateContactAvatarFromDB,
+  archiveContactFromDB,
+  archiveBulkContactsFromDB,
 } from "../services/contacts.service";
 
 import { AppError } from "../middleware/error.middleware";
@@ -386,6 +389,42 @@ export const updateContactCareer = async (
   }
 };
 
+export const updateContactAvatar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { avatar_file_id, avatar_url } = req.body;
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await updateContactAvatarFromDB(
+      id,
+      orgId,
+      memberId,
+      avatar_file_id ?? null,
+      avatar_url ?? null,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact Avatar successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const updateContactSource = async (
   req: Request,
   res: Response,
@@ -522,6 +561,78 @@ export const updateContactPreferredTime = async (
   }
 };
 
+export const archiveContact = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await archiveContactFromDB(
+      id,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Contact successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const archiveBulkContacts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ids = req.body.ids;
+
+    const memberId = req.user?.member_id;
+    const orgId = req.user?.org_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!ids || !Array.isArray(ids)) {
+      throw new AppError(400, "Contacts required");
+    }
+
+    const validIds = ids.map((id) => uuidSchema.parse(id));
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await archiveBulkContactsFromDB(
+      validIds,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Contacts successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const deleteContact = async (
   req: Request,
   res: Response,
@@ -614,73 +725,62 @@ export const deleteBulkContacts = async (
   try {
     const ids = req.body.ids;
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-
     if (!ids || !Array.isArray(ids)) {
-      throw new AppError(
-        400,
-        "Contacts required"
-      );
+      throw new AppError(400, "Contacts required");
     }
 
+    const validIds = ids.map((id) => uuidSchema.parse(id));
 
     if (!memberId || !orgId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
-
     const data = await deleteBulkContactsFromDB(
-      ids,
+      validIds,
       orgId,
       memberId,
       accessToken
     );
 
-
     await Promise.all([
       deleteAllDealsByBulkContactsFromDB(
-        ids,
+        validIds,
         orgId,
         memberId,
         accessToken
       ),
 
       deleteBulkCustomersByBulkContactIDsFromDB(
-        ids,
+        validIds,
         orgId,
         memberId,
         accessToken
-      )
+      ),
     ]);
-
 
     await addActivityToDB(
       orgId,
       memberId,
       {
-        type:"contact",
-        action:"deleted",
-        title:"Removed contacts",
-        target_name:`${ids.length} contacts`,
-        description:`Removed ${ids.length} contacts`,
+        type: "contact",
+        action: "deleted",
+        title: "Removed contacts",
+        target_name: `${validIds.length} contacts`,
+        description: `Removed ${validIds.length} contacts`,
       },
       accessToken
     );
 
-
     return res.status(200).json({
-      success:true,
-      message:"Delete Contacts successful",
+      success: true,
+      message: "Delete Contacts successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };

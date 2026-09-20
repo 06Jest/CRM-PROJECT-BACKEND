@@ -25,6 +25,7 @@ import activitiesRoutes from './routes/activities.routes'
 import aiRoutes from "./ai/routes/ai.routes";
 import feedbackRoutes from './routes/feedback.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
+import archiveRoutes from './routes/archive.routes';
 import healthRoutes from './routes/health';
 import cookieParser from 'cookie-parser';
 import mcpRoutes from './ai/mcp/routes/mcp.routes';
@@ -73,7 +74,7 @@ app.use('/api/emails', emailRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/chat', chatsRoutes);
 app.use('/api/calls', callsRoutes); 
-
+app.use("/api/archives", archiveRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/mcp", mcpRoutes);
 

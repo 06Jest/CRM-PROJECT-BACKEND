@@ -29,3 +29,4 @@ export const updateMessageSchema = z.object({
   content: longTextSchema,
 
 });
+

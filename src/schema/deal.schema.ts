@@ -5,6 +5,8 @@ export const addDealSchema = z.object({
 
   contact_id: uuidSchema,
 
+  assigned_to: uuidSchema.optional().nullable().or(z.literal("")),
+
   title: titleSchema,
 
   stage: dealStageSchema,

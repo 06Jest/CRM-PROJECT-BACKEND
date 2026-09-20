@@ -1,12 +1,8 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import {
-  authenticateUser,
-  requireActiveMembership,
-  verifyToken,
-} from "../middleware/auth.middleware";
+import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from '../middleware/validate';
 
 import {
   getTasks,
@@ -18,7 +14,8 @@ import {
   updateTaskPriority,
   updateTaskDueDate,
   deleteTask,
-} from "../controllers/tasks.controller";
+  archiveTask
+} from '../controllers/tasks.controller';
 
 import {
   addTaskSchema,
@@ -26,64 +23,87 @@ import {
   assignTaskSchema,
   completeTaskSchema,
   updateTaskPrioritySchema,
-  updateTaskDueDateSchema,
-} from "../schema/tasks.schema";
-import { createLimiter, deleteLimiter, readLimiter, updateLimiter, } from '../middleware/rate.limit.middleware';
+  updateTaskDueDateSchema
+} from '../schema/tasks.schema';
+
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+
 
 const router = Router();
 
 router.use(verifyToken);
+
 router.use(authenticateUser);
 
 
-router.get("/show-tasks",readLimiter, getTasks);
-router.get("/show-task/:id",readLimiter, getTaskByID);
+router.get(
+  '/show-tasks',
+  readLimiter,
+  getTasks
+);
+
+router.get(
+  '/show-task/:id',
+  readLimiter,
+  getTaskByID
+);
+
 
 router.use(requireActiveMembership);
 
 router.post(
-  "/add-task",
+  '/add-task',
   createLimiter,
   validateBody(addTaskSchema),
   addTask
 );
 
-
 router.patch(
-  "/update-task/:id",
+  '/update-task/:id',
   updateLimiter,
   validateBody(updateTaskSchema),
   updateTask
 );
 
 router.patch(
-  "/assign-task/:id",
+  '/assign-task/:id',
   updateLimiter,
   validateBody(assignTaskSchema),
   assignTask
 );
 
 router.patch(
-  "/complete-task/:id",
+  '/complete-task/:id',
   updateLimiter,
   validateBody(completeTaskSchema),
   completeTask
 );
 
 router.patch(
-  "/update-task-priority/:id",
+  '/update-task-priority/:id',
   updateLimiter,
   validateBody(updateTaskPrioritySchema),
   updateTaskPriority
 );
 
 router.patch(
-  "/update-task-due-date/:id",
+  '/update-task-due-date/:id',
   updateLimiter,
   validateBody(updateTaskDueDateSchema),
   updateTaskDueDate
 );
 
-router.delete("/delete-task/:id",deleteLimiter, deleteTask);
+router.delete(
+  '/delete-task/:id',
+  deleteLimiter,
+  deleteTask
+);
+
+router.patch(
+  '/archive/:id',
+  updateLimiter,
+  archiveTask
+);
+
 
 export default router;

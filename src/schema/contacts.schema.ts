@@ -19,12 +19,17 @@ import {
   preferredTimeSchema,
   websiteSchema,
   longTextSchema,
+  avatarSchema,
  } from "./global.schema";
 
 
 export const addContactSchema = z.object({
 
-  lead_id: uuidSchema.optional(),
+  avatar_url: avatarSchema.optional().nullable(),
+
+  avatar_file_id: z.string().optional().nullable(),
+
+  lead_id: uuidSchema.optional().nullable().or(z.literal("")),
 
   first_name: NameSchema,
 
@@ -41,6 +46,8 @@ export const addContactSchema = z.object({
   phone: phoneSchema.optional(),
 
   source: sourceSchema.optional(),
+
+  assigned_to: uuidSchema.optional().nullable().or(z.literal("")),
 
   industry: industrySchema.optional(),
 
@@ -134,6 +141,14 @@ export const updateCareerSchema = z.object({
   department: departmentSchema.nullable().optional(),
 
   website: websiteSchema.optional().nullable(),
+});
+
+export const updateContactAvatarSchema = z.object({
+
+  avatar_url: avatarSchema.optional().nullable(),
+
+  avatar_file_id: z.string().optional().nullable(),
+  
 });
 
 export const updateContactNotesSchema = z.object({

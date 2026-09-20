@@ -13,9 +13,12 @@ export type LeadStatus = typeof LEAD_STATUSES[number];
 
 export interface Lead {
   id: string;
-  title: string;
+  display_id: string;
   source: Source;
+  assigned_to?: string | null;
   status: LeadStatus;
+  avatar_file_id?: string | null;
+  avatar_url?: string | null;
   first_name: string;
   last_name: string;
   suffix?: Suffix;
@@ -34,6 +37,7 @@ export interface Lead {
   linkedin?: string;
   facebook?: string;
   instagram?: string;
+  is_archived: boolean;
   tiktok?: string;
   x?: string;
   whatsapp?: string;
@@ -47,21 +51,28 @@ export interface Lead {
   updated_by: string | null;
 }
 
-export interface LeadListItem extends Lead{
+export interface LeadListItem extends Lead {
   owner: {
     id: string;
     profile: {
       first_name: string;
       last_name: string;
       avatar_url?: string | null;
-    }
+    };
   };
+  assigned?: {
+    id: string;
+    profile: {
+      first_name: string;
+      last_name: string;
+      avatar_url?: string | null;
+    };
+  } | null;
 }
 
-
 export interface AddLead {
-  title: string;
   source: Source;
+  assigned_to?: string | null;
   first_name: string;
   last_name: string;
   suffix?: Suffix;
@@ -94,6 +105,8 @@ export interface LeadPersonal {
   birth_date?: string | null;
   email?: string;
   phone?: string;
+  avatar_file_id?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface LeadCareer {

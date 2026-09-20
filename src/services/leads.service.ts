@@ -3,9 +3,12 @@ import type { AddLead, Lead, LeadPersonal, LeadCareer, LeadListItem, LeadSocials
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
 import { PreferredTime, Priority, Source } from '../types/global';
+import { deleteImageKitFile } from './imagekit.service';
 
 const tab = table.leads;
 const fkey = 'leads_owner_id_fkey';
+const assignedFkey = 'leads_assigned_to_fkey';
+
 const selectAllWithOwner = `
     *, 
     owner:organization_members!${fkey} (
@@ -15,7 +18,15 @@ const selectAllWithOwner = `
         last_name,
         avatar_url
       )
-    )`
+    ),
+    assigned:organization_members!${assignedFkey} (
+      id,
+      profile:profiles(
+        first_name,
+        last_name,
+        avatar_url
+      )
+    )`;
 
 const all = selectAllWithOwner;
 
@@ -28,31 +39,36 @@ export const getLeadsFromDB = async (
   const { data, error } = await db
     .from(tab)
     .select("*")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("is_archived", false);
 
   if (error) {
     throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
   }
+
   return data ?? [];
-}
+};
 
 export const getLeadsListsFromDB = async (
   orgId: string, 
   accessToken: string
 ): Promise<LeadListItem[]> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .select(all)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-      .order('first_name', { ascending: true })
 
-    if (error) {
-      throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
-    }
+  const { data, error } = await db
+    .from(tab)
+    .select(all)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .eq('is_archived', false)
+    .order('first_name', { ascending: true });
+
+  if (error) {
+    throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
+  }
+
   return data ?? [];
-}
+};
 
 export const getLeadListByIDFromDB = async (
   leadId: string,
@@ -202,6 +218,58 @@ export const updateLeadCareerFromDB = async (
   return data;
 }
 
+export const updateLeadAvatarFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  avatarFileId: string | null,
+  avatarUrl: string | null,
+  accessToken: string
+): Promise<LeadListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data: lead, error: fetchError } = await db
+    .from(tab)
+    .select('avatar_file_id')
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .single();
+
+  if (fetchError) {
+    throw new AppError(
+      500,
+      `Failed to fetch Lead Avatar: ${fetchError.message}`
+    );
+  }
+
+  const oldAvatarFileId = lead?.avatar_file_id;
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      avatar_file_id: avatarFileId,
+      avatar_url: avatarUrl,
+      updated_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Lead Avatar: ${error.message}`
+    );
+  }
+
+  if (oldAvatarFileId && oldAvatarFileId !== avatarFileId) {
+    await deleteImageKitFile(oldAvatarFileId);
+  }
+
+  return data;
+};
+
 export const updateLeadStatusFromDB = async (
   id: string,
   orgId: string,
@@ -326,6 +394,93 @@ export const updateLeadPreferredTimeFromDB = async (
     }
   return data;
 }
+
+export const archiveLeadFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive Lead: ${error.message}`
+    );
+  }
+
+  return id;
+};
+
+export const archiveBulkLeadsFromDB = async (
+  ids: string[],
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string[]> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .in("id", ids)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive Leads: ${error.message}`
+    );
+  }
+
+  return ids;
+};
+
+export const deleteBulkLeadsFromDB = async (
+  ids: string[],
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string[]> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: memberId,
+    })
+    .in("id", ids)
+    .eq("org_id", orgId);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to delete Leads: ${error.message}`
+    );
+  }
+
+  return ids;
+};
 
 export const deleteLeadFromDB = async (
   id: string,
