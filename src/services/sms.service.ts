@@ -24,12 +24,14 @@ const selectAll = `
     id,
     first_name,
     last_name,
+    avatar_url,
     phone
   ),
   contact:contacts!${contactFKey}(
     id,
     first_name,
     last_name,
+    avatar_url,
     phone
   ),
   sender:organization_members!${senderFKey}(
