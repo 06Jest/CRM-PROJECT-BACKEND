@@ -96,8 +96,6 @@ export const addTaskToDB = async (
 ): Promise<TaskListItem> => {
   const db = createSupabaseUserClient(accessToken);
 
-  const isPersonal = task.target_type === "personal";
-
   const { data, error } = await db
     .from(tab)
     .insert({
@@ -105,7 +103,7 @@ export const addTaskToDB = async (
       profile_id: profileId,
       org_id: orgId ?? null,
       author_id: memberId ?? null,
-      assigned_to: isPersonal ? null : task.assigned_to ?? memberId,
+      assigned_to: task.assigned_to ?? memberId,
       updated_by: memberId ?? null,
     })
     .select(all)

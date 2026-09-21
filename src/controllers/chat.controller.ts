@@ -489,16 +489,16 @@ export const markConversationAsRead = async (
     }
 
 
-    await markConversationAsReadFromDB(
+    const data = await markConversationAsReadFromDB(
       conversationId,
       memberId,
       accessToken
     );
 
-
     return res.status(200).json({
-      success:true,
-      message:"Conversation marked as read",
+      success: true,
+      message: "Conversation marked as read",
+      data,
     });
 
 
