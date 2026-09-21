@@ -87,7 +87,7 @@ export interface MemberData {
 export interface ConversationMember {
   id: string;
   conversation_id: string;
-  profile_id: string;
+  member_id: string;
   joined_at: string;
   last_read_at: string | null;
 }
