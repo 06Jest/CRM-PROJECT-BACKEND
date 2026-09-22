@@ -29,6 +29,7 @@ import archiveRoutes from './routes/archive.routes';
 import healthRoutes from './routes/health';
 import cookieParser from 'cookie-parser';
 import mcpRoutes from './ai/mcp/routes/mcp.routes';
+import analyticsRoutes from './routes/analytics.routes';
 
 const app = express();
 
@@ -77,7 +78,7 @@ app.use('/api/calls', callsRoutes);
 app.use("/api/archives", archiveRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/mcp", mcpRoutes);
-
+app.use("/api/analytics", analyticsRoutes);
 
 app.use('/api/health', healthRoutes);
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json'}));
