@@ -14,7 +14,6 @@ export type LeadStatus = typeof LEAD_STATUSES[number];
 export interface Lead {
   id: string;
   display_id: string;
-  source: Source;
   assigned_to?: string | null;
   status: LeadStatus;
   avatar_file_id?: string | null;
@@ -33,6 +32,7 @@ export interface Lead {
   website?: string;
   priority: Priority;
   notes?: string;
+  source: Source;
   preferred_contact_time: PreferredTime;
   linkedin?: string;
   facebook?: string;
