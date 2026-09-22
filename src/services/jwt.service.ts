@@ -1,6 +1,5 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "../config/environment";
-import type { AccessTokenPayload } from "../types/auth";
 import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase";
 import { RequestMeta } from "../types/auth";
@@ -8,6 +7,7 @@ import { table } from '../config/tables';
 import { Profile } from "../types/profile";
 import { AppError } from "../middleware/error.middleware";
 import { Roles } from "../types/global";
+import { AccessTokenPayload } from "../types";
 
 
 

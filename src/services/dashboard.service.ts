@@ -1,1036 +1,779 @@
-import { createSupabaseUserClient } from '../config/supabase';
-import { table } from '../config/tables';
-import { AppError } from '../middleware/error.middleware';
-
+import { createSupabaseUserClient } from "../config/supabase";
+import { table } from "../config/tables";
 import type {
-  DashboardOverview,
-  LeadMetrics,
-  DealMetrics,
-  CustomerMetrics,
-  ActivityMetrics,
-  DashboardTrends,
-  ActivityItem,
-  UserPerformanceMetrics,
-  TrendInterval,
-  CustomerWithContact
-} from '../types/dashboard';
+  DashboardData,
+  DashboardParams,
+} from "../types/dashboard";
 
-const contactsTab = table.contacts;
-const leadsTab = table.leads;
-const dealsTab = table.deals;
-const customersTab = table.customers;
-const emailsTab = table.emails;
-const smsTab = table.sms;
-const tasksTab = table.tasks;
-const callsTab = table.calls;
-
-export const getDashboardOverviewFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<DashboardOverview> => {
-
+export const getDashboardFromDB = async ({
+  orgId,
+  accessToken,
+  memberId,
+  role,
+}: DashboardParams): Promise<DashboardData> => {
   const db = createSupabaseUserClient(accessToken);
 
-  const [
-    contacts,
-    leads,
-    deals,
-    customers,
-    emails,
-    sms,
-    calls,
-    tasks
-  ] = await Promise.all([
+  const scope = role === "agent" ? "user" : "organization";
 
-    db
-      .from(contactsTab)
-      .select('*', {
-        count: 'exact',
-        head: true
-      })
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
-
-    db
-      .from(leadsTab)
-      .select('*', {
-        count: 'exact',
-        head: true
-      })
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
-
-    db
-      .from(dealsTab)
-      .select('*', {
-        count: 'exact',
-        head: true
-      })
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
-
-    db
-      .from(customersTab)
-      .select('*', {
-        count: 'exact',
-        head: true
-      })
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
-
-    db
-      .from(emailsTab)
-      .select('*', {
-        count: 'exact',
-        head: true
-      })
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
-
-    db
-      .from(smsTab)
-      .select('*', {
-        count: 'exact',
-        head: true
-      })
-      .eq('org_id', orgId),
-
-    db
-      .from(callsTab)
-      .select('*', {
-        count: 'exact',
-        head: true
-      })
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
-
-    db
-      .from(tasksTab)
-      .select('*', {
-        count: 'exact',
-        head: true
-      })
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-
-  ]);
-
-  if (
-    contacts.error ||
-    leads.error ||
-    deals.error ||
-    customers.error ||
-    emails.error ||
-    sms.error ||
-    calls.error ||
-    tasks.error
-  ) {
-    throw new AppError(
-      500,
-      contacts.error?.message ||
-      leads.error?.message ||
-      deals.error?.message ||
-      customers.error?.message ||
-      emails.error?.message ||
-      sms.error?.message ||
-      calls.error?.message ||
-      tasks.error?.message ||
-      'Failed to fetch dashboard overview.'
-    );
-  }
-
-  return {
-    totalContacts: contacts.count ?? 0,
-    totalLeads: leads.count ?? 0,
-    totalDeals: deals.count ?? 0,
-    totalCustomers: customers.count ?? 0,
-    totalEmails: emails.count ?? 0,
-    totalSms: sms.count ?? 0,
-    totalCalls: calls.count ?? 0,
-    totalTasks: tasks.count ?? 0
-  };
-};
-
-export const getLeadMetricsFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<LeadMetrics> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(leadsTab)
-    .select(`
-      source,
-      priority,
-      status
-    `)
-    .eq('org_id', orgId)
-    .is('deleted_at', null);
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch lead metrics: ${error.message}`
-    );
-  }
-
-  let totalLeads = 0;
-  let convertedLeads = 0;
-
-  const leadsBySource: Record<string, number> = {};
-  const leadsByPriority: Record<string, number> = {};
-  const leadsByStatus: Record<string, number> = {};
-
-  for (const lead of data ?? []) {
-
-    totalLeads++;
-
-    const source = lead.source ?? 'Unknown';
-    const priority = lead.priority ?? 'Unknown';
-    const status = lead.status ?? 'Unknown';
-
-    leadsBySource[source] =
-      (leadsBySource[source] ?? 0) + 1;
-
-    leadsByPriority[priority] =
-      (leadsByPriority[priority] ?? 0) + 1;
-
-    leadsByStatus[status] =
-      (leadsByStatus[status] ?? 0) + 1;
-
-    if (status.toLowerCase() === 'qualified') {
-      convertedLeads++;
-    }
-
-  }
-
-  return {
-    totalLeads,
-    leadsBySource,
-    leadsByPriority,
-    leadsByStatus,
-    conversionRate:
-      totalLeads > 0
-        ? Number(
-            (
-              (convertedLeads / totalLeads) * 100
-            ).toFixed(2)
-          )
-        : 0
-  };
-
-};
-
-
-export const getDealMetricsFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<DealMetrics> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(dealsTab)
-    .select(`
-      stage,
-      value
-    `)
-    .eq('org_id', orgId)
-    .is('deleted_at', null);
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch deal metrics: ${error.message}`
-    );
-  }
-
-  let totalDeals = 0;
-  let wonDeals = 0;
-  let lostDeals = 0;
-  let totalRevenue = 0;
-
-  const dealsByStage: Record<string, number> = {};
-
-  for (const deal of data ?? []) {
-
-    totalDeals++;
-
-    const stage = deal.stage ?? 'Unknown';
-    const amount = Number(deal.value) || 0;
-
-    dealsByStage[stage] =
-      (dealsByStage[stage] ?? 0) + 1;
-
-    if (stage.toLowerCase() === 'closed won') {
-      wonDeals++;
-      totalRevenue += amount;
-    }
-
-    if (stage.toLowerCase() === 'closed lost') {
-      lostDeals++;
-    }
-
-  }
-
-  const openDeals =
-    totalDeals - wonDeals - lostDeals;
-
-  const closedDeals =
-    wonDeals + lostDeals;
-
-  return {
-    totalDeals,
-    dealsByStage,
-    wonDeals,
-    lostDeals,
-    openDeals,
-    totalRevenue,
-    averageDealSize:
-      wonDeals > 0
-        ? Number(
-            (
-              totalRevenue / wonDeals
-            ).toFixed(2)
-          )
-        : 0,
-    winRate:
-      closedDeals > 0
-        ? Number(
-            (
-              (wonDeals / closedDeals) * 100
-            ).toFixed(2)
-          )
-        : 0
-  };
-
-};
-
-
-export const getCustomerMetricsFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<CustomerMetrics> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(customersTab)
+  const { data: members, error: membersError } = await db
+    .from(table.orgmembers)
     .select(`
       id,
+      profile_id,
+      display_id,
+      role,
       status,
-      created_at
-    `)
-    .eq('org_id', orgId)
-    .is('deleted_at', null);
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch customer metrics: ${error.message}`
-    );
-  }
-
-  let totalCustomers = 0;
-
-  let activeCustomers = 0;
-  let churnedCustomers = 0;
-
-  const customersByStatus: Record<string, number> = {};
-  const customerGrowth: Record<string, number> = {};
-
-  for (const customer of data ?? []) {
-
-    totalCustomers++;
-
-    const status = customer.status ?? 'Unknown';
-
-    customersByStatus[status] =
-      (customersByStatus[status] ?? 0) + 1;
-
-    if (status === 'Active') {
-      activeCustomers++;
-    }
-
-    if (status === 'Churned') {
-      churnedCustomers++;
-    }
-
-    if (customer.created_at) {
-
-      const month = customer.created_at.slice(0, 7);
-
-      customerGrowth[month] =
-        (customerGrowth[month] ?? 0) + 1;
-
-    }
-
-  }
-
-  return {
-    totalCustomers,
-    customersByStatus,
-    activeCustomers,
-    churnedCustomers,
-    customerGrowth
-  };
-
-};
-
-export const getActivityMetricsFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<ActivityMetrics> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const [
-    emails,
-    sms,
-    calls,
-    tasks
-  ] = await Promise.all([
-
-    db
-      .from(emailsTab)
-      .select("*", {
-        count: "exact",
-        head: true
-      })
-      .eq('org_id', orgId)
-      .eq('status', 'sent')
-      .is('deleted_at', null),
-
-    db
-      .from(smsTab)
-      .select("*", {
-        count: "exact",
-        head: true
-      })
-      .eq('org_id', orgId)
-      .eq('status', 'sent'),
-
-    db
-      .from(callsTab)
-      .select("*", {
-        count: "exact",
-        head: true
-      })
-      .eq('org_id', orgId)
-      .eq('status', 'completed')
-      .is('deleted_at', null),
-
-    db
-      .from(tasksTab)
-      .select(`
-        id,
-        status,
-        due_date
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-
-  ]);
-
-  if (
-    emails.error ||
-    sms.error ||
-    calls.error ||
-    tasks.error
-  ) {
-    throw new AppError(
-      500,
-      emails.error?.message ||
-      sms.error?.message ||
-      calls.error?.message ||
-      tasks.error?.message ||
-      'Failed to fetch activity metrics.'
-    );
-  }
-
-  let tasksCompleted = 0;
-  let tasksPending = 0;
-  let tasksOverdue = 0;
-
-  const now = new Date();
-
-  for (const task of tasks.data ?? []) {
-
-    if (task.status === 'completed') {
-      tasksCompleted++;
-    }
-
-    if (task.status === 'in_progress') {
-      tasksPending++;
-    }
-    if (task.status === 'todo') {
-      tasksPending++;
-    }
-
-    if (
-      task.status !== 'completed' &&
-      task.due_date &&
-      new Date(task.due_date) < now
-    ) {
-      tasksOverdue++;
-    }
-
-  }
-
-  return {
-    emailsSent: emails.data?.length ?? 0,
-    smsSent: sms.data?.length ?? 0,
-    callsCompleted: calls.data?.length ?? 0,
-    tasksCompleted,
-    tasksPending,
-    tasksOverdue
-  };
-
-};
-
-export const getDashboardTrendsFromDB = async (
-  orgId: string,
-  accessToken: string,
-  interval: TrendInterval = 'day',
-  daysBack = 30
-): Promise<DashboardTrends> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const startDate = new Date();
-
-  startDate.setDate(startDate.getDate() - daysBack);
-
-  const startDateISO = startDate.toISOString();
-
-  const [
-    leads,
-    deals,
-    customers
-  ] = await Promise.all([
-
-    db
-      .from(leadsTab)
-      .select(`
-        created_at
-      `)
-      .eq('org_id', orgId)
-      .gte('created_at', startDateISO)
-      .is('deleted_at', null),
-
-    db
-      .from(dealsTab)
-      .select(`
-        created_at,
-        value,
-        stage
-      `)
-      .eq('org_id', orgId)
-      .gte('created_at', startDateISO)
-      .is('deleted_at', null),
-
-    db
-      .from(customersTab)
-      .select(`
-        created_at
-      `)
-      .eq('org_id', orgId)
-      .gte('created_at', startDateISO)
-      .is('deleted_at', null)
-
-  ]);
-
-  if (
-    leads.error ||
-    deals.error ||
-    customers.error
-  ) {
-    throw new AppError(
-      500,
-      leads.error?.message ||
-      deals.error?.message ||
-      customers.error?.message ||
-      'Failed to fetch dashboard trends.'
-    );
-  }
-
-  const leadsCreated: Record<string, number> = {};
-
-  const dealsCreated: Record<string, number> = {};
-
-  const revenueOverTime: Record<string, number> = {};
-
-  const customerGrowth: Record<string, number> = {};
-
-  const getBucket = (
-    date: string
-  ): string => {
-
-    const d = new Date(date);
-
-    if (interval === 'day') {
-      return d.toISOString().slice(0, 10);
-    }
-
-    if (interval === 'month') {
-      return d.toISOString().slice(0, 7);
-    }
-
-    const firstDay = new Date(d);
-
-    const day = firstDay.getUTCDay();
-
-    firstDay.setUTCDate(
-      firstDay.getUTCDate() - day
-    );
-
-    return firstDay
-      .toISOString()
-      .slice(0, 10);
-
-  };
-
-  for (const lead of leads.data ?? []) {
-
-    const bucket = getBucket(
-      lead.created_at
-    );
-
-    leadsCreated[bucket] =
-      (leadsCreated[bucket] ?? 0) + 1;
-
-  }
-
-  for (const deal of deals.data ?? []) {
-
-    const bucket = getBucket(
-      deal.created_at
-    );
-
-    dealsCreated[bucket] =
-      (dealsCreated[bucket] ?? 0) + 1;
-
-    if (
-      deal.stage?.toLowerCase() === 'closed won'
-    ) {
-
-      revenueOverTime[bucket] =
-        (revenueOverTime[bucket] ?? 0) +
-        (Number(deal.value) || 0);
-
-    }
-
-  }
-
-  for (const customer of customers.data ?? []) {
-
-    const bucket = getBucket(
-      customer.created_at
-    );
-
-    customerGrowth[bucket] =
-      (customerGrowth[bucket] ?? 0) + 1;
-
-  }
-
-  return {
-    interval,
-    startDate: startDateISO,
-    leadsCreated,
-    dealsCreated,
-    revenueOverTime,
-    customerGrowth
-  };
-
-};
-
-export const getRecentDashboardActivitiesFromDB = async (
-  orgId: string,
-  accessToken: string,
-  limit = 10
-): Promise<ActivityItem[]> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const [
-    leads,
-    deals,
-    customers,
-    emails,
-    sms,
-    calls,
-    tasks
-  ] = await Promise.all([
-
-    db
-      .from(leadsTab)
-      .select(`
-        id,
+      profiles:profile_id (
+        display_name,
         first_name,
         last_name,
-        status,
-        created_at
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-      .order('created_at', {
-        ascending: false
-      })
-      .limit(limit),
+        avatar_url,
+        job_title
+      )
+    `)
+    .eq("org_id", orgId)
+    .eq("status", "active")
+    .is("deleted_at", null);
 
-    db
-      .from(dealsTab)
-      .select(`
-        id,
-        title,
-        stage,
-        created_at
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-      .order('created_at', {
-        ascending: false
-      })
-      .limit(limit),
-
-    db
-      .from(customersTab)
-      .select(`
-        id,
-        status,
-        created_at,
-        contact:contacts!fk_customer_contact!inner(
-          id,
-          first_name,
-          last_name
-        )
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-      .order('created_at', {
-        ascending: false
-      })
-      .limit(limit),
-
-    db
-      .from(emailsTab)
-      .select(`
-        id,
-        subject,
-        status,
-        created_at
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-      .order('created_at', {
-        ascending: false
-      })
-      .limit(limit),
-
-    db
-      .from(smsTab)
-      .select(`
-        id,
-        content,
-        status,
-        created_at
-      `)
-      .eq('org_id', orgId)
-      .order('created_at', {
-        ascending: false
-      })
-      .limit(limit),
-
-    db
-      .from(callsTab)
-      .select(`
-        id,
-        subject,
-        status,
-        created_at
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-      .order('created_at', {
-        ascending: false
-      })
-      .limit(limit),
-
-    db
-      .from(tasksTab)
-      .select(`
-        id,
-        title,
-        status,
-        created_at
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
-      .order('created_at', {
-        ascending: false
-      })
-      .limit(limit)
-
-  ]);
-
-  if (
-    leads.error ||
-    deals.error ||
-    customers.error ||
-    emails.error ||
-    sms.error ||
-    calls.error ||
-    tasks.error
-  ) {
-    throw new AppError(
-      500,
-      leads.error?.message ||
-      deals.error?.message ||
-      customers.error?.message ||
-      emails.error?.message ||
-      sms.error?.message ||
-      calls.error?.message ||
-      tasks.error?.message ||
-      'Failed to fetch recent dashboard activities.'
+  if (membersError) {
+    throw new Error(
+      `Failed to fetch dashboard members: ${membersError.message}`
     );
   }
 
-  const activities: ActivityItem[] = [];
+  const dashboardMembers = (members ?? []).map((member) => {
+    const profile = Array.isArray(member.profiles)
+      ? member.profiles[0]
+      : member.profiles;
 
-  for (const lead of leads.data ?? []) {
+    const name =
+      profile?.display_name ||
+      [profile?.first_name, profile?.last_name]
+        .filter(Boolean)
+        .join(" ") ||
+      "Unknown User";
 
-    activities.push({
-      id: lead.id,
-      type: 'lead',
-      title: (lead.first_name && lead.last_name) ?? 'Lead',
-      description: lead.status,
-      createdAt: lead.created_at
-    });
-
-  }
-
-  for (const deal of deals.data ?? []) {
-
-    activities.push({
-      id: deal.id,
-      type: 'deal',
-      title: deal.title ?? 'Deal',
-      description: deal.stage,
-      createdAt: deal.created_at
-    });
-
-  }
-
-  for (const customer of customers.data ?? []) {
-    const contact = customer.contact?.[0];
-
-    activities.push({
-      id: customer.id,
-      type: "customer",
-      title:
-        `${contact?.first_name ?? ""} ${contact?.last_name ?? ""}`.trim()
-        || "Customer",
-      description: customer.status,
-      createdAt: customer.created_at,
-    });
-  }
-
-  for (const email of emails.data ?? []) {
-
-    activities.push({
-      id: email.id,
-      type: 'email',
-      title: email.subject ?? 'Email',
-      description: email.status,
-      createdAt: email.created_at
-    });
-
-  }
-
-  for (const text of sms.data ?? []) {
-
-    activities.push({
-      id: text.id,
-      type: 'sms',
-      title: text.content ?? 'SMS',
-      description: text.status,
-      createdAt: text.created_at
-    });
-
-  }
-
-  for (const call of calls.data ?? []) {
-
-    activities.push({
-      id: call.id,
-      type: 'call',
-      title: call.subject ?? 'Call',
-      description: call.status,
-      createdAt: call.created_at
-    });
-
-  }
-
-  for (const task of tasks.data ?? []) {
-
-    activities.push({
-      id: task.id,
-      type: 'task',
-      title: task.title ?? 'Task',
-      description: task.status,
-      createdAt: task.created_at
-    });
-
-  }
-
-  activities.sort((a, b) =>
-    new Date(b.createdAt).getTime() -
-    new Date(a.createdAt).getTime()
-  );
-
-  return activities.slice(0, limit);
-
-};
-
-export const getUserPerformanceMetricsFromDB = async (
-  orgId: string,
-  accessToken: string
-): Promise<UserPerformanceMetrics> => {
-
-  const db = createSupabaseUserClient(accessToken);
+    return {
+      memberId: member.id,
+      profileId: member.profile_id,
+      displayId: member.display_id,
+      name,
+      avatarUrl: profile?.avatar_url ?? null,
+      jobTitle: profile?.job_title ?? null,
+      role: member.role,
+    };
+  });
 
   const [
-    leads,
-    deals,
-    tasks,
-    calls
+    leadsResult,
+    contactsResult,
+    customersResult,
+    dealsResult,
+    tasksResult,
+    callsResult,
+    emailsResult,
+    smsResult,
+    activitiesResult,
+    contactActivitiesResult,
   ] = await Promise.all([
+    db
+      .from(table.leads)
+      .select(
+        "id, display_id, first_name, last_name, status, priority, source, owner_id, assigned_to, created_at, updated_at, deleted_at, is_archived"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .eq("is_archived", false),
 
     db
-      .from(leadsTab)
-      .select(`
-        owner_id
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
+      .from(table.contacts)
+      .select(
+        "id, display_id, first_name, last_name, priority, owner_id, assigned_to, created_at, updated_at, deleted_at, is_archived"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .eq("is_archived", false),
 
     db
-      .from(dealsTab)
-      .select(`
-        owner_id,
-        stage
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
+      .from(table.customers)
+      .select(
+        "id, contact_id, status, owner_id, assigned_to, created_at, updated_at, deleted_at, is_archived"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .eq("is_archived", false),
 
     db
-      .from(tasksTab)
-      .select(`
-        assigned_to,
-        status
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null),
+      .from(table.deals)
+      .select(
+        "id, display_id, title, stage, value, owner_id, assigned_to, created_at, updated_at, close_date, deleted_at, is_archived"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .eq("is_archived", false),
 
     db
-      .from(callsTab)
-      .select(`
-        assigned_to,
-        status
-      `)
-      .eq('org_id', orgId)
-      .is('deleted_at', null)
+      .from(table.tasks)
+      .select(
+        "id, assigned_to, status, priority, due_date, created_at, updated_at, deleted_at, is_archived"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .eq("is_archived", false),
 
+    db
+      .from(table.calls)
+      .select(
+        "id, assigned_to, created_by, status, priority, scheduled_for, created_at, updated_at, deleted_at, is_archived"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .eq("is_archived", false),
+
+    db
+      .from(table.emails)
+      .select(
+        "id, sender_id, lead_id, contact_id, customer_id, status, sent_at, created_at, updated_at, deleted_at"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null),
+
+    db
+      .from(table.sms)
+      .select(
+        "id, sender_id, lead_id, contact_id, status, created_at, updated_at, deleted_at, is_archived"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .eq("is_archived", false),
+
+    db
+      .from(table.activities)
+      .select(
+        "id, type, action, title, description, target_name, contact_id, lead_id, customer_id, created_by, created_at, updated_at, deleted_at"
+      )
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(50),
+
+    db
+      .from(table.activities)
+      .select("contact_id, created_at")
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .not("contact_id", "is", null)
+      .order("created_at", { ascending: false }),
   ]);
 
-  if (
-    leads.error ||
-    deals.error ||
-    tasks.error ||
-    calls.error
-  ) {
-    throw new AppError(
-      500,
-      leads.error?.message ||
-      deals.error?.message ||
-      tasks.error?.message ||
-      calls.error?.message ||
-      'Failed to fetch user performance metrics.'
-    );
+  const queryResults = [
+    ["leads", leadsResult],
+    ["contacts", contactsResult],
+    ["customers", customersResult],
+    ["deals", dealsResult],
+    ["tasks", tasksResult],
+    ["calls", callsResult],
+    ["emails", emailsResult],
+    ["sms", smsResult],
+    ["activities", activitiesResult],
+    ["contact activities", contactActivitiesResult],
+  ] as const;
+
+  for (const [name, result] of queryResults) {
+    if (result.error) {
+      throw new Error(
+        `Failed to fetch dashboard ${name}: ${result.error.message}`
+      );
+    }
   }
 
-  const leadsPerUser: Record<string, number> = {};
+  const now = new Date();
+  const inactiveThreshold = new Date(now);
+  inactiveThreshold.setDate(inactiveThreshold.getDate() - 30);
 
-  const dealsClosedPerUser: Record<string, number> = {};
+  const memberStats = new Map(
+    dashboardMembers.map((member) => [
+      member.memberId,
+      {
+        ...member,
+        leads: 0,
+        contacts: 0,
+        customers: 0,
+        openDeals: 0,
+        pipelineValue: 0,
+        openTasks: 0,
+        overdueTasks: 0,
+        scheduledCalls: 0,
+        completedCalls: 0,
+        emailsSent: 0,
+        smsSent: 0,
+      },
+    ])
+  );
 
-  const tasksCompletedPerUser: Record<string, number> = {};
+  const leads = leadsResult.data ?? [];
+  const contacts = contactsResult.data ?? [];
+  const customers = customersResult.data ?? [];
+  const deals = dealsResult.data ?? [];
+  const tasks = tasksResult.data ?? [];
+  const calls = callsResult.data ?? [];
+  const emails = emailsResult.data ?? [];
+  const sms = smsResult.data ?? [];
+  const activities = activitiesResult.data ?? [];
+  const contactActivities = contactActivitiesResult.data ?? [];
 
-  const callsCompletedPerUser: Record<string, number> = {};
+  for (const lead of leads) {
+    const memberId = lead.assigned_to ?? lead.owner_id;
 
-  for (const lead of leads.data ?? []) {
+    if (!memberId) continue;
 
-    const user =
-      lead.owner_id ?? 'Unassigned';
+    const member = memberStats.get(memberId);
 
-    leadsPerUser[user] =
-      (leadsPerUser[user] ?? 0) + 1;
-
+    if (member) {
+      member.leads += 1;
+    }
   }
 
-  for (const deal of deals.data ?? []) {
+  for (const contact of contacts) {
+    const memberId = contact.assigned_to ?? contact.owner_id;
 
+    if (!memberId) continue;
+
+    const member = memberStats.get(memberId);
+
+    if (member) {
+      member.contacts += 1;
+    }
+  }
+
+  for (const customer of customers) {
+    const memberId = customer.assigned_to ?? customer.owner_id;
+
+    if (!memberId) continue;
+
+    const member = memberStats.get(memberId);
+
+    if (member) {
+      member.customers += 1;
+    }
+  }
+  
+  for (const deal of deals) {
+    const memberId = deal.assigned_to ?? deal.owner_id;
+
+    if (!memberId) continue;
+
+    const member = memberStats.get(memberId);
+
+    if (!member) continue;
+
+    const isOpen =
+      deal.stage !== "Closed Won" &&
+      deal.stage !== "Closed Lost";
+
+    if (isOpen) {
+      member.openDeals += 1;
+      member.pipelineValue += Number(deal.value ?? 0);
+    }
+  }
+
+  for (const task of tasks) {
+    const memberId = task.assigned_to;
+
+    if (!memberId) continue;
+
+    const member = memberStats.get(memberId);
+
+    if (!member) continue;
+
+    const isOpen =
+      task.status !== "completed" &&
+      task.status !== "cancelled";
+
+    if (isOpen) {
+      member.openTasks += 1;
+    }
+
+    const isOverdue =
+      isOpen &&
+      task.due_date &&
+      new Date(task.due_date) < now;
+
+    if (isOverdue) {
+      member.overdueTasks += 1;
+    }
+  }
+
+  for (const call of calls) {
+    const memberId = call.assigned_to;
+
+    if (!memberId) continue;
+
+    const member = memberStats.get(memberId);
+
+    if (!member) continue;
+
+    if (call.status === "completed") {
+      member.completedCalls += 1;
+    }
+
+    const isScheduled =
+      call.status === "scheduled" &&
+      call.scheduled_for &&
+      new Date(call.scheduled_for) >= now;
+
+    if (isScheduled) {
+      member.scheduledCalls += 1;
+    }
+  }
+
+  for (const email of emails) {
+    if (email.status !== "sent") continue;
+
+    const memberId = email.sender_id;
+
+    if (!memberId) continue;
+
+    const member = memberStats.get(memberId);
+
+    if (member) {
+      member.emailsSent += 1;
+    }
+  }
+
+  for (const message of sms) {
     if (
-      deal.stage?.toLowerCase() !== 'closed won'
+      message.status !== "sent" &&
+      message.status !== "delivered"
     ) {
       continue;
     }
 
-    const user =
-      deal.owner_id ?? 'Unassigned';
+    const memberId = message.sender_id;
 
-    dealsClosedPerUser[user] =
-      (dealsClosedPerUser[user] ?? 0) + 1;
+    if (!memberId) continue;
 
-  }
+    const member = memberStats.get(memberId);
 
-  for (const task of tasks.data ?? []) {
-
-    if (
-      task.status?.toLowerCase() !== 'completed'
-    ) {
-      continue;
+    if (member) {
+      member.smsSent += 1;
     }
-
-    const user =
-      task.assigned_to ?? 'Unassigned';
-
-    tasksCompletedPerUser[user] =
-      (tasksCompletedPerUser[user] ?? 0) + 1;
-
   }
 
-  for (const call of calls.data ?? []) {
+  const scopedMemberId = scope === "user" ? memberId : null;
 
-    if (
-      call.status?.toLowerCase() !== 'completed'
-    ) {
-      continue;
-    }
+  const scopedLeads = scopedMemberId
+    ? leads.filter(
+        (lead) =>
+          (lead.assigned_to ?? lead.owner_id) === scopedMemberId
+      )
+    : leads;
 
-    const user =
-      call.assigned_to ?? 'Unassigned';
+  const scopedContacts = scopedMemberId
+    ? contacts.filter(
+        (contact) =>
+          (contact.assigned_to ?? contact.owner_id) === scopedMemberId
+      )
+    : contacts;
 
-    callsCompletedPerUser[user] =
-      (callsCompletedPerUser[user] ?? 0) + 1;
+  const scopedCustomers = scopedMemberId
+    ? customers.filter(
+        (customer) =>
+          (customer.assigned_to ?? customer.owner_id) === scopedMemberId
+      )
+    : customers;
 
-  }
+  const scopedDeals = scopedMemberId
+    ? deals.filter(
+        (deal) =>
+          (deal.assigned_to ?? deal.owner_id) === scopedMemberId
+      )
+    : deals;
 
-  return {
-    leadsPerUser,
-    dealsClosedPerUser,
-    tasksCompletedPerUser,
-    callsCompletedPerUser
+  const scopedTasks = scopedMemberId
+    ? tasks.filter((task) => task.assigned_to === scopedMemberId)
+    : tasks;
+
+  const scopedCalls = scopedMemberId
+    ? calls.filter((call) => call.assigned_to === scopedMemberId)
+    : calls;
+
+  const scopedEmails = scopedMemberId
+    ? emails.filter((email) => email.sender_id === scopedMemberId)
+    : emails;
+
+  const scopedSms = scopedMemberId
+    ? sms.filter((message) => message.sender_id === scopedMemberId)
+    : sms;
+
+  const openDeals = scopedDeals.filter(
+    (deal) =>
+      deal.stage !== "Closed Won" &&
+      deal.stage !== "Closed Lost"
+  );
+
+  const wonDeals = scopedDeals.filter(
+    (deal) => deal.stage === "Closed Won"
+  );
+
+  const openTasks = scopedTasks.filter(
+    (task) =>
+      task.status !== "completed" &&
+      task.status !== "cancelled"
+  );
+
+  const overdueTasks = openTasks.filter(
+    (task) =>
+      task.due_date &&
+      new Date(task.due_date) < now
+  );
+
+  const scheduledCalls = scopedCalls.filter(
+    (call) =>
+      call.status === "scheduled" &&
+      call.scheduled_for &&
+      new Date(call.scheduled_for) >= now
+  );
+
+  const kpis = {
+    totalLeads: scopedLeads.length,
+    totalContacts: scopedContacts.length,
+    totalCustomers: scopedCustomers.length,
+    totalDeals: scopedDeals.length,
+
+    openDeals: openDeals.length,
+
+    pipelineValue: openDeals.reduce(
+      (sum, deal) => sum + Number(deal.value ?? 0),
+      0
+    ),
+
+    wonRevenue: wonDeals.reduce(
+      (sum, deal) => sum + Number(deal.value ?? 0),
+      0
+    ),
+
+    openTasks: openTasks.length,
+    overdueTasks: overdueTasks.length,
+    scheduledCalls: scheduledCalls.length,
   };
 
+  const pipelineMap = new Map<
+    string,
+    { count: number; value: number }
+  >();
+
+  for (const deal of scopedDeals) {
+    const existing = pipelineMap.get(deal.stage) ?? {
+      count: 0,
+      value: 0,
+    };
+
+    existing.count += 1;
+    existing.value += Number(deal.value ?? 0);
+
+    pipelineMap.set(deal.stage, existing);
+  }
+
+  const pipelineStages = Array.from(
+    pipelineMap.entries()
+  ).map(([stage, metrics]) => ({
+    stage,
+    count: metrics.count,
+    value: metrics.value,
+  }));
+
+  const leadByStatus: Record<string, number> = {};
+  const leadByPriority: Record<string, number> = {};
+  const leadBySource: Record<string, number> = {};
+
+  for (const lead of scopedLeads) {
+    leadByStatus[lead.status] =
+      (leadByStatus[lead.status] ?? 0) + 1;
+
+    leadByPriority[lead.priority] =
+      (leadByPriority[lead.priority] ?? 0) + 1;
+
+    const source = lead.source ?? "Unknown";
+
+    leadBySource[source] =
+      (leadBySource[source] ?? 0) + 1;
+  }
+
+  const leadOverview = {
+    total: scopedLeads.length,
+    byStatus: leadByStatus,
+    byPriority: leadByPriority,
+    bySource: leadBySource,
+  };
+
+  const customerByStatus: Record<string, number> = {};
+
+  for (const customer of scopedCustomers) {
+    customerByStatus[customer.status] =
+      (customerByStatus[customer.status] ?? 0) + 1;
+  }
+
+  const customerOverview = {
+    total: scopedCustomers.length,
+    byStatus: customerByStatus,
+  };
+
+  const activity = {
+    emailsSent: scopedEmails.filter(
+      (email) => email.status === "sent"
+    ).length,
+
+    smsSent: scopedSms.filter(
+      (message) =>
+        message.status === "sent" ||
+        message.status === "delivered"
+    ).length,
+
+    callsCompleted: scopedCalls.filter(
+      (call) => call.status === "completed"
+    ).length,
+
+    tasksCompleted: scopedTasks.filter(
+      (task) => task.status === "completed"
+    ).length,
+
+    tasksPending: openTasks.length,
+
+    tasksOverdue: overdueTasks.length,
+  };
+
+  const membersWithStats = Array.from(memberStats.values());
+
+  const lastActivityByContact = new Map<string, string>();
+
+  for (const activityItem of contactActivities) {
+    if (!activityItem.contact_id) continue;
+
+    if (!lastActivityByContact.has(activityItem.contact_id)) {
+      lastActivityByContact.set(
+        activityItem.contact_id,
+        activityItem.created_at
+      );
+    }
+  }
+
+  const priorityLeads = [...scopedLeads]
+    .filter(
+      (lead) =>
+        lead.priority === "Highest" ||
+        lead.priority === "High"
+    )
+    .sort((a, b) => {
+      const priorityRank = {
+        Highest: 0,
+        High: 1,
+        Low: 2,
+      };
+
+      const aPriority =
+        priorityRank[a.priority as keyof typeof priorityRank] ?? 99;
+
+      const bPriority =
+        priorityRank[b.priority as keyof typeof priorityRank] ?? 99;
+
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+
+      return (
+        new Date(b.updated_at).getTime() -
+        new Date(a.updated_at).getTime()
+      );
+    })
+    .slice(0, 5)
+    .map((lead) => ({
+      id: lead.id,
+      displayId: lead.display_id,
+      name:
+        [lead.first_name, lead.last_name]
+          .filter(Boolean)
+          .join(" ") || "Unnamed Lead",
+      priority: lead.priority,
+      createdAt: lead.created_at,
+      updatedAt: lead.updated_at,
+    }));
+
+  const priorityContacts = [...scopedContacts]
+    .filter(
+      (contact) =>
+        contact.priority === "Highest" ||
+        contact.priority === "High"
+    )
+    .sort((a, b) => {
+      const priorityRank = {
+        Highest: 0,
+        High: 1,
+        Low: 2,
+      };
+
+      const aPriority =
+        priorityRank[a.priority as keyof typeof priorityRank] ?? 99;
+
+      const bPriority =
+        priorityRank[b.priority as keyof typeof priorityRank] ?? 99;
+
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+
+      return (
+        new Date(b.updated_at).getTime() -
+        new Date(a.updated_at).getTime()
+      );
+    })
+    .slice(0, 5)
+    .map((contact) => ({
+      id: contact.id,
+      displayId: contact.display_id,
+      name:
+        [contact.first_name, contact.last_name]
+          .filter(Boolean)
+          .join(" ") || "Unnamed Contact",
+      priority: contact.priority,
+      createdAt: contact.created_at,
+      updatedAt: contact.updated_at,
+    }));
+
+  const openDealsForAttention = [...openDeals]
+    .sort((a, b) => {
+      const valueDifference =
+        Number(b.value ?? 0) - Number(a.value ?? 0);
+
+      if (valueDifference !== 0) {
+        return valueDifference;
+      }
+
+      if (!a.close_date && !b.close_date) return 0;
+      if (!a.close_date) return 1;
+      if (!b.close_date) return -1;
+
+      return (
+        new Date(a.close_date).getTime() -
+        new Date(b.close_date).getTime()
+      );
+    })
+    .slice(0, 5);
+
+  const openDealItems = openDealsForAttention.map((deal) => ({
+    id: deal.id,
+    displayId: deal.display_id,
+    title: deal.title,
+    stage: deal.stage,
+    value: Number(deal.value ?? 0),
+    closeDate: deal.close_date,
+    updatedAt: deal.updated_at,
+  }));
+
+  const inactiveContacts = [...scopedContacts]
+  .map((contact) => {
+    const lastActivityAt =
+      lastActivityByContact.get(contact.id) ?? null;
+
+    return {
+      contact,
+      lastActivityAt,
+    };
+  })
+  .filter(({ lastActivityAt }) => {
+    if (!lastActivityAt) return true;
+
+    return new Date(lastActivityAt) < inactiveThreshold;
+  })
+  .sort((a, b) => {
+    const aTime = a.lastActivityAt
+      ? new Date(a.lastActivityAt).getTime()
+      : 0;
+
+    const bTime = b.lastActivityAt
+      ? new Date(b.lastActivityAt).getTime()
+      : 0;
+
+    return aTime - bTime;
+  })
+  .slice(0, 5)
+  .map(({ contact, lastActivityAt }) => ({
+    id: contact.id,
+    displayId: contact.display_id,
+    name:
+      [contact.first_name, contact.last_name]
+        .filter(Boolean)
+        .join(" ") || "Unnamed Contact",
+    priority: contact.priority,
+    lastActivityAt,
+    inactiveDays: lastActivityAt
+      ? Math.floor(
+          (now.getTime() - new Date(lastActivityAt).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      : Math.floor(
+          (now.getTime() - new Date(contact.created_at).getTime()) /
+            (1000 * 60 * 60 * 24)
+        ),
+  }));
+
+  const scopedActivities =
+    scope === "user"
+      ? activities.filter(
+          (activity) => activity.created_by === memberId
+        )
+      : activities;
+
+  const recentActivity = scopedActivities
+    .slice(0, 10)
+    .map((activity) => {
+      const member = activity.created_by
+        ? dashboardMembers.find(
+            (item) => item.memberId === activity.created_by
+          )
+        : null;
+
+      return {
+        id: activity.id,
+        type: activity.type,
+        action: activity.action,
+        title: activity.title,
+        description: activity.description ?? null,
+        targetName: activity.target_name ?? null,
+        createdAt: activity.created_at,
+        createdBy: member
+          ? {
+              memberId: member.memberId,
+              name: member.name,
+              avatarUrl: member.avatarUrl,
+            }
+          : null,
+      };
+    });
+
+
+  return {
+    scope,
+    role,
+    kpis,
+    pipeline: {
+      stages: pipelineStages,
+    },
+    leads: leadOverview,
+    customers: customerOverview,
+    activity,
+    attention: {
+      priorityLeads,
+      priorityContacts,
+      openDeals: openDealItems,
+      inactiveContacts,
+    },
+    recentActivity,
+    members:
+      scope === "organization"
+        ? membersWithStats
+        : membersWithStats.filter(
+            (member) => member.memberId === memberId
+          ),
+  };
 };

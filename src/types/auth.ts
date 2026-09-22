@@ -20,18 +20,6 @@ export interface UpdatePasswordDTO {
   password: string;
 }
 
-export interface AccessTokenPayload extends JwtPayload {
-  aud: string | string[];
-  iss: string;
-  sub: string; 
-  role: "authenticated";
-  email: string;
-  org_id: string | null;
-  member_id: string | null;
-  user_metadata: {
-    role: Roles | null;
-  };
-}
 
 
 export interface RequestMeta {
