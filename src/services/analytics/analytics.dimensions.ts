@@ -88,7 +88,6 @@ export const getAnalyticsDimension = (
   const definition = analyticsDimensions.find(
     (item) => item.key === dimension,
   );
-  console.log("ANALYTICS DEFINITION:", definition);
 
   if (!definition) {
     throw new Error(

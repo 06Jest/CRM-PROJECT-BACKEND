@@ -200,8 +200,6 @@ export async function chatWithAI(
             input.message
           );
 
-        console.log("Generated conversation title:", title);
-
         const updatedConversation =
           await conversationService.updateConversationTitle({
             conversationId,

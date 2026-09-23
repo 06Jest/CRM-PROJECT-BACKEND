@@ -37,7 +37,6 @@ export const getBreakdownAnalytics = async (
   const startDate = filterContext.current.start.toISOString();
   const endDate = filterContext.current.end.toISOString();
   const definition = getAnalyticsDimension(dimension);
-  console.log(definition)
 
   if (!definition.leadColumn) {
     return {
