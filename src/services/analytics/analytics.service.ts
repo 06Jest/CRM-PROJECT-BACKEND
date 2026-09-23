@@ -126,9 +126,6 @@ export const getAnalyticsFromDB = async ({
   filters,
 }: AnalyticsParams): Promise<AnalyticsData> => {
   const scope = role === "agent" ? "user" : "organization";
-
-  console.log("Analytics filters:", filters);
-
   const results = await Promise.allSettled([
     getAnalyticsOverview({
       orgId,

@@ -32,7 +32,6 @@ async function main(): Promise<void> {
     `Knowledge ingestion completed. Processed ${documentIds.length} documents.`
   );
 
-  console.log("Document IDs:", documentIds);
 }
 
 main().catch((error: unknown) => {

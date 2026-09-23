@@ -296,7 +296,6 @@ export const demoLogin = async (
 ): Promise<void> => {
   try {
     const meta = metaFromRequest(req);
-
     const auth = await signInWithAuth({
       email: process.env.DEMO_EMAIL!,
       password: process.env.DEMO_PASSWORD!,
@@ -335,11 +334,6 @@ export const demoLogin = async (
         "Demo account is not fully configured"
       );
     }
-
-    profile =
-      await getProfileByIdForAuthFromDB(
-        profile.id
-      );
 
     await issueSession(
       res,
@@ -402,29 +396,17 @@ export const signIn = async (
         });
       needsOnboarding = true;
     } else {
-      needsOnboarding =
-        !profile.onboarding_completed;
-
-      if (!needsOnboarding) {
-        profile =
-          await getProfileByIdForAuthFromDB(
-            profile.id
-          );
+        needsOnboarding = !profile.onboarding_completed;
       }
-    }
-    await issueSession(
-      res,
-      profile,
-      meta
-    );
+    await issueSession(res, profile, meta);
 
-    await updateLastLogin(
-      userId
-    )
+    void updateLastLogin(userId).catch((err) => {
+      console.error("Failed to update last login:", err);
+    });
+
     res.status(200).json({
       success: true,
-      message:
-        "Login successful",
+      message: "Login successful",
       profile,
       needsOnboarding,
     });
