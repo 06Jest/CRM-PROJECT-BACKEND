@@ -26,6 +26,7 @@ export interface Customer {
   owner_id: string;
   org_id?: string;          
   created_at: string;
+  churned_at: string | null;
   deleted_at: string | null;
   deleted_by: string | null;
   updated_by: string | null;

@@ -7,7 +7,6 @@ import {
   updateDealStageFromDB,
   getDealsByIDFromDB,
   getDealsListsFromDB,
-  closeDealFromDB,
   getOpenDealsByContactIDFromDB,
   getDealListByIDFromDB,
   getDealsListsByContactIDFromDB,
@@ -270,115 +269,128 @@ export const updateDealStage = async (
     );
 
     if (stage === "Closed Won") {
-      if (contact.status !== "Customer") {
+  if (contact.status !== "Customer") {
+    await ensureResourceLimit(
+      orgId,
+      table.customers,
+      "customers",
+      "active_limit",
+      accessToken
+    );
 
-        await ensureResourceLimit(
-          orgId,
-          table.customers,
-          "customers",
-          "active_limit",
-          accessToken
-        );
+    await addCustomerToDB(
+      orgId,
+      memberId,
+      contact.assigned_to ?? null,
+      contact.id,
+      accessToken
+    );
 
-        await addCustomerToDB(
-          orgId,
-          memberId,
-          contact.assigned_to ?? null,
-          contact.id,
-          accessToken
-        );
+    await updateContactStatusFromDB(
+      contact.id,
+      orgId,
+      memberId,
+      "Customer",
+      accessToken
+    );
 
+    await addActivityToDB(
+      orgId,
+      memberId,
+      {
+        contact_id: contact.id,
+        type: "customer",
+        action: "created",
+        title: "New customer",
+        target_name:
+          `${contact.first_name} ${contact.last_name}`,
+        description:
+          "Converted contact into customer",
+      },
+      accessToken
+    );
+  }
+
+  await addActivityToDB(
+    orgId,
+    memberId,
+    {
+      contact_id: contact.id,
+      type: "deal",
+      action: "completed",
+      title: "Deal won",
+      target_name: deal.title,
+      description:
+        `Won deal ${deal.title}`,
+    },
+    accessToken
+  );
+
+  data = await updateDealStageFromDB(
+    id,
+    orgId,
+    memberId,
+    stage,
+    accessToken
+  );
+
+    } else if (stage === "Closed Lost") {
+
+      await addActivityToDB(
+        orgId,
+        memberId,
+        {
+          contact_id: contact.id,
+          type: "deal",
+          action: "cancelled",
+          title: "Deal lost",
+          target_name: deal.title,
+          description: `Lost deal ${deal.title}`,
+        },
+        accessToken
+      );
+
+      data = await updateDealStageFromDB(
+        id,
+        orgId,
+        memberId,
+        stage,
+        accessToken
+      );
+
+      const openDeals = await getOpenDealsByContactIDFromDB(
+        contact.id,
+        orgId,
+        accessToken
+      );
+
+      if (openDeals.length === 0 && contact.status === "Opportunity") {
         await updateContactStatusFromDB(
           contact.id,
           orgId,
           memberId,
-          "Customer",
+          "Contacted",
           accessToken
         );
 
-        await addActivityToDB(orgId, memberId, {
-          contact_id: contact.id,
-          type: "customer",
-          action: "created",
-          title: "New customer",
-          target_name:
-            `${contact.first_name} ${contact.last_name}`,
-          description:
-            "Converted contact into customer",
-        },accessToken);
-      }
-
-      await addActivityToDB(orgId, memberId, {
-        contact_id: contact.id,
-        type: "deal",
-        action: "completed",
-        title: "Deal won",
-        target_name: deal.title,
-        description:
-          `Won deal ${deal.title}`,
-      },accessToken);
-
-      data = await closeDealFromDB(
-        id,
-        stage,
-        memberId,
-        orgId,
-        accessToken
-      );
-    } else if (stage === "Closed Lost") {
         await addActivityToDB(
           orgId,
           memberId,
           {
             contact_id: contact.id,
-            type: "deal",
-            action: "cancelled",
-            title: "Deal lost",
-            target_name: deal.title,
-            description: `Lost deal ${deal.title}`,
+            type: "contact",
+            action: "updated",
+            title: "Contact status updated",
+            target_name:
+              `${contact.first_name} ${contact.last_name}`,
+            description:
+              "Contact moved back to Contacted because there are no open deals",
           },
           accessToken
         );
+      }
 
-        data = await closeDealFromDB(
-          id,
-          stage,
-          memberId,
-          orgId,
-          accessToken
-        );
-
-        const openDeals = await getOpenDealsByContactIDFromDB(
-          contact.id,
-          orgId,
-          accessToken
-        );
-
-        if (openDeals.length === 0 && contact.status === "Opportunity") {
-          await updateContactStatusFromDB(
-            contact.id,
-            orgId,
-            memberId,
-            "Contacted",
-            accessToken
-          );
-
-          await addActivityToDB(
-            orgId,
-            memberId,
-            {
-              contact_id: contact.id,
-              type: "contact",
-              action: "updated",
-              title: "Contact status updated",
-              target_name: `${contact.first_name} ${contact.last_name}`,
-              description:
-                "Contact moved back to Contacted because there are no open deals",
-            },
-            accessToken
-          );
-        }
-      } else {
+    } else {
       data = await updateDealStageFromDB(
         id,
         orgId,

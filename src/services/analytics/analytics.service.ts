@@ -1,105 +1,3 @@
-// import type {
-//   AnalyticsData,
-//   AnalyticsParams,
-// } from "../../types/analytics";
-// import { getAnalyticsOverview } from "./overview.analytics";
-// import { getSalesAnalytics } from "./sales.analytics";
-// import { getLeadAnalytics } from "./leads.analytics";
-// import { getContactCustomerAnalytics } from "./contacts.analytics";
-// import { getActivityAnalytics } from "./activity.analytics";
-// import { getTeamAnalytics } from "./team.analytics";
-// import { getTaskAnalytics } from "./tasks.analytics";
-// import { getCRMHealthAnalytics } from "./health.analytics";
-// import { getFunnelAnalytics } from "./funnel.analytics";
-// import { getCohortAnalytics } from "./cohorts.analytics";
-// import { getRevenueAnalytics } from "./revenue.analytics";
-// import { getEngagementAnalytics } from "./engagement.analytics";
-// import { getBreakdownAnalytics } from "./breakdown.analytics";
-
-// export const getAnalyticsFromDB = async ({
-//   orgId,
-//   accessToken,
-//   memberId,
-//   role,
-//   filters,
-// }: AnalyticsParams): Promise<AnalyticsData> => {
-
-//   const scope = role === "agent" ? "user" : "organization";
-
-//   const [
-//     overview,
-//     sales,
-//     leads,
-//     contacts,
-//     activity,
-//     team,
-//     tasks,
-//     health,
-//     funnel,
-//     cohorts,
-//     revenue,
-//     engagement,
-//     breakdown,
-//   ] = await Promise.all([
-//     getAnalyticsOverview({ orgId, accessToken, memberId, role, filters }),
-//     getSalesAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getLeadAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getContactCustomerAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getActivityAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getTeamAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getTaskAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getCRMHealthAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getFunnelAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getCohortAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getRevenueAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getEngagementAnalytics({ orgId, accessToken, memberId, role, filters }),
-//     getBreakdownAnalytics({orgId, accessToken, memberId, role, filters,}),
-//   ]);
-
-//   return {
-//     scope,
-//     role,
-//     filters,
-//     overview,
-//     sales,
-//     leads,
-//     contacts,
-//     activity,
-//     team,
-//     tasks,
-//     health,
-//     funnel,
-//     cohorts,
-
-//     conversionTime: {
-//       available: false,
-//       reason:
-//         "Conversion time analytics require reliable lifecycle history, which is not currently available.",
-//     },
-
-//     revenue,
-
-//     forecasting: {
-//       available: false,
-//       reason:"Forecasting analytics require sufficient historical time-series data and a defined forecasting methodology.",
-//     },
-
-//     attribution: {
-//       available: false,
-//       reason: "Attribution analytics require reliable source-to-outcome relationships, which are not currently available.",
-//     },
-
-//     engagement,
-
-//     anomalies: {
-//       available: false,
-//       reason: "Anomaly analytics require sufficient historical baseline data and defined detection rules.",
-//     },
-//     breakdown,
-//   };
-// };
-
-
 import type {
   AnalyticsData,
   AnalyticsParams,
@@ -117,6 +15,10 @@ import { getCohortAnalytics } from "./cohorts.analytics";
 import { getRevenueAnalytics } from "./revenue.analytics";
 import { getEngagementAnalytics } from "./engagement.analytics";
 import { getBreakdownAnalytics } from "./breakdown.analytics";
+import { getConversionTimeAnalytics } from "./conversion-time.analytics";
+import { getForecastingAnalytics } from "./forecasting.analytics";
+import { getAttributionAnalytics } from "./attribution.analytics";
+import { getAnomalyAnalytics } from "./anomalies.analytics";
 
 export const getAnalyticsFromDB = async ({
   orgId,
@@ -218,6 +120,34 @@ export const getAnalyticsFromDB = async ({
       role,
       filters,
     }),
+    getConversionTimeAnalytics({
+      orgId,
+      accessToken,
+      memberId,
+      role,
+      filters,
+    }),
+    getForecastingAnalytics({
+      orgId,
+      accessToken,
+      memberId,
+      role,
+      filters,
+    }),
+    getAttributionAnalytics({
+      orgId,
+      accessToken,
+      memberId,
+      role,
+      filters,
+    }),
+    getAnomalyAnalytics({
+      orgId,
+      accessToken,
+      memberId,
+      role,
+      filters,
+    }),
   ]);
 
   const names = [
@@ -234,6 +164,10 @@ export const getAnalyticsFromDB = async ({
     "revenue",
     "engagement",
     "breakdown",
+    "conversionTime",
+    "forecasting",
+    "attribution",
+    "anomalies",
   ];
 
   results.forEach((result, index) => {
@@ -277,6 +211,10 @@ export const getAnalyticsFromDB = async ({
   const revenue = getResult(results[10], "revenue");
   const engagement = getResult(results[11], "engagement");
   const breakdown = getResult(results[12], "breakdown");
+  const conversionTime = getResult(results[13],"conversionTime",);
+  const forecasting = getResult(results[14],"forecasting");
+  const attribution = getResult(results[15],"attribution",);
+  const anomalies = getResult(results[16],"anomalies",);
 
   return {
     scope,
@@ -292,35 +230,12 @@ export const getAnalyticsFromDB = async ({
     health,
     funnel,
     cohorts,
-
-    conversionTime: {
-      available: false,
-      reason:
-        "Conversion time analytics require reliable lifecycle history, which is not currently available.",
-    },
-
+    conversionTime,
     revenue,
-
-    forecasting: {
-      available: false,
-      reason:
-        "Forecasting analytics require sufficient historical time-series data and a defined forecasting methodology.",
-    },
-
-    attribution: {
-      available: false,
-      reason:
-        "Attribution analytics require reliable source-to-outcome relationships, which are not currently available.",
-    },
-
+    forecasting,
+    attribution,
     engagement,
-
-    anomalies: {
-      available: false,
-      reason:
-        "Anomaly analytics require sufficient historical baseline data and defined detection rules.",
-    },
-
+    anomalies,
     breakdown,
   };
 };

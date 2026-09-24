@@ -227,6 +227,22 @@ export interface CohortAnalytics {
 export interface ConversionTimeAnalytics {
   available: boolean;
   reason?: string;
+
+  leads: {
+    averageDays: number;
+    medianDays: number;
+    fastestDays: number;
+    slowestDays: number;
+    sampleSize: number;
+  };
+
+  deals: {
+    averageDays: number;
+    medianDays: number;
+    fastestDays: number;
+    slowestDays: number;
+    sampleSize: number;
+  };
 }
 
 export interface RevenueAnalytics {
@@ -245,11 +261,31 @@ export interface RevenueAnalytics {
 export interface ForecastAnalytics {
   available: boolean;
   reason?: string;
+
+  revenue: {
+    historical: number;
+    projected: number;
+    growthRate: number;
+  };
+
+  pipeline: {
+    openValue: number;
+    weightedValue: number;
+  };
 }
 
 export interface AttributionAnalytics {
   available: boolean;
   reason?: string;
+
+  sources: {
+    source: string;
+    leads: number;
+    convertedLeads: number;
+    conversionRate: number;
+    wonDeals: number;
+    wonRevenue: number;
+  }[];
 }
 
 export interface EngagementAnalytics {
@@ -265,6 +301,15 @@ export interface EngagementAnalytics {
 export interface AnomalyAnalytics {
   available: boolean;
   reason?: string;
+
+  anomalies: {
+    metric: string;
+    currentValue: number;
+    baselineValue: number;
+    deviationPercent: number;
+    direction: "increase" | "decrease";
+    severity: "low" | "medium" | "high";
+  }[];
 }
 
 export interface AnalyticsData {
