@@ -219,6 +219,7 @@ export const addSmsToDB = async (
         org_id: orgId,
         sender_id: memberId,
         status: "sent",
+        sent_at: new Date().toISOString(),  
       },
     ])
     .select(selectAll)
@@ -245,19 +246,27 @@ export const updateSmsStatusFromDB = async (
   status: SmsStatus,
   accessToken: string
 ): Promise<SmsListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
+
+  const timestamp = new Date().toISOString();
+
+  const lifecycleUpdate = {
+    status,
+    ...(status === "delivered" && {
+      delivered_at: timestamp,
+    }),
+    ...(status === "failed" && {
+      failed_at: timestamp,
+    }),
+  };
 
   const { data, error } = await db
     .from(tab)
-    .update({
-      status,
-    })
+    .update(lifecycleUpdate)
     .eq("id", id)
     .eq("org_id", orgId)
     .select(selectAll)
     .single();
-
 
   if (error) {
     throw new AppError(
@@ -266,11 +275,8 @@ export const updateSmsStatusFromDB = async (
     );
   }
 
-
   return data;
-
 };
-
 export const archiveSmsFromDB = async (
   id: string,
   orgId: string,

@@ -18,6 +18,7 @@ import {
   archiveLeadFromDB,
   archiveBulkLeadsFromDB,
   deleteBulkLeadsFromDB,
+  markLeadConvertedFromDB,
 } from "../services/leads.service";
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
@@ -518,6 +519,13 @@ export const updateLeadStatus = async (
         orgId,
         memberId,
         contact,
+        accessToken
+      );
+
+      await markLeadConvertedFromDB(
+        id,
+        orgId,
+        memberId,
         accessToken
       );
 

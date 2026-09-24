@@ -1,5 +1,3 @@
-import { Priority, Suffix } from "./global";
-
 export const DEAL_STAGES = [
   "Prospecting",
   "Proposal",
@@ -10,8 +8,6 @@ export const DEAL_STAGES = [
 
 export type DealStage = typeof DEAL_STAGES[number];
 
-
-
 export interface Deal {
   id: string;
   display_id: string;
@@ -20,15 +16,17 @@ export interface Deal {
   title: string;
   stage: DealStage;
   notes?: string;
-  owner_id: string;         
-  org_id: string; 
+  owner_id: string;
+  org_id: string;
   value: number;
   created_at: string;
+  won_at: string | null;
+  lost_at: string | null;
   deleted_at: string | null;
   deleted_by: string | null;
   updated_by: string | null;
-  close_date?: string;          
-  closed_by?: string;       
+  close_date?: string;
+  closed_by?: string;
 }
 
 export interface DealListItem extends Deal {
@@ -38,16 +36,18 @@ export interface DealListItem extends Deal {
       first_name: string;
       last_name: string;
       avatar_url?: string | null;
-    }
+    };
   };
+
   assigned?: {
     id: string;
     profile: {
       first_name: string;
       last_name: string;
       avatar_url?: string | null;
-    }
+    };
   } | null;
+
   contact: {
     id: string;
     first_name: string;
@@ -63,12 +63,11 @@ export interface AddDeal {
   title: string;
   stage: DealStage;
   notes?: string;
-  value: number;      
+  value: number;
 }
 
 export interface UpdateDeal {
   title?: string;
   notes?: string;
-  value?: number;      
+  value?: number;
 }
-

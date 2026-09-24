@@ -16,6 +16,8 @@ export interface Lead {
   display_id: string;
   assigned_to?: string | null;
   status: LeadStatus;
+  converted_at: string | null;
+  lost_at: string | null;
   avatar_file_id?: string | null;
   avatar_url?: string | null;
   first_name: string;
@@ -27,7 +29,7 @@ export interface Lead {
   phone: string;
   company_name?: string;
   industry?: string;
-  position?: string;  
+  position?: string;
   department?: string;
   website?: string;
   priority: Priority;
@@ -44,7 +46,7 @@ export interface Lead {
   telegram?: string;
   viber?: string;
   owner_id: string;
-  org_id: string;            
+  org_id: string;
   created_at: string;
   deleted_at: string | null;
   deleted_by: string | null;

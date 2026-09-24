@@ -212,24 +212,22 @@ export const updateCustomerStatusFromDB = async (
   accessToken: string
 ): Promise<CustomerListItem> => {
   const db = createSupabaseUserClient(accessToken);
-  const { data, error } = await db
-    .from(tab)
-    .update({
-      status,
-      updated_by: memberId
-    })
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .select(all)
-    .single();
+
+  const { error } = await db.rpc("update_customer_status", {
+    p_customer_id: id,
+    p_org_id: orgId,
+    p_member_id: memberId,
+    p_status: status,
+  });
 
   if (error) {
     throw new AppError(
       500,
-      `Failed to update customer status: ${error.message}`
+      `Failed to update Customer Status: ${error.message}`
     );
   }
-  return data as CustomerListItem;
+
+  return getCustomerByIDFromDB(id, orgId, accessToken);
 };
 
 

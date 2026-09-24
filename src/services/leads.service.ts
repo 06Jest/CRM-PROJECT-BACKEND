@@ -276,24 +276,51 @@ export const updateLeadStatusFromDB = async (
   memberId: string,
   status: LeadStatus,
   accessToken: string
-) : Promise<LeadListItem> => {
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .update({
-        status: status,
-        updated_by: memberId
-      })
-      .eq('id', id)
-      .eq('org_id', orgId)
-      .select(all)
-      .single()
 
-    if (error) {
-      throw new AppError(500, `Failed to update Lead Status: ${error.message}`);
-    }
-  return data;
-}
+  const { error } = await db.rpc("update_lead_status", {
+    p_lead_id: id,
+    p_org_id: orgId,
+    p_member_id: memberId,
+    p_status: status,
+  });
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Lead Status: ${error.message}`
+    );
+  }
+
+  return getLeadByIDFromDB(id, orgId, accessToken);
+};
+
+export const markLeadConvertedFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<void> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      converted_at: new Date().toISOString(),
+      updated_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to mark Lead as converted: ${error.message}`
+    );
+  }
+};
 
 export const updateLeadSourceFromDB = async (
   id: string,
