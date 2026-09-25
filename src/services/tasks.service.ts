@@ -5,9 +5,13 @@ import {
   AddTask,
   TaskListItem,
   TaskPriority,
-  TaskStatus,
   UpdateTask,
 } from "../types/task";
+import cacheService from "../cache/cache.service";
+import {
+  tasksRawListCacheKey,
+  taskCacheKey,
+} from "../cache/cache-keys";
 
 const tab = table.tasks;
 
@@ -36,30 +40,41 @@ const selectAllWithUsers = `
 
 const all = selectAllWithUsers;
 
-
 export const getTasksFromDB = async (
   orgId: string,
   memberId: string,
   accessToken: string
 ): Promise<TaskListItem[]> => {
+  const cacheKey = tasksRawListCacheKey(
+    orgId,
+    memberId
+  );
 
-  const db = createSupabaseUserClient(accessToken);
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq("org_id", orgId)
-    .is("deleted_at", null)
-    .or(`author_id.eq.${memberId},assigned_to.eq.${memberId}`)
-    .order("created_at", { ascending: false });
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .or(`author_id.eq.${memberId},assigned_to.eq.${memberId}`)
+        .order("created_at", { ascending: false });
 
-  if (error) {
-    throw new AppError(500, `Failed to fetch Tasks: ${error.message}`);
-  }
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Tasks: ${error.message}`
+        );
+      }
 
-  return data ?? [];
+      return data ?? [];
+    },
+    60
+  );
 };
-
 
 export const getTaskByIDFromDB = async (
   id: string,
@@ -67,25 +82,38 @@ export const getTaskByIDFromDB = async (
   memberId: string,
   accessToken: string
 ): Promise<TaskListItem> => {
+  const cacheKey = taskCacheKey(
+    orgId,
+    memberId,
+    id
+  );
 
-  const db = createSupabaseUserClient(accessToken);
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq("id", id)
-    .eq("org_id", orgId)
-    .is("deleted_at", null)
-    .or(`author_id.eq.${memberId},assigned_to.eq.${memberId}`)
-    .single();
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .or(`author_id.eq.${memberId},assigned_to.eq.${memberId}`)
+        .single();
 
-  if (error) {
-    throw new AppError(500, `Failed to fetch Task: ${error.message}`);
-  }
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Task: ${error.message}`
+        );
+      }
 
-  return data;
+      return data;
+    },
+    60
+  );
 };
-
 
 export const addTaskToDB = async (
   profileId: string,
@@ -110,7 +138,10 @@ export const addTaskToDB = async (
     .single();
 
   if (error) {
-    throw new AppError(500, `Failed to add Task: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to add Task: ${error.message}`
+    );
   }
 
   return data;
@@ -123,7 +154,6 @@ export const updateTaskFromDB = async (
   task: UpdateTask,
   accessToken: string
 ): Promise<TaskListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -140,12 +170,14 @@ export const updateTaskFromDB = async (
     .single();
 
   if (error) {
-    throw new AppError(500, `Failed to update Task: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to update Task: ${error.message}`
+    );
   }
 
   return data;
 };
-
 
 export const assignTaskFromDB = async (
   id: string,
@@ -154,7 +186,6 @@ export const assignTaskFromDB = async (
   assignedTo: string,
   accessToken: string
 ): Promise<TaskListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -171,12 +202,14 @@ export const assignTaskFromDB = async (
     .single();
 
   if (error) {
-    throw new AppError(500, `Failed to assign Task: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to assign Task: ${error.message}`
+    );
   }
 
   return data;
 };
-
 
 export const updateTaskPriorityFromDB = async (
   id: string,
@@ -185,7 +218,6 @@ export const updateTaskPriorityFromDB = async (
   priority: TaskPriority,
   accessToken: string
 ): Promise<TaskListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -211,7 +243,6 @@ export const updateTaskPriorityFromDB = async (
   return data;
 };
 
-
 export const updateTaskDueDateFromDB = async (
   id: string,
   orgId: string,
@@ -219,7 +250,6 @@ export const updateTaskDueDateFromDB = async (
   dueDate: string | null,
   accessToken: string
 ): Promise<TaskListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -244,7 +274,6 @@ export const updateTaskDueDateFromDB = async (
   return data;
 };
 
-
 export const completeTaskFromDB = async (
   id: string,
   orgId: string,
@@ -252,14 +281,15 @@ export const completeTaskFromDB = async (
   completed: boolean,
   accessToken: string
 ): Promise<TaskListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
     .from(tab)
     .update({
       status: completed ? "completed" : "todo",
-      completed_at: completed ? new Date().toISOString() : null,
+      completed_at: completed
+        ? new Date().toISOString()
+        : null,
       updated_by: memberId,
     })
     .eq("id", id)
@@ -277,7 +307,6 @@ export const completeTaskFromDB = async (
 
   return data;
 };
-
 
 export const archiveTaskFromDB = async (
   id: string,
@@ -316,7 +345,6 @@ export const deleteTaskFromDB = async (
   memberId: string,
   accessToken: string
 ): Promise<string> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { error } = await db
@@ -330,7 +358,10 @@ export const deleteTaskFromDB = async (
     .eq("org_id", orgId);
 
   if (error) {
-    throw new AppError(500, `Failed to delete Task: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to delete Task: ${error.message}`
+    );
   }
 
   return id;

@@ -24,27 +24,80 @@ import {
   createEmailDraftSchema,
   updateEmailDraftSchema,
 } from "../schema/email.schema";
-import { createLimiter, deleteLimiter, emailLimiter, readLimiter, updateLimiter, } from '../middleware/rate.limit.middleware';
+
+import {
+  createLimiter,
+  deleteLimiter,
+  emailLimiter,
+  readLimiter,
+  updateLimiter,
+} from "../middleware/rate.limit.middleware";
+
+import { idempotencyMiddleware } from "../idempotency/idempotency.middleware";
 
 const router = Router();
 
 router.use(verifyToken);
 router.use(authenticateUser);
 
+router.get(
+  "/show-emails",
+  readLimiter,
+  getAllEmails
+);
 
-router.get("/show-emails",readLimiter, getAllEmails);
-router.get("/show-email/:id",readLimiter, getEmailByID);
-router.get("/lead/:leadId/emails",readLimiter, getLeadEmailHistory);
-router.get("/contact/:contactId/emails",readLimiter, getContactEmailHistory);
-router.get("/customer/:customerId/emails",readLimiter, getCustomerEmailHistory);
+router.get(
+  "/show-email/:id",
+  readLimiter,
+  getEmailByID
+);
+
+router.get(
+  "/lead/:leadId/emails",
+  readLimiter,
+  getLeadEmailHistory
+);
+
+router.get(
+  "/contact/:contactId/emails",
+  readLimiter,
+  getContactEmailHistory
+);
+
+router.get(
+  "/customer/:customerId/emails",
+  readLimiter,
+  getCustomerEmailHistory
+);
 
 router.use(requireActiveMembership);
 
-router.post("/add-email-draft",createLimiter, validateBody(createEmailDraftSchema), addEmailDraft);
-router.post("/send-email/:id",emailLimiter, sendEmail);
+router.post(
+  "/add-email-draft",
+  createLimiter,
+  validateBody(createEmailDraftSchema),
+  idempotencyMiddleware,
+  addEmailDraft
+);
 
-router.patch("/update-email/:id",updateLimiter, validateBody(updateEmailDraftSchema), updateEmailDraft);
+router.post(
+  "/send-email/:id",
+  emailLimiter,
+  idempotencyMiddleware,
+  sendEmail
+);
 
-router.delete("/delete-email/:id",deleteLimiter, removeEmail);
+router.patch(
+  "/update-email/:id",
+  updateLimiter,
+  validateBody(updateEmailDraftSchema),
+  updateEmailDraft
+);
+
+router.delete(
+  "/delete-email/:id",
+  deleteLimiter,
+  removeEmail
+);
 
 export default router;

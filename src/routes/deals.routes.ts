@@ -4,6 +4,7 @@ import { getDeals, addDeal, updateDeal, deleteDeal, updateDealStage, getDealsLis
 import { validateBody } from '../middleware/validate';
 import { addDealSchema, updateDealSchema, updateDealStageSchema } from '../schema/deal.schema';
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
 
 const router = Router();
 router.use(verifyToken);
@@ -39,8 +40,9 @@ router.use(requireActiveMembership);
 
 router.post(
   '/add',
-  createLimiter, 
-  validateBody(addDealSchema), 
+  createLimiter,
+  validateBody(addDealSchema),
+  idempotencyMiddleware,
   addDeal
 );
 
@@ -52,9 +54,10 @@ router.patch(
 );
 
 router.patch(
-  '/update/stage/:id', 
-  updateLimiter, 
-  validateBody(updateDealStageSchema), 
+  '/update/stage/:id',
+  updateLimiter,
+  validateBody(updateDealStageSchema),
+  idempotencyMiddleware,
   updateDealStage
 );
 

@@ -23,6 +23,7 @@ import {
   updateCallSchema,
   endCallSchema
 } from '../schema/calls.schema';
+import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
 
 
 const router = Router();
@@ -56,11 +57,11 @@ router.get(
 router.use(requireActiveMembership);
 
 router.post(
-  '/add-call',
+  "/add-call",
   validateBody(addCallSchema),
+  idempotencyMiddleware,
   addCall
 );
-
 router.patch(
   '/update-call/:id',
   validateBody(updateCallSchema),

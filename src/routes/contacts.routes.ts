@@ -22,6 +22,7 @@ import {
 import { validateBody } from '../middleware/validate';
 import { addContactSchema, updateCareerSchema, updateContactAvatarSchema, updateContactNotesSchema, updateContactPreferredTimeSchema, updateContactPrioritySchema, updateContactSchema, updateContactSourceSchema, updateSocialsSchema } from '../schema/contacts.schema';
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
 
 
 const router = Router();
@@ -51,16 +52,18 @@ router.get(
 router.use(requireActiveMembership);
 
 router.post(
-  '/add',
-  createLimiter, 
-  validateBody(addContactSchema), 
+  "/add",
+  createLimiter,
+  validateBody(addContactSchema),
+  idempotencyMiddleware,
   addContact
 );
 
 router.post(
-  '/move',
-  createLimiter, 
-  validateBody(addContactSchema),  
+  "/move",
+  createLimiter,
+  validateBody(addContactSchema),
+  idempotencyMiddleware,
   addContactFromLeads
 );
 

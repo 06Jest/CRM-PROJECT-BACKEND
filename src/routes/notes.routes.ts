@@ -24,6 +24,7 @@ import {
 } from '../schema/note.schema';
 
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
 
 
 const router = Router();
@@ -51,10 +52,12 @@ router.get(
   getPrivateNotes
 );
 
-router.get(
-  '/show-note/:id',
-  readLimiter,
-  getNoteByID
+router.post(
+  "/add-note",
+  createLimiter,
+  validateBody(addNoteSchema),
+  idempotencyMiddleware,
+  addNote
 );
 
 

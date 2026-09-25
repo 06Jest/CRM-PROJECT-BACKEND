@@ -1,3 +1,4 @@
+
 import { createSupabaseUserClient } from "../config/supabase";
 import type {
   AddDeal,
@@ -8,76 +9,105 @@ import type {
 } from "../types/deal";
 import { AppError } from "../middleware/error.middleware";
 import { table } from "../config/tables";
+import cacheService from "../cache/cache.service";
+import {
+  dealsRawListCacheKey,
+  dealsListCacheKey,
+  dealListCacheKey,
+  dealCacheKey,
+  dealsByContactCacheKey,
+} from "../cache/cache-keys";
 
 const tab = table.deals;
 const ownerFkey = "deals_owner_id_fkey";
 const contactFkey = "deals_contact_id_fkey";
 
+
 const selectAll = `
-  *,
+  *, 
   owner:organization_members!${ownerFkey} (
-    id,
+    id, 
     profile:profiles(
-      first_name,
-      last_name,
-      avatar_url
+      first_name, 
+      last_name, 
+      avatar_url 
     )
-  ),
+  ), 
   assigned:organization_members!deals_assigned_to_fkey (
-    id,
+    id, 
     profile:profiles(
-      first_name,
-      last_name,
-      avatar_url
+      first_name, 
+      last_name, 
+      avatar_url 
     )
-  ),
+  ), 
   contact:contacts!${contactFkey} (
-    id,
-    first_name,
-    last_name,
-    email,
-    phone
-  )
+    id, 
+    first_name, 
+    last_name, 
+    email, 
+    phone 
+  ) 
 `;
 
 export const getDealsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<Deal[]> => {
-  const db = createSupabaseUserClient(accessToken);
-  const { data, error } = await db
-    .from(tab)
-    .select("*")
-    .eq("org_id", orgId)
-    .is("deleted_at", null);
+  const cacheKey = dealsRawListCacheKey(orgId);
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch deals: ${error.message}`
-    );
-  }
-  return data ?? [];
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select("*")
+        .eq("org_id", orgId)
+        .is("deleted_at", null);
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch deals: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
 };
 
 export const getDealsListsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DealListItem[]> => {
-  const db = createSupabaseUserClient(accessToken);
-  const { data, error } = await db
-    .from(tab)
-    .select(selectAll)
-    .eq("org_id", orgId)
-    .is("deleted_at", null);
+  const cacheKey = dealsListCacheKey(orgId);
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch deals: ${error.message}`
-    );
-  }
-  return (data ?? []) as DealListItem[];
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAll)
+        .eq("org_id", orgId)
+        .is("deleted_at", null);
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch deals: ${error.message}`
+        );
+      }
+
+      return (data ?? []) as DealListItem[];
+    },
+    60
+  );
 };
 
 export const getDealListByIDFromDB = async (
@@ -85,22 +115,32 @@ export const getDealListByIDFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DealListItem> => {
-  const db = createSupabaseUserClient(accessToken);
-  const { data, error } = await db
-    .from(tab)
-    .select(selectAll)
-    .eq("org_id", orgId)
-    .eq('id', dealId)
-    .is("deleted_at", null)
-    .single();
+  const cacheKey = dealListCacheKey(orgId, dealId);
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch deals: ${error.message}`
-    );
-  }
-  return data ;
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAll)
+        .eq("org_id", orgId)
+        .eq("id", dealId)
+        .is("deleted_at", null)
+        .single();
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch deals: ${error.message}`
+        );
+      }
+
+      return data as DealListItem;
+    },
+    60
+  );
 };
 
 export const getDealsListsByContactIDFromDB = async (
@@ -108,22 +148,31 @@ export const getDealsListsByContactIDFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DealListItem[]> => {
-  const db = createSupabaseUserClient(accessToken);
-  const { data, error } = await db
-    .from(tab)
-    .select(selectAll)
-    .eq("org_id", orgId)
-    .eq('contact_id', contactId)
-    .is("deleted_at", null)
-    .maybeSingle();
+  const cacheKey = dealsByContactCacheKey(orgId, contactId);
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch deals: ${error.message}`
-    );
-  }
-  return (data ?? []) as DealListItem[] ;
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAll)
+        .eq("org_id", orgId)
+        .eq("contact_id", contactId)
+        .is("deleted_at", null);
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch deals: ${error.message}`
+        );
+      }
+
+      return (data ?? []) as DealListItem[];
+    },
+    60
+  );
 };
 
 export const getDealsByIDFromDB = async (
@@ -131,22 +180,32 @@ export const getDealsByIDFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DealListItem> => {
-  const db = createSupabaseUserClient(accessToken);
-  const { data, error } = await db
-    .from(tab)
-    .select(selectAll)
-    .eq("id", id)
-    .eq("org_id", orgId)
-    .is("deleted_at", null)
-    .single();
+  const cacheKey = dealCacheKey(orgId, id);
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch deal: ${error.message}`
-    );
-  }
-  return data as DealListItem;
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAll)
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .single();
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch deal: ${error.message}`
+        );
+      }
+
+      return data as DealListItem;
+    },
+    60
+  );
 };
 
 export const addDealToDB = async (
@@ -156,6 +215,7 @@ export const addDealToDB = async (
   accessToken: string
 ): Promise<DealListItem> => {
   const db = createSupabaseUserClient(accessToken);
+
   const { data, error } = await db
     .from(tab)
     .insert({
@@ -173,6 +233,9 @@ export const addDealToDB = async (
       `Failed to add deal: ${error.message}`
     );
   }
+
+  
+
   return data as DealListItem;
 };
 
@@ -182,6 +245,7 @@ export const getOpenDealsByContactIDFromDB = async (
   accessToken: string
 ) => {
   const db = createSupabaseUserClient(accessToken);
+
   const { data, error } = await db
     .from("deals")
     .select("*")
@@ -196,6 +260,7 @@ export const getOpenDealsByContactIDFromDB = async (
       `Failed to fetch open deals: ${error.message}`
     );
   }
+
   return data ?? [];
 };
 
@@ -225,6 +290,9 @@ export const updateDealFromDB = async (
       `Failed to update deal: ${error.message}`
     );
   }
+
+  
+
   return data as DealListItem;
 };
 
@@ -250,6 +318,9 @@ export const updateDealStageFromDB = async (
       `Failed to update deal stage: ${error.message}`
     );
   }
+
+  
+
   return getDealsByIDFromDB(id, orgId, accessToken);
 };
 
@@ -261,6 +332,7 @@ export const closeDealFromDB = async (
   accessToken: string
 ): Promise<DealListItem> => {
   const db = createSupabaseUserClient(accessToken);
+
   const { data, error } = await db
     .from(tab)
     .update({
@@ -280,6 +352,9 @@ export const closeDealFromDB = async (
       `Failed to close deal: ${error.message}`
     );
   }
+
+  
+
   return data as DealListItem;
 };
 
@@ -310,6 +385,8 @@ export const archiveDealFromDB = async (
     );
   }
 
+  
+
   return id;
 };
 
@@ -337,6 +414,8 @@ export const deleteDealFromDB = async (
     );
   }
 
+  
+
   return id;
 };
 
@@ -347,6 +426,7 @@ export const deleteAllDealsByContactIDFromDB = async (
   accessToken: string
 ): Promise<string> => {
   const db = createSupabaseUserClient(accessToken);
+
   const { error } = await db
     .from(tab)
     .update({
@@ -362,6 +442,9 @@ export const deleteAllDealsByContactIDFromDB = async (
       `Failed to delete deals: ${error.message}`
     );
   }
+
+  
+
   return id;
 };
 
@@ -372,6 +455,7 @@ export const deleteAllDealsByBulkContactsFromDB = async (
   accessToken: string
 ): Promise<string[]> => {
   const db = createSupabaseUserClient(accessToken);
+
   const { error } = await db
     .from(tab)
     .update({
@@ -387,5 +471,8 @@ export const deleteAllDealsByBulkContactsFromDB = async (
       `Failed to delete deals: ${error.message}`
     );
   }
+
+  
+
   return ids;
 };

@@ -19,6 +19,8 @@ import { getConversionTimeAnalytics } from "./conversion-time.analytics";
 import { getForecastingAnalytics } from "./forecasting.analytics";
 import { getAttributionAnalytics } from "./attribution.analytics";
 import { getAnomalyAnalytics } from "./anomalies.analytics";
+import cacheService from "../../cache/cache.service";
+import { analyticsCacheKey } from "../../cache/cache-keys";
 
 export const getAnalyticsFromDB = async ({
   orgId,
@@ -27,6 +29,22 @@ export const getAnalyticsFromDB = async ({
   role,
   filters,
 }: AnalyticsParams): Promise<AnalyticsData> => {
+  const cacheKey = analyticsCacheKey(
+    orgId,
+    role,
+    memberId,
+    filters,
+  );
+
+  const cachedAnalytics = await cacheService.get<AnalyticsData>(cacheKey);
+
+  if (cachedAnalytics) {
+    console.log("Analytics cache HIT:", cacheKey);
+    return cachedAnalytics;
+  }
+
+  console.log("Analytics cache MISS:", cacheKey);
+
   const scope = role === "agent" ? "user" : "organization";
   const results = await Promise.allSettled([
     getAnalyticsOverview({
@@ -216,7 +234,7 @@ export const getAnalyticsFromDB = async ({
   const attribution = getResult(results[15],"attribution",);
   const anomalies = getResult(results[16],"anomalies",);
 
-  return {
+  const analyticsData: AnalyticsData = {
     scope,
     role,
     filters,
@@ -238,4 +256,10 @@ export const getAnalyticsFromDB = async ({
     anomalies,
     breakdown,
   };
+
+  await cacheService.set(cacheKey, analyticsData, 60);
+
+  console.log("Analytics cache SET:", cacheKey);
+
+  return analyticsData;
 };

@@ -27,6 +27,7 @@ import {
 } from '../schema/tasks.schema';
 
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
 
 
 const router = Router();
@@ -52,9 +53,10 @@ router.get(
 router.use(requireActiveMembership);
 
 router.post(
-  '/add-task',
+  "/add-task",
   createLimiter,
   validateBody(addTaskSchema),
+  idempotencyMiddleware,
   addTask
 );
 

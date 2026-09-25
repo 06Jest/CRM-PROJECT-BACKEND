@@ -4,6 +4,8 @@ import type {
   DashboardData,
   DashboardParams,
 } from "../types/dashboard";
+import cacheService from "../cache/cache.service";
+import { dashboardCacheKey } from "../cache/cache-keys";
 
 export const getDashboardFromDB = async ({
   orgId,
@@ -11,6 +13,17 @@ export const getDashboardFromDB = async ({
   memberId,
   role,
 }: DashboardParams): Promise<DashboardData> => {
+
+  const cacheKey = dashboardCacheKey(orgId, role, memberId);
+
+  const cachedDashboard = await cacheService.get<DashboardData>(cacheKey);
+
+if (cachedDashboard) {
+  console.log("Dashboard cache HIT:", cacheKey);
+  return cachedDashboard;
+}
+
+console.log("Dashboard cache MISS:", cacheKey);
   const db = createSupabaseUserClient(accessToken);
 
   const scope = role === "agent" ? "user" : "organization";
@@ -751,8 +764,7 @@ export const getDashboardFromDB = async ({
       };
     });
 
-
-  return {
+  const dashboardData: DashboardData = {
     scope,
     role,
     kpis,
@@ -776,4 +788,10 @@ export const getDashboardFromDB = async ({
             (member) => member.memberId === memberId
           ),
   };
+
+  await cacheService.set(cacheKey, dashboardData, 60);
+
+console.log("Dashboard cache SET:", cacheKey);
+
+return dashboardData;
 };

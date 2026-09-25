@@ -1,15 +1,22 @@
-import { createSupabaseUserClient } from '../config/supabase';
-import { AppError } from '../middleware/error.middleware';
-import { table } from '../config/tables';
+import { createSupabaseUserClient } from "../config/supabase";
+import { AppError } from "../middleware/error.middleware";
+import { table } from "../config/tables";
+import cacheService from "../cache/cache.service";
+import {
+  notesPublicListCacheKey,
+  notesListCacheKey,
+  notesPrivateListCacheKey,
+  noteCacheKey,
+} from "../cache/cache-keys";
 
 import type {
   NoteListItem,
   AddNote,
   UpdateNote,
-} from '../types/note';
+} from "../types/note";
 
 const tab = table.notes;
-const fkey = 'notes_author_id_fkey';
+const fkey = "notes_author_id_fkey";
 
 const selectAllWithAuthor = `
   *,
@@ -29,21 +36,32 @@ export const getPublicNotesFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<NoteListItem[]> => {
-  const db = createSupabaseUserClient(accessToken);
+  const cacheKey = notesPublicListCacheKey(orgId);
 
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq('org_id', orgId)
-    .eq('visibility', 'public')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  if (error) {
-    throw new AppError(500, `Failed to fetch Notes: ${error.message}`);
-  }
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq("org_id", orgId)
+        .eq("visibility", "public")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
 
-  return data ?? [];
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Notes: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
 };
 
 export const getPrivateNotesFromDB = async (
@@ -51,22 +69,36 @@ export const getPrivateNotesFromDB = async (
   memberId: string,
   accessToken: string
 ): Promise<NoteListItem[]> => {
-  const db = createSupabaseUserClient(accessToken);
+  const cacheKey = notesPrivateListCacheKey(
+    orgId,
+    memberId
+  );
 
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq('org_id', orgId)
-    .eq('author_id', memberId)
-    .eq('visibility', 'private')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  if (error) {
-    throw new AppError(500, `Failed to fetch Notes: ${error.message}`);
-  }
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq("org_id", orgId)
+        .eq("author_id", memberId)
+        .eq("visibility", "private")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
 
-  return data ?? [];
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Notes: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
 };
 
 export const getNotesFromDB = async (
@@ -74,23 +106,37 @@ export const getNotesFromDB = async (
   memberId: string,
   accessToken: string
 ): Promise<NoteListItem[]> => {
-  const db = createSupabaseUserClient(accessToken);
+  const cacheKey = notesListCacheKey(
+    orgId,
+    memberId
+  );
 
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq("org_id", orgId)
-    .is("deleted_at", null)
-    .or(
-      `visibility.eq.public,and(visibility.eq.private,author_id.eq.${memberId})`
-    )
-    .order("created_at", { ascending: false });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  if (error) {
-    throw new AppError(500, `Failed to fetch Notes: ${error.message}`);
-  }
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .or(
+          `visibility.eq.public,and(visibility.eq.private,author_id.eq.${memberId})`
+        )
+        .order("created_at", { ascending: false });
 
-  return data ?? [];
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Notes: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
 };
 
 export const getNoteByIDFromDB = async (
@@ -98,21 +144,32 @@ export const getNoteByIDFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<NoteListItem> => {
-  const db = createSupabaseUserClient(accessToken);
+  const cacheKey = noteCacheKey(orgId, id);
 
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .is('deleted_at', null)
-    .single();
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  if (error) {
-    throw new AppError(500, `Failed to fetch Note: ${error.message}`);
-  }
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .single();
 
-  return data;
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Note: ${error.message}`
+        );
+      }
+
+      return data;
+    },
+    60
+  );
 };
 
 export const addNoteToDB = async (
@@ -123,7 +180,6 @@ export const addNoteToDB = async (
   accessToken: string
 ): Promise<NoteListItem> => {
   const db = createSupabaseUserClient(accessToken);
-  
 
   const { data, error } = await db
     .from(tab)
@@ -137,10 +193,11 @@ export const addNoteToDB = async (
     .select(all)
     .single();
 
-    
-
   if (error) {
-    throw new AppError(500, `Failed to add Note: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to add Note: ${error.message}`
+    );
   }
 
   return data;
@@ -161,15 +218,18 @@ export const updateNoteFromDB = async (
       ...note,
       updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .eq('author_id', memberId)
-    .is('deleted_at', null)
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("author_id", memberId)
+    .is("deleted_at", null)
     .select(all)
     .single();
 
   if (error) {
-    throw new AppError(500, `Failed to update Note: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to update Note: ${error.message}`
+    );
   }
 
   return data;
@@ -190,14 +250,17 @@ export const isPinnedNoteFromDB = async (
       pinned,
       updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .is('deleted_at', null)
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
     .select(all)
     .single();
 
   if (error) {
-    throw new AppError(500, `Failed to update Note: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to update Note: ${error.message}`
+    );
   }
 
   return data;
@@ -218,11 +281,11 @@ export const archiveNoteFromDB = async (
       archived_at: new Date().toISOString(),
       archived_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .eq('author_id', memberId)
-    .is('deleted_at', null)
-    .eq('is_archived', false);
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("author_id", memberId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
 
   if (error) {
     throw new AppError(
@@ -248,12 +311,15 @@ export const deletePrivateNoteFromDB = async (
       deleted_at: new Date().toISOString(),
       deleted_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .eq('author_id', memberId);
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("author_id", memberId);
 
   if (error) {
-    throw new AppError(500, `Failed to delete Note: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to delete Note: ${error.message}`
+    );
   }
 
   return id;
@@ -273,11 +339,14 @@ export const deleteNoteFromDB = async (
       deleted_at: new Date().toISOString(),
       deleted_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId);
+    .eq("id", id)
+    .eq("org_id", orgId);
 
   if (error) {
-    throw new AppError(500, `Failed to delete Note: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to delete Note: ${error.message}`
+    );
   }
 
   return id;

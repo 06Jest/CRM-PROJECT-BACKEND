@@ -1,9 +1,24 @@
 import { createSupabaseUserClient } from '../config/supabase';
-import type { AddLead, Lead, LeadPersonal, LeadCareer, LeadListItem, LeadSocials, LeadStatus } from '../types/lead';
+import type {
+  AddLead,
+  Lead,
+  LeadPersonal,
+  LeadCareer,
+  LeadListItem,
+  LeadSocials,
+  LeadStatus
+} from '../types/lead';
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
 import { PreferredTime, Priority, Source } from '../types/global';
 import { deleteImageKitFile } from './imagekit.service';
+import cacheService from "../cache/cache.service";
+import {
+  leadsRawListCacheKey,
+  leadsListCacheKey,
+  leadListCacheKey,
+  leadCacheKey,
+} from "../cache/cache-keys";
 
 const tab = table.leads;
 const fkey = 'leads_owner_id_fkey';
@@ -31,110 +46,174 @@ const selectAllWithOwner = `
 const all = selectAllWithOwner;
 
 export const getLeadsFromDB = async (
+  orgId: string,
+  memberId: string,
   accessToken: string
 ): Promise<Lead[]> => {
+  const cacheKey = leadsRawListCacheKey(orgId, memberId);
 
-  const db = createSupabaseUserClient(accessToken);
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  const { data, error } = await db
-    .from(tab)
-    .select("*")
-    .is("deleted_at", null)
-    .eq("is_archived", false);
+      const { data, error } = await db
+        .from(tab)
+        .select("*")
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .eq("is_archived", false);
 
-  if (error) {
-    throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
-  }
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Leads: ${error.message}`
+        );
+      }
 
-  return data ?? [];
+      return data ?? [];
+    },
+    60
+  );
 };
 
 export const getLeadsListsFromDB = async (
-  orgId: string, 
+  orgId: string,
+  memberId: string,
   accessToken: string
 ): Promise<LeadListItem[]> => {
-  const db = createSupabaseUserClient(accessToken);
+  const cacheKey = leadsListCacheKey(orgId, memberId);
 
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq('org_id', orgId)
-    .is('deleted_at', null)
-    .eq('is_archived', false)
-    .order('first_name', { ascending: true });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  if (error) {
-    throw new AppError(500, `Failed to fetch Leads: ${error.message}`);
-  }
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq('org_id', orgId)
+        .is('deleted_at', null)
+        .eq('is_archived', false)
+        .order('first_name', { ascending: true });
 
-  return data ?? [];
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Leads: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
 };
 
 export const getLeadListByIDFromDB = async (
   leadId: string,
-  orgId: string, 
+  orgId: string,
+  memberId: string,
   accessToken: string
 ): Promise<LeadListItem> => {
-  const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .select(all)
-      .eq('org_id', orgId)
-      .eq('id', leadId)
-      .is('deleted_at', null)
-      .single()
+  const cacheKey = leadListCacheKey(
+    orgId,
+    memberId,
+    leadId
+  );
 
-    if (error) {
-      throw new AppError(500, `Failed to fetch Lead: ${error.message}`);
-    }
-  return data;
-}
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq('org_id', orgId)
+        .eq('id', leadId)
+        .is('deleted_at', null)
+        .single();
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Lead: ${error.message}`
+        );
+      }
+
+      return data;
+    },
+    60
+  );
+};
 
 export const getLeadByIDFromDB = async (
   id: string,
   orgId: string,
+  memberId: string,
   accessToken: string
 ): Promise<LeadListItem> => {
-  const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .select(all)
-      .is('deleted_at', null)
-      .eq('id', id)
-      .eq('org_id', orgId)
-      .single()
+  const cacheKey = leadCacheKey(
+    orgId,
+    memberId,
+    id
+  );
 
-    if (error) {
-      throw new AppError(500, `Failed to fetch Lead: ${error.message}`);
-    }
-  return data;
-}
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .is('deleted_at', null)
+        .eq('id', id)
+        .eq('org_id', orgId)
+        .single();
 
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Lead: ${error.message}`
+        );
+      }
+
+      return data;
+    },
+    60
+  );
+};
 
 export const addLeadToDB = async (
   orgId: string,
   memberId: string,
   lead: AddLead,
   accessToken: string
-) : Promise<LeadListItem> => {
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .insert([{
-        ...lead,
-        org_id: orgId,
-        owner_id: memberId,
-        updated_by: memberId,
-      }])
-      .select(all)
-      .single()
 
-    if (error) {
-      throw new AppError(500, `Failed to add Lead: ${error.message}`);
-    }
+  const { data, error } = await db
+    .from(tab)
+    .insert([{
+      ...lead,
+      org_id: orgId,
+      owner_id: memberId,
+      updated_by: memberId,
+    }])
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to add Lead: ${error.message}`
+    );
+  }
+
   return data;
-}
+};
 
 export const updateLeadPersonalFromDB = async (
   id: string,
@@ -142,81 +221,89 @@ export const updateLeadPersonalFromDB = async (
   memberId: string,
   personal: LeadPersonal,
   accessToken: string
-) : Promise<LeadListItem> => {
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .update([{
-        ...personal,
-        updated_by: memberId
-      }])
-      .eq('id', id)
-      .eq('org_id', orgId)
-      .select(all)
-      .single()
 
-    if (error) {
-      throw new AppError(500, `Failed to update Lead: ${error.message}`);
-    }
+  const { data, error } = await db
+    .from(tab)
+    .update([{
+      ...personal,
+      updated_by: memberId
+    }])
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Lead Personal: ${error.message}`
+    );
+  }
+
   return data;
-}
-
+};
 
 export const updateLeadSocialsFromDB = async (
-  id:string,
-  orgId:string,
-  memberId:string,
-  socials:LeadSocials,
-  accessToken:string
-):Promise<LeadListItem> => {
+  id: string,
+  orgId: string,
+  memberId: string,
+  socials: LeadSocials,
+  accessToken: string
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-  const {data,error} = await db
+
+  const { data, error } = await db
     .from(tab)
     .update({
       ...socials,
-      updated_by:memberId
+      updated_by: memberId
     })
-    .eq('id',id)
-    .eq('org_id',orgId)
+    .eq('id', id)
+    .eq('org_id', orgId)
     .select(all)
     .single();
 
-  if(error){
+  if (error) {
     throw new AppError(
       500,
-      `Failed to update Contact Socials: ${error.message}`
+      `Failed to update Lead Socials: ${error.message}`
     );
   }
+
   return data;
-}
+};
 
 export const updateLeadCareerFromDB = async (
-  id:string,
-  orgId:string,
-  memberId:string,
-  career:LeadCareer,
-  accessToken:string
-):Promise<LeadListItem> => {
+  id: string,
+  orgId: string,
+  memberId: string,
+  career: LeadCareer,
+  accessToken: string
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-  const {data,error} = await db
+
+  const { data, error } = await db
     .from(tab)
     .update({
       ...career,
-      updated_by:memberId
+      updated_by: memberId
     })
-    .eq('id',id)
-    .eq('org_id',orgId)
+    .eq('id', id)
+    .eq('org_id', orgId)
     .select(all)
     .single();
 
-  if(error){
+  if (error) {
     throw new AppError(
       500,
-      `Failed to update Contact Career: ${error.message}`
+      `Failed to update Lead Career: ${error.message}`
     );
   }
+
   return data;
-}
+};
 
 export const updateLeadAvatarFromDB = async (
   id: string,
@@ -293,7 +380,22 @@ export const updateLeadStatusFromDB = async (
     );
   }
 
-  return getLeadByIDFromDB(id, orgId, accessToken);
+  const { data, error: fetchError } = await db
+    .from(tab)
+    .select(all)
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (fetchError) {
+    throw new AppError(
+      500,
+      `Failed to fetch updated Lead: ${fetchError.message}`
+    );
+  }
+
+  return data;
 };
 
 export const markLeadConvertedFromDB = async (
@@ -328,24 +430,29 @@ export const updateLeadSourceFromDB = async (
   memberId: string,
   source: Source,
   accessToken: string
-) : Promise<LeadListItem> => {
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .update({
-        source: source,
-        updated_by: memberId
-      })
-      .eq('id', id)
-      .eq('org_id', orgId)
-      .select(all)
-      .single()
 
-    if (error) {
-      throw new AppError(500, `Failed to update Lead Source: ${error.message}`);
-    }
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      source: source,
+      updated_by: memberId
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Lead Source: ${error.message}`
+    );
+  }
+
   return data;
-}
+};
 
 export const updateLeadPriorityFromDB = async (
   id: string,
@@ -353,24 +460,29 @@ export const updateLeadPriorityFromDB = async (
   memberId: string,
   priority: Priority,
   accessToken: string
-) : Promise<LeadListItem> => {
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .update({
-        priority: priority,
-        updated_by: memberId
-      })
-      .eq('id', id)
-      .eq('org_id', orgId)
-      .select(all)
-      .single()
 
-    if (error) {
-      throw new AppError(500, `Failed to update Lead Priority: ${error.message}`);
-    }
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      priority: priority,
+      updated_by: memberId
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Lead Priority: ${error.message}`
+    );
+  }
+
   return data;
-}
+};
 
 export const updateLeadNotesFromDB = async (
   id: string,
@@ -378,24 +490,29 @@ export const updateLeadNotesFromDB = async (
   memberId: string,
   notes: string,
   accessToken: string
-) : Promise<LeadListItem> => {
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .update({
-        notes: notes,
-        updated_by: memberId
-      })
-      .eq('id', id)
-      .eq('org_id', orgId)
-      .select(all)
-      .single()
 
-    if (error) {
-      throw new AppError(500, `Failed to update Lead Notes: ${error.message}`);
-    }
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      notes: notes,
+      updated_by: memberId
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Lead Notes: ${error.message}`
+    );
+  }
+
   return data;
-}
+};
 
 export const updateLeadPreferredTimeFromDB = async (
   id: string,
@@ -403,24 +520,29 @@ export const updateLeadPreferredTimeFromDB = async (
   memberId: string,
   preferredTime: PreferredTime,
   accessToken: string
-) : Promise<LeadListItem> => {
+): Promise<LeadListItem> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .update({
-        preferred_contact_time: preferredTime,
-        updated_by: memberId  
-      })
-      .eq('id', id)
-      .eq('org_id', orgId)
-      .select(all)
-      .single()
 
-    if (error) {
-      throw new AppError(500, `Failed to update Lead Preferred contact time: ${error.message}`);
-    }
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      preferred_contact_time: preferredTime,
+      updated_by: memberId
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select(all)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Lead Preferred contact time: ${error.message}`
+    );
+  }
+
   return data;
-}
+};
 
 export const archiveLeadFromDB = async (
   id: string,
@@ -514,19 +636,24 @@ export const deleteLeadFromDB = async (
   orgId: string,
   memberId: string,
   accessToken: string
-) : Promise<string> => {
+): Promise<string> => {
   const db = createSupabaseUserClient(accessToken);
-    const { error } = await db
-      .from(tab)
-      .update({
-        deleted_at: new Date().toISOString(),
-        deleted_by: memberId,
-      })
-      .eq('id', id)
-      .eq('org_id', orgId)
 
-    if (error) {
-      throw new AppError(500, `Failed to delete Lead: ${error.message}`);
-    }
+  const { error } = await db
+    .from(tab)
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: memberId,
+    })
+    .eq('id', id)
+    .eq('org_id', orgId);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to delete Lead: ${error.message}`
+    );
+  }
+
   return id;
-}
+};
