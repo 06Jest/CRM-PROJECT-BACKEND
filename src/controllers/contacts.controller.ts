@@ -26,18 +26,18 @@ import { uuidSchema } from "../schema/global.schema";
 
 import {
   deleteAllDealsByBulkContactsFromDB,
-  deleteAllDealsByContactIDFromDB
+  deleteAllDealsByContactIDFromDB,
 } from "../services/deals.service";
 
 import {
   deleteBulkCustomersByBulkContactIDsFromDB,
-  deleteCustomerByContactIDFromDB
+  deleteCustomerByContactIDFromDB,
 } from "../services/customer.service";
 
+import contactEventsPublisher from "../pubsub/contact-events.publisher";
 import { addActivityToDB } from "../services/activities.service";
 import { ensureResourceLimit } from "../services/plans.service";
 import { table } from "../config/tables";
-
 
 export const getContacts = async (
   req: Request,
@@ -49,10 +49,7 @@ export const getContacts = async (
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !accessToken) {
-      throw new AppError(
-        400,
-        "orgId is required"
-      );
+      throw new AppError(400, "orgId is required");
     }
 
     const contacts = await getContactsFromDB(
@@ -65,13 +62,10 @@ export const getContacts = async (
       message: "Contacts fetch successful",
       data: contacts,
     });
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
 };
-
-
 
 export const getContactsLists = async (
   req: Request,
@@ -83,10 +77,7 @@ export const getContactsLists = async (
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !accessToken) {
-      throw new AppError(
-        400,
-        "orgId is required"
-      );
+      throw new AppError(400, "orgId is required");
     }
 
     const contacts = await getContactsListsFromDB(
@@ -99,8 +90,7 @@ export const getContactsLists = async (
       message: "Contacts fetch successful",
       data: contacts,
     });
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
 };
@@ -116,10 +106,7 @@ export const getContactListByID = async (
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !accessToken) {
-      throw new AppError(
-        400,
-        "orgId is required"
-      );
+      throw new AppError(400, "orgId is required");
     }
 
     const contact = await getContactListByIDFromDB(
@@ -133,13 +120,10 @@ export const getContactListByID = async (
       message: "Contact fetch successful",
       data: contact,
     });
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
 };
-
-
 
 export const addContact = async (
   req: Request,
@@ -148,16 +132,13 @@ export const addContact = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     const contact = req.body;
 
     if (!orgId || !memberId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
     await ensureResourceLimit(
@@ -178,7 +159,6 @@ export const addContact = async (
     const contactName =
       `${data.first_name} ${data.last_name} ${data.suffix ?? ""}`.trim();
 
-
     await addActivityToDB(
       orgId,
       memberId,
@@ -193,19 +173,21 @@ export const addContact = async (
       accessToken
     );
 
+    await contactEventsPublisher.created(
+      orgId,
+      memberId,
+      data.id
+    );
 
     return res.status(200).json({
-      success:true,
-      message:"Add Contact successful",
+      success: true,
+      message: "Add Contact successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
-
-
 
 export const addContactFromLeads = async (
   req: Request,
@@ -214,16 +196,13 @@ export const addContactFromLeads = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     const contact = req.body;
 
     if (!orgId || !memberId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
     const data = await addContactFromLeadsToDB(
@@ -233,38 +212,38 @@ export const addContactFromLeads = async (
       accessToken
     );
 
-
     const contactName =
       `${data.first_name} ${data.last_name} ${data.suffix ?? ""}`.trim();
-
 
     await addActivityToDB(
       orgId,
       memberId,
       {
-        contact_id:data.id,
-        type:"contact",
-        action:"created",
-        title:"New contact",
-        target_name:contactName,
-        description:"Created contact from qualified lead",
+        contact_id: data.id,
+        type: "contact",
+        action: "created",
+        title: "New contact",
+        target_name: contactName,
+        description: "Created contact from qualified lead",
       },
       accessToken
     );
 
+    await contactEventsPublisher.created(
+      orgId,
+      memberId,
+      data.id
+    );
 
     return res.status(201).json({
-      success:true,
-      message:"Add Contact successful",
+      success: true,
+      message: "Add Contact successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
-
-
 
 export const updateContactPersonal = async (
   req: Request,
@@ -274,16 +253,12 @@ export const updateContactPersonal = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const personal = req.body;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-
     if (!memberId || !orgId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateContactPersonalFromDB(
@@ -294,19 +269,21 @@ export const updateContactPersonal = async (
       accessToken
     );
 
+    await contactEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
+    );
 
     return res.status(200).json({
-      success:true,
-      message:"Update Contact successful",
+      success: true,
+      message: "Update Contact successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
-
-
 
 export const updateContactSocials = async (
   req: Request,
@@ -316,15 +293,12 @@ export const updateContactSocials = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const socials = req.body;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
     if (!memberId || !orgId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateContactSocialsFromDB(
@@ -335,18 +309,21 @@ export const updateContactSocials = async (
       accessToken
     );
 
+    await contactEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
-      success:true,
-      message:"Update Contact successful",
+      success: true,
+      message: "Update Contact successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
-
-
 
 export const updateContactCareer = async (
   req: Request,
@@ -355,18 +332,13 @@ export const updateContactCareer = async (
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
-
     const career = req.body;
-
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
     if (!memberId || !orgId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateContactCareerFromDB(
@@ -377,14 +349,18 @@ export const updateContactCareer = async (
       accessToken
     );
 
+    await contactEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
+    );
 
     return res.status(200).json({
-      success:true,
-      message:"Update Contact successful",
+      success: true,
+      message: "Update Contact successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
@@ -415,6 +391,12 @@ export const updateContactAvatar = async (
       accessToken
     );
 
+    await contactEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Update Contact Avatar successful",
@@ -433,7 +415,7 @@ export const updateContactSource = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { source } = req.body;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -447,6 +429,12 @@ export const updateContactSource = async (
       memberId,
       source,
       accessToken
+    );
+
+    await contactEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -467,7 +455,7 @@ export const updateContactPriority = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { priority } = req.body;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -481,6 +469,12 @@ export const updateContactPriority = async (
       memberId,
       priority,
       accessToken
+    );
+
+    await contactEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -501,7 +495,7 @@ export const updateContactNotes = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { notes } = req.body;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -515,6 +509,12 @@ export const updateContactNotes = async (
       memberId,
       notes,
       accessToken
+    );
+
+    await contactEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -535,7 +535,7 @@ export const updateContactPreferredTime = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { preferredTime } = req.body;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -549,6 +549,12 @@ export const updateContactPreferredTime = async (
       memberId,
       preferredTime,
       accessToken
+    );
+
+    await contactEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -582,6 +588,12 @@ export const archiveContact = async (
       orgId,
       memberId,
       accessToken
+    );
+
+    await contactEventsPublisher.archived(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -623,6 +635,12 @@ export const archiveBulkContacts = async (
       accessToken
     );
 
+    await contactEventsPublisher.bulkArchived(
+      orgId,
+      memberId,
+      validIds
+    );
+
     return res.status(200).json({
       success: true,
       message: "Archive Contacts successful",
@@ -641,25 +659,19 @@ export const deleteContact = async (
   try {
     const id = uuidSchema.parse(req.params.id);
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
-
     if (!memberId || !orgId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
-
 
     const deleted = await getContactByIDFromDB(
       id,
       orgId,
       accessToken
     );
-
 
     const data = await deleteContactFromDB(
       id,
@@ -668,25 +680,22 @@ export const deleteContact = async (
       accessToken
     );
 
-
     const contactName =
       `${deleted.first_name} ${deleted.last_name} ${deleted.suffix ?? ""}`.trim();
-
 
     await addActivityToDB(
       orgId,
       memberId,
       {
         contact_id: deleted.id,
-        type:"contact",
-        action:"deleted",
-        title:"Removed contact",
-        target_name:contactName,
-        description:`Removed ${contactName} as contact`,
+        type: "contact",
+        action: "deleted",
+        title: "Removed contact",
+        target_name: contactName,
+        description: `Removed ${contactName} as contact`,
       },
       accessToken
     );
-
 
     await deleteAllDealsByContactIDFromDB(
       id,
@@ -695,7 +704,6 @@ export const deleteContact = async (
       accessToken
     );
 
-
     await deleteCustomerByContactIDFromDB(
       id,
       orgId,
@@ -703,19 +711,21 @@ export const deleteContact = async (
       accessToken
     );
 
+    await contactEventsPublisher.deleted(
+      orgId,
+      memberId,
+      id
+    );
 
     return res.status(200).json({
-      success:true,
-      message:"Delete Contact successful",
+      success: true,
+      message: "Delete Contact successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
-
-
 
 export const deleteBulkContacts = async (
   req: Request,
@@ -773,6 +783,12 @@ export const deleteBulkContacts = async (
         description: `Removed ${validIds.length} contacts`,
       },
       accessToken
+    );
+
+    await contactEventsPublisher.bulkDeleted(
+      orgId,
+      memberId,
+      validIds
     );
 
     return res.status(200).json({

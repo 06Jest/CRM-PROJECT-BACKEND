@@ -27,6 +27,7 @@ import { AddContact } from "../types/contact";
 import { Source } from "../types/global";
 import { addActivityToDB } from "../services/activities.service";
 import { ensureResourceLimit } from "../services/plans.service";
+import leadEventsPublisher from "../pubsub/lead-events.publisher";
 import { table } from "../config/tables";
 
 export const getLeads = async (
@@ -35,13 +36,19 @@ export const getLeads = async (
   next: NextFunction
 ) => {
   try {
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!accessToken) {
-      throw new AppError(401, "Missing access token");
+    if (!orgId || !memberId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
     }
 
-    const leads = await getLeadsFromDB(accessToken);
+    const leads = await getLeadsFromDB(
+      orgId,
+      memberId,
+      accessToken
+    );
 
     return res.status(200).json({
       success: true,
@@ -60,14 +67,16 @@ export const getLeadsLists = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized");
     }
 
     const leads = await getLeadsListsFromDB(
       orgId,
+      memberId,
       accessToken
     );
 
@@ -89,15 +98,17 @@ export const getLeadListByID = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
-    if (!orgId || !accessToken) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized");
     }
 
     const lead = await getLeadListByIDFromDB(
       id,
       orgId,
+      memberId,
       accessToken
     );
 
@@ -111,7 +122,6 @@ export const getLeadListByID = async (
   }
 };
 
-
 export const addLead = async (
   req: Request,
   res: Response,
@@ -119,7 +129,7 @@ export const addLead = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
     const lead = req.body;
 
@@ -156,6 +166,12 @@ export const addLead = async (
       accessToken
     );
 
+    await leadEventsPublisher.created(
+      orgId,
+      memberId,
+      data.id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Add Lead successful",
@@ -175,7 +191,7 @@ export const updateLeadPersonal = async (
     const id = uuidSchema.parse(req.params.id);
     const personal = req.body;
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -189,6 +205,12 @@ export const updateLeadPersonal = async (
       memberId,
       personal,
       accessToken
+    );
+
+    await leadEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -209,15 +231,13 @@ export const updateLeadSocials = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const socials = req.body;
-    const memberId = req.user?.member_id
+
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
     if (!memberId || !orgId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateLeadSocialsFromDB(
@@ -228,18 +248,21 @@ export const updateLeadSocials = async (
       accessToken
     );
 
+    await leadEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
-      success:true,
-      message:"Update Contact successful",
+      success: true,
+      message: "Update Contact successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
-
-
 
 export const updateLeadCareer = async (
   req: Request,
@@ -248,18 +271,14 @@ export const updateLeadCareer = async (
 ) => {
   try {
     const id = uuidSchema.parse(req.params.id);
-
     const career = req.body;
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
     if (!memberId || !orgId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
     const data = await updateLeadCareerFromDB(
@@ -270,14 +289,18 @@ export const updateLeadCareer = async (
       accessToken
     );
 
+    await leadEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
+    );
 
     return res.status(200).json({
-      success:true,
-      message:"Update Contact successful",
+      success: true,
+      message: "Update Contact successful",
       data,
     });
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
@@ -290,7 +313,8 @@ export const updateLeadSource = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { source } = req.body;
-    const memberId = req.user?.member_id
+
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -304,6 +328,12 @@ export const updateLeadSource = async (
       memberId,
       source,
       accessToken
+    );
+
+    await leadEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -324,7 +354,8 @@ export const updateLeadPriority = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { priority } = req.body;
-    const memberId = req.user?.member_id
+
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -338,6 +369,12 @@ export const updateLeadPriority = async (
       memberId,
       priority,
       accessToken
+    );
+
+    await leadEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -358,7 +395,8 @@ export const updateLeadNotes = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { notes } = req.body;
-    const memberId = req.user?.member_id
+
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -372,6 +410,12 @@ export const updateLeadNotes = async (
       memberId,
       notes,
       accessToken
+    );
+
+    await leadEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -392,7 +436,8 @@ export const updateLeadPreferredTime = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { preferredTime } = req.body;
-    const memberId = req.user?.member_id
+
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -406,6 +451,12 @@ export const updateLeadPreferredTime = async (
       memberId,
       preferredTime,
       accessToken
+    );
+
+    await leadEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -444,6 +495,12 @@ export const updateLeadAvatar = async (
       accessToken
     );
 
+    await leadEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Update Lead Avatar successful",
@@ -463,7 +520,7 @@ export const updateLeadStatus = async (
     const id = uuidSchema.parse(req.params.id);
     const { status } = req.body;
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -474,6 +531,7 @@ export const updateLeadStatus = async (
     const leadData = await getLeadByIDFromDB(
       id,
       orgId,
+      memberId,
       accessToken
     );
 
@@ -532,14 +590,31 @@ export const updateLeadStatus = async (
       const contactName =
         `${contactData.first_name} ${contactData.last_name} ${contactData.suffix ?? ""}`.trim();
 
-      await addActivityToDB(orgId, memberId, {
-        contact_id: contactData.id,
-        type: "contact",
-        action: "created",
-        title: "New contact",
-        target_name: contactName,
-        description: "Created contact from qualified lead",
-      },accessToken);
+      await addActivityToDB(
+        orgId,
+        memberId,
+        {
+          contact_id: contactData.id,
+          type: "contact",
+          action: "created",
+          title: "New contact",
+          target_name: contactName,
+          description: "Created contact from qualified lead",
+        },
+        accessToken
+      );
+
+      await leadEventsPublisher.converted(
+        orgId,
+        memberId,
+        id
+      );
+    } else {
+      await leadEventsPublisher.updated(
+        orgId,
+        memberId,
+        id
+      );
     }
 
     return res.status(200).json({
@@ -573,6 +648,12 @@ export const archiveLead = async (
       orgId,
       memberId,
       accessToken
+    );
+
+    await leadEventsPublisher.archived(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -614,6 +695,12 @@ export const archiveBulkLeads = async (
       accessToken
     );
 
+    await leadEventsPublisher.bulkArchived(
+      orgId,
+      memberId,
+      validIds
+    );
+
     return res.status(200).json({
       success: true,
       message: "Archive Leads successful",
@@ -632,7 +719,7 @@ export const deleteLead = async (
   try {
     const id = uuidSchema.parse(req.params.id);
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -643,6 +730,7 @@ export const deleteLead = async (
     const deleted = await getLeadByIDFromDB(
       id,
       orgId,
+      memberId,
       accessToken
     );
 
@@ -653,14 +741,25 @@ export const deleteLead = async (
       accessToken
     );
 
-    await addActivityToDB(orgId, memberId, {
-      lead_id: deleted.id,
-      type: "lead",
-      action: "deleted",
-      title: "Removed contact",
-      target_name: `${deleted.first_name} ${deleted.last_name} ${deleted.suffix ?? ""}`,
-      description: `Removed ${deleted.first_name} ${deleted.last_name} ${deleted.suffix ?? ""} as contact`,
-    },accessToken);
+    await addActivityToDB(
+      orgId,
+      memberId,
+      {
+        lead_id: deleted.id,
+        type: "lead",
+        action: "deleted",
+        title: "Removed contact",
+        target_name: `${deleted.first_name} ${deleted.last_name} ${deleted.suffix ?? ""}`,
+        description: `Removed ${deleted.first_name} ${deleted.last_name} ${deleted.suffix ?? ""} as contact`,
+      },
+      accessToken
+    );
+
+    await leadEventsPublisher.deleted(
+      orgId,
+      memberId,
+      id
+    );
 
     return res.status(200).json({
       success: true,
@@ -712,6 +811,12 @@ export const deleteBulkLeads = async (
         description: `Removed ${validIds.length} leads`,
       },
       accessToken
+    );
+
+    await leadEventsPublisher.bulkDeleted(
+      orgId,
+      memberId,
+      validIds
     );
 
     return res.status(200).json({

@@ -4,6 +4,7 @@ import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateL
 import { validateBody } from '../middleware/validate';
 import { addLeadSchema, updateCareerSchema, updateLeadAvatarSchema, updateLeadNotesSchema, updateLeadPreferredTimeSchema, updateLeadPrioritySchema, updateLeadSchema, updateLeadSourceSchema, updateLeadStatusSchema, updateSocialsSchema } from '../schema/leads.schema';
 import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
 
 const router = Router();
 
@@ -33,8 +34,9 @@ router.use(requireActiveMembership);
 
 router.post(
   '/add',
-  createLimiter, 
-  validateBody(addLeadSchema), 
+  createLimiter,
+  validateBody(addLeadSchema),
+  idempotencyMiddleware,
   addLead
 );
 

@@ -16,6 +16,7 @@ import {
 } from "../services/notes.service";
 import { ensureResourceLimit } from "../services/plans.service";
 import { table } from "../config/tables";
+import noteEventsPublisher from "../pubsub/note-events.publisher";
 
 export const getPublicNotes = async (
   req: Request,
@@ -40,12 +41,10 @@ export const getPublicNotes = async (
       message: "Public Notes fetch successful",
       data: notes,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const getNotes = async (
   req: Request,
@@ -54,7 +53,7 @@ export const getNotes = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
@@ -72,12 +71,10 @@ export const getNotes = async (
       message: "Notes fetch successful",
       data: notes,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const getPrivateNotes = async (
   req: Request,
@@ -86,7 +83,7 @@ export const getPrivateNotes = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
@@ -104,12 +101,10 @@ export const getPrivateNotes = async (
       message: "Private Notes fetch successful",
       data: notes,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const getNoteByID = async (
   req: Request,
@@ -137,12 +132,10 @@ export const getNoteByID = async (
       message: "Note fetch successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const addNote = async (
   req: Request,
@@ -151,7 +144,7 @@ export const addNote = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
     const profileId = req.user?.profile_id;
 
@@ -177,17 +170,21 @@ export const addNote = async (
       accessToken
     );
 
+    await noteEventsPublisher.created(
+      orgId,
+      memberId,
+      data.id
+    );
+
     return res.status(201).json({
       success: true,
       message: "Add Note successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const updateNote = async (
   req: Request,
@@ -200,7 +197,7 @@ export const updateNote = async (
     const note = req.body;
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
@@ -228,17 +225,21 @@ export const updateNote = async (
       accessToken
     );
 
+    await noteEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Update Note successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const isPinnedNote = async (
   req: Request,
@@ -251,7 +252,7 @@ export const isPinnedNote = async (
     const { pinned } = req.body;
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
@@ -266,17 +267,21 @@ export const isPinnedNote = async (
       accessToken
     );
 
+    await noteEventsPublisher.pinned(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Update Note successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const deletePrivateNote = async (
   req: Request,
@@ -287,7 +292,7 @@ export const deletePrivateNote = async (
     const id = uuidSchema.parse(req.params.id);
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
@@ -314,17 +319,21 @@ export const deletePrivateNote = async (
       accessToken
     );
 
+    await noteEventsPublisher.deleted(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Delete Private Note successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const archiveNote = async (
   req: Request,
@@ -349,6 +358,12 @@ export const archiveNote = async (
       accessToken
     );
 
+    await noteEventsPublisher.archived(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Archive Note successful",
@@ -368,7 +383,7 @@ export const deleteNote = async (
     const id = uuidSchema.parse(req.params.id);
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
@@ -382,12 +397,17 @@ export const deleteNote = async (
       accessToken
     );
 
+    await noteEventsPublisher.deleted(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Delete Note successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }

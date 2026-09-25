@@ -18,6 +18,7 @@ import {
 import { addActivityToDB } from "../services/activities.service";
 import { ensureResourceLimit } from "../services/plans.service";
 import { table } from "../config/tables";
+import taskEventsPublisher from "../pubsub/task-events.publisher";
 
 
 export const getTasks = async (
@@ -269,6 +270,12 @@ export const assignTask = async (
       accessToken
     );
 
+    await taskEventsPublisher.assigned(
+    orgId,
+    memberId,
+    data.id
+  );
+
 
     return res.status(200).json({
       success: true,
@@ -330,6 +337,11 @@ export const completeTask = async (
       accessToken
     );
 
+    await taskEventsPublisher.completed(
+      orgId,
+      memberId,
+      data.id
+    );
 
     return res.status(200).json({
       success: true,
@@ -448,6 +460,11 @@ export const updateTaskDueDate = async (
       accessToken
     );
 
+    await taskEventsPublisher.updated(
+      orgId,
+      memberId,
+      data.id
+    );
 
     return res.status(200).json({
       success: true,
@@ -482,6 +499,12 @@ export const archiveTask = async (
       orgId,
       memberId,
       accessToken
+    );
+
+    await taskEventsPublisher.archived(
+      orgId,
+      memberId,
+      data
     );
 
     return res.status(200).json({
@@ -535,6 +558,12 @@ export const deleteTask = async (
       orgId,
       memberId,
       accessToken
+    );
+
+    await taskEventsPublisher.deleted(
+      orgId,
+      memberId,
+      data
     );
 
 

@@ -1,3 +1,4 @@
+
 import { createSupabaseUserClient } from '../config/supabase';
 import { AppError } from '../middleware/error.middleware';
 import { table } from '../config/tables';
@@ -6,6 +7,13 @@ import type {
   CustomerListItem,
   CustomerStatus
 } from '../types/customer';
+import cacheService from '../cache/cache.service';
+import {
+  customersRawListCacheKey,
+  customersListCacheKey,
+  customerListCacheKey,
+  customerCacheKey
+} from '../cache/cache-keys';
 
 const tab = table.customers;
 
@@ -45,99 +53,135 @@ export const getCustomersFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<Customer[]> => {
+  const cacheKey = customersRawListCacheKey(orgId);
 
-  const db = createSupabaseUserClient(accessToken);
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  const { data, error } = await db
-    .from(tab)
-    .select('*')
-    .eq('org_id', orgId)
-    .is('deleted_at', null)
-    .order('first_name', {
-      ascending: true
-    });
+      const { data, error } = await db
+        .from(tab)
+        .select('*')
+        .eq('org_id', orgId)
+        .is('deleted_at', null)
+        .order('first_name', {
+          ascending: true
+        });
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch customers: ${error.message}`
-    );
-  }
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch customers: ${error.message}`
+        );
+      }
 
-  return data ?? [];
+      return data ?? [];
+    },
+    60
+  );
 };
-
 
 export const getCustomersListsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<CustomerListItem[]> => {
-  const db = createSupabaseUserClient(accessToken);
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq('org_id', orgId)
-    .is('deleted_at', null);
+  const cacheKey = customersListCacheKey(orgId);
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch customers: ${error.message}`
-    );
-  }
-  return data as CustomerListItem[];
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq('org_id', orgId)
+        .is('deleted_at', null);
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch customers: ${error.message}`
+        );
+      }
+
+      return (data ?? []) as CustomerListItem[];
+    },
+    60
+  );
 };
-
 
 export const getCustomerListByIDFromDB = async (
   customerId: string,
   orgId: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
-  const db = createSupabaseUserClient(accessToken);
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq('org_id', orgId)
-    .eq('id', customerId)
-    .single();
+  const cacheKey = customerListCacheKey(
+    orgId,
+    customerId
+  );
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch customers: ${error.message}`
-    );
-  }
-  return data as CustomerListItem;
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq('org_id', orgId)
+        .eq('id', customerId)
+        .single();
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch customers: ${error.message}`
+        );
+      }
+
+      return data as CustomerListItem;
+    },
+    60
+  );
 };
-
 
 export const getCustomerByIDFromDB = async (
   id: string,
   orgId: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
+  const cacheKey = customerCacheKey(
+    orgId,
+    id
+  );
 
-  const db = createSupabaseUserClient(accessToken);
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
 
-  const { data, error } = await db
-    .from(tab)
-    .select(all)
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .is('deleted_at', null)
-    .single();
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq('id', id)
+        .eq('org_id', orgId)
+        .is('deleted_at', null)
+        .single();
 
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch customer: ${error.message}`
-    );
-  }
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch customer: ${error.message}`
+        );
+      }
 
-  return data as CustomerListItem;
+      return data as CustomerListItem;
+    },
+    60
+  );
 };
-
 
 export const addCustomerToDB = async (
   orgId: string,
@@ -146,15 +190,14 @@ export const addCustomerToDB = async (
   contactId: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
     .from(tab)
-    .insert({ 
-      contact_id: contactId, 
-      status: 'Active', 
-      org_id: orgId, 
+    .insert({
+      contact_id: contactId,
+      status: 'Active',
+      org_id: orgId,
       owner_id: memberId,
       assigned_to,
     })
@@ -171,7 +214,6 @@ export const addCustomerToDB = async (
   return data as CustomerListItem;
 };
 
-
 export const updateCustomerNotesFromDB = async (
   id: string,
   orgId: string,
@@ -179,7 +221,6 @@ export const updateCustomerNotesFromDB = async (
   notes: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -202,7 +243,6 @@ export const updateCustomerNotesFromDB = async (
 
   return data as CustomerListItem;
 };
-
 
 export const updateCustomerStatusFromDB = async (
   id: string,
@@ -230,14 +270,12 @@ export const updateCustomerStatusFromDB = async (
   return getCustomerByIDFromDB(id, orgId, accessToken);
 };
 
-
 export const deleteCustomerFromDB = async (
   id: string,
   orgId: string,
   memberId: string,
   accessToken: string
 ): Promise<string> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { error } = await db
@@ -259,14 +297,12 @@ export const deleteCustomerFromDB = async (
   return id;
 };
 
-
 export const deleteBulkCustomersFromDB = async (
   ids: string[],
   orgId: string,
   memberId: string,
   accessToken: string
 ): Promise<string[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { error } = await db
@@ -331,7 +367,7 @@ export const archiveBulkCustomersFromDB = async (
     .update({
       is_archived: true,
       archived_at: new Date().toISOString(),
-      archived_by: memberId,
+      archived_by: memberId
     })
     .in('id', ids)
     .eq('org_id', orgId)
@@ -348,14 +384,12 @@ export const archiveBulkCustomersFromDB = async (
   return ids;
 };
 
-
 export const deleteCustomerByContactIDFromDB = async (
   id: string,
   orgId: string,
   memberId: string,
   accessToken: string
 ): Promise<string> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { error } = await db
@@ -377,14 +411,12 @@ export const deleteCustomerByContactIDFromDB = async (
   return id;
 };
 
-
 export const deleteBulkCustomersByBulkContactIDsFromDB = async (
   ids: string[],
   orgId: string,
   memberId: string,
   accessToken: string
 ): Promise<string[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { error } = await db

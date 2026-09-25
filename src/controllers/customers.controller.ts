@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from "express";
 import {
   archiveBulkCustomersFromDB,
@@ -15,6 +16,7 @@ import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
 import { addActivityToDB } from "../services/activities.service";
 import { updateContactStatusFromDB } from "../services/contacts.service";
+import customerEventsPublisher from "../pubsub/customer-events.publisher";
 
 export const getCustomers = async (
   req: Request,
@@ -142,7 +144,7 @@ export const updateCustomerNotes = async (
     const id = uuidSchema.parse(req.params.id);
     const { notes } = req.body;
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -156,6 +158,12 @@ export const updateCustomerNotes = async (
       memberId,
       notes,
       accessToken
+    );
+
+    await customerEventsPublisher.updated(
+      orgId,
+      memberId,
+      id
     );
 
     return res.status(200).json({
@@ -177,7 +185,7 @@ export const updateCustomerStatus = async (
     const id = uuidSchema.parse(req.params.id);
     const { status } = req.body;
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -193,12 +201,12 @@ export const updateCustomerStatus = async (
       accessToken
     );
 
-    if (status === 'Churned') {
+    if (status === "Churned") {
       const customer = await getCustomerByIDFromDB(
         id,
         orgId,
         accessToken
-      )
+      );
 
       await updateContactStatusFromDB(
         customer.contact_id,
@@ -206,8 +214,14 @@ export const updateCustomerStatus = async (
         memberId,
         "Churned",
         accessToken
-      )
+      );
     }
+
+    await customerEventsPublisher.statusUpdated(
+      orgId,
+      memberId,
+      id
+    );
 
     return res.status(200).json({
       success: true,
@@ -242,6 +256,12 @@ export const archiveCustomer = async (
       accessToken
     );
 
+    await customerEventsPublisher.archived(
+      orgId,
+      memberId,
+      id
+    );
+
     return res.status(200).json({
       success: true,
       message: "Archive Customer successful",
@@ -260,7 +280,7 @@ export const deleteCustomer = async (
   try {
     const id = uuidSchema.parse(req.params.id);
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -281,16 +301,27 @@ export const deleteCustomer = async (
       accessToken
     );
 
-    await addActivityToDB(orgId, memberId, {
-      customer_id: deleted.id,
-      type: "customer",
-      action: "deleted",
-      title: "Removed customer",
-      target_name:
-        `${deleted.contact?.first_name} ${deleted.contact?.last_name}`,
-      description:
-        `Removed ${deleted.contact?.first_name} ${deleted.contact?.last_name} as customer`,
-    }, accessToken);
+    await addActivityToDB(
+      orgId,
+      memberId,
+      {
+        customer_id: deleted.id,
+        type: "customer",
+        action: "deleted",
+        title: "Removed customer",
+        target_name:
+          `${deleted.contact?.first_name} ${deleted.contact?.last_name}`,
+        description:
+          `Removed ${deleted.contact?.first_name} ${deleted.contact?.last_name} as customer`,
+      },
+      accessToken
+    );
+
+    await customerEventsPublisher.deleted(
+      orgId,
+      memberId,
+      id
+    );
 
     return res.status(200).json({
       success: true,
@@ -337,6 +368,12 @@ export const archiveBulkCustomers = async (
       accessToken
     );
 
+    await customerEventsPublisher.bulkArchived(
+      orgId,
+      memberId,
+      validIds
+    );
+
     return res.status(200).json({
       success: true,
       message: "Archive Customers successful",
@@ -355,7 +392,7 @@ export const deleteBulkCustomers = async (
   try {
     const ids = req.body.ids;
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -375,6 +412,12 @@ export const deleteBulkCustomers = async (
       orgId,
       memberId,
       accessToken
+    );
+
+    await customerEventsPublisher.bulkDeleted(
+      orgId,
+      memberId,
+      ids
     );
 
     return res.status(200).json({

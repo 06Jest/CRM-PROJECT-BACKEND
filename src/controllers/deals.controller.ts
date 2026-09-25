@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from "express";
 import {
   updateDealFromDB,
@@ -22,6 +23,7 @@ import { addCustomerToDB } from "../services/customer.service";
 import { addActivityToDB } from "../services/activities.service";
 import { ensureResourceLimit } from "../services/plans.service";
 import { table } from "../config/tables";
+import dealEventsPublisher from "../pubsub/deal-events.publisher";
 
 export const getDeals = async (
   req: Request,
@@ -146,7 +148,7 @@ export const addDeal = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
     const deal = req.body;
 
@@ -185,14 +187,25 @@ export const addDeal = async (
       accessToken
     );
 
-    await addActivityToDB(orgId, memberId, {
-      contact_id: data.contact_id,
-      type: "deal",
-      action: "created",
-      title: "New deal",
-      target_name: data.title,
-      description: `Created deal ${data.title}`,
-    },accessToken);
+    await addActivityToDB(
+      orgId,
+      memberId,
+      {
+        contact_id: data.contact_id,
+        type: "deal",
+        action: "created",
+        title: "New deal",
+        target_name: data.title,
+        description: `Created deal ${data.title}`,
+      },
+      accessToken
+    );
+
+    await dealEventsPublisher.created(
+      orgId,
+      memberId,
+      data.id
+    );
 
     return res.status(200).json({
       success: true,
@@ -212,7 +225,7 @@ export const updateDeal = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const deal = req.body;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -226,6 +239,12 @@ export const updateDeal = async (
       deal,
       orgId,
       accessToken
+    );
+
+    await dealEventsPublisher.updated(
+      orgId,
+      memberId,
+      data.id
     );
 
     return res.status(200).json({
@@ -246,7 +265,7 @@ export const updateDealStage = async (
   try {
     const id = uuidSchema.parse(req.params.id);
     const { stage } = req.body;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -269,73 +288,71 @@ export const updateDealStage = async (
     );
 
     if (stage === "Closed Won") {
-  if (contact.status !== "Customer") {
-    await ensureResourceLimit(
-      orgId,
-      table.customers,
-      "customers",
-      "active_limit",
-      accessToken
-    );
+      if (contact.status !== "Customer") {
+        await ensureResourceLimit(
+          orgId,
+          table.customers,
+          "customers",
+          "active_limit",
+          accessToken
+        );
 
-    await addCustomerToDB(
-      orgId,
-      memberId,
-      contact.assigned_to ?? null,
-      contact.id,
-      accessToken
-    );
+        await addCustomerToDB(
+          orgId,
+          memberId,
+          contact.assigned_to ?? null,
+          contact.id,
+          accessToken
+        );
 
-    await updateContactStatusFromDB(
-      contact.id,
-      orgId,
-      memberId,
-      "Customer",
-      accessToken
-    );
+        await updateContactStatusFromDB(
+          contact.id,
+          orgId,
+          memberId,
+          "Customer",
+          accessToken
+        );
 
-    await addActivityToDB(
-      orgId,
-      memberId,
-      {
-        contact_id: contact.id,
-        type: "customer",
-        action: "created",
-        title: "New customer",
-        target_name:
-          `${contact.first_name} ${contact.last_name}`,
-        description:
-          "Converted contact into customer",
-      },
-      accessToken
-    );
-  }
+        await addActivityToDB(
+          orgId,
+          memberId,
+          {
+            contact_id: contact.id,
+            type: "customer",
+            action: "created",
+            title: "New customer",
+            target_name:
+              `${contact.first_name} ${contact.last_name}`,
+            description:
+              "Converted contact into customer",
+          },
+          accessToken
+        );
+      }
 
-  await addActivityToDB(
-    orgId,
-    memberId,
-    {
-      contact_id: contact.id,
-      type: "deal",
-      action: "completed",
-      title: "Deal won",
-      target_name: deal.title,
-      description:
-        `Won deal ${deal.title}`,
-    },
-    accessToken
-  );
+      await addActivityToDB(
+        orgId,
+        memberId,
+        {
+          contact_id: contact.id,
+          type: "deal",
+          action: "completed",
+          title: "Deal won",
+          target_name: deal.title,
+          description:
+            `Won deal ${deal.title}`,
+        },
+        accessToken
+      );
 
-  data = await updateDealStageFromDB(
-    id,
-    orgId,
-    memberId,
-    stage,
-    accessToken
-  );
-
+      data = await updateDealStageFromDB(
+        id,
+        orgId,
+        memberId,
+        stage,
+        accessToken
+      );
     } else if (stage === "Closed Lost") {
-
       await addActivityToDB(
         orgId,
         memberId,
@@ -345,7 +362,8 @@ export const updateDealStage = async (
           action: "cancelled",
           title: "Deal lost",
           target_name: deal.title,
-          description: `Lost deal ${deal.title}`,
+          description:
+            `Lost deal ${deal.title}`,
         },
         accessToken
       );
@@ -364,7 +382,10 @@ export const updateDealStage = async (
         accessToken
       );
 
-      if (openDeals.length === 0 && contact.status === "Opportunity") {
+      if (
+        openDeals.length === 0 &&
+        contact.status === "Opportunity"
+      ) {
         await updateContactStatusFromDB(
           contact.id,
           orgId,
@@ -389,7 +410,6 @@ export const updateDealStage = async (
           accessToken
         );
       }
-
     } else {
       data = await updateDealStageFromDB(
         id,
@@ -397,6 +417,20 @@ export const updateDealStage = async (
         memberId,
         stage,
         accessToken
+      );
+    }
+
+    if (stage === "Closed Won" || stage === "Closed Lost") {
+      await dealEventsPublisher.closed(
+        orgId,
+        memberId,
+        data.id
+      );
+    } else {
+      await dealEventsPublisher.stageUpdated(
+        orgId,
+        memberId,
+        data.id
       );
     }
 
@@ -409,7 +443,6 @@ export const updateDealStage = async (
     next(err);
   }
 };
-
 
 export const archiveDeal = async (
   req: Request,
@@ -434,6 +467,12 @@ export const archiveDeal = async (
       accessToken
     );
 
+    await dealEventsPublisher.archived(
+      orgId,
+      memberId,
+      data
+    );
+
     return res.status(200).json({
       success: true,
       message: "Archive Deal successful",
@@ -444,7 +483,6 @@ export const archiveDeal = async (
   }
 };
 
-
 export const deleteDeal = async (
   req: Request,
   res: Response,
@@ -453,7 +491,7 @@ export const deleteDeal = async (
   try {
     const id = uuidSchema.parse(req.params.id);
 
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
 
@@ -474,15 +512,26 @@ export const deleteDeal = async (
       accessToken
     );
 
-    await addActivityToDB(orgId, memberId, {
-      contact_id: deleted.contact_id,
-      type: "deal",
-      action: "deleted",
-      title: "Removed deal",
-      target_name: deleted.title,
-      description:
-        `Removed deal ${deleted.title}`,
-    },accessToken);
+    await addActivityToDB(
+      orgId,
+      memberId,
+      {
+        contact_id: deleted.contact_id,
+        type: "deal",
+        action: "deleted",
+        title: "Removed deal",
+        target_name: deleted.title,
+        description:
+          `Removed deal ${deleted.title}`,
+      },
+      accessToken
+    );
+
+    await dealEventsPublisher.deleted(
+      orgId,
+      memberId,
+      data
+    );
 
     return res.status(200).json({
       success: true,
@@ -493,3 +542,4 @@ export const deleteDeal = async (
     next(err);
   }
 };
+
