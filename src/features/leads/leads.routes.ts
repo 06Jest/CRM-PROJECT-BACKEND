@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { authenticateUser,  requireActiveMembership,  verifyToken } from '../middleware/auth.middleware';
-import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateLeadNotes, updateLeadSource, updateLeadPriority, updateLeadPersonal, updateLeadCareer, updateLeadSocials, updateLeadPreferredTime, getLeadListByID, updateLeadAvatar, archiveLead, archiveBulkLeads, deleteBulkLeads  } from '../controllers/leads.controller';
-import { validateBody } from '../middleware/validate';
-import { addLeadSchema, updateCareerSchema, updateLeadAvatarSchema, updateLeadNotesSchema, updateLeadPreferredTimeSchema, updateLeadPrioritySchema, updateLeadSchema, updateLeadSourceSchema, updateLeadStatusSchema, updateSocialsSchema } from '../schema/leads.schema';
-import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
-import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
+import { authenticateUser,  requireActiveMembership,  verifyToken } from '../../middleware/auth.middleware';
+import { getLeads, addLead, deleteLead, updateLeadStatus, getLeadsLists, updateLeadNotes, updateLeadSource, updateLeadPriority, updateLeadPersonal, updateLeadCareer, updateLeadSocials, updateLeadPreferredTime, getLeadListByID, updateLeadAvatar, archiveLead, archiveBulkLeads, deleteBulkLeads  } from './leads.controller';
+import { validateBody } from '../../middleware/validate';
+import { addLeadSchema, updateCareerSchema, updateLeadAvatarSchema, updateLeadNotesSchema, updateLeadPreferredTimeSchema, updateLeadPrioritySchema, updateLeadSchema, updateLeadSourceSchema, updateLeadStatusSchema, updateSocialsSchema } from './leads.schema';
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../../idempotency/idempotency.middleware';
 
 const router = Router();
 

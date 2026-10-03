@@ -1,4 +1,4 @@
-import type { Gender, PreferredTime, Priority, Source, Suffix } from "./global";
+import type { Gender, PreferredTime, Priority, Source, Suffix } from "../../types/global";
 
 export const LEAD_STATUSES = [
   "New",

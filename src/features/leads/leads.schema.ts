@@ -20,7 +20,7 @@ import {
   preferredTimeSchema,
   avatarSchema,
   uuidSchema,
- } from "./global.schema";
+ } from "../../schema/global.schema";
 
 
 

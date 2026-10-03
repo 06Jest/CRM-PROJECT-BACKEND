@@ -1,4 +1,4 @@
-import { createSupabaseUserClient } from '../config/supabase';
+import { createSupabaseUserClient } from "../../config/supabase";
 import type {
   AddLead,
   Lead,
@@ -6,42 +6,43 @@ import type {
   LeadCareer,
   LeadListItem,
   LeadSocials,
-  LeadStatus
-} from '../types/lead';
-import { AppError } from '../middleware/error.middleware';
-import { table } from '../config/tables';
-import { PreferredTime, Priority, Source } from '../types/global';
-import { deleteImageKitFile } from './imagekit.service';
-import cacheService from "../cache/cache.service";
+  LeadStatus,
+} from "./leads.types";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
+import { PreferredTime, Priority, Source } from "../../types/global";
+import cacheService from "../../cache/cache.service";
 import {
   leadsRawListCacheKey,
   leadsListCacheKey,
   leadListCacheKey,
   leadCacheKey,
-} from "../cache/cache-keys";
+} from "../../cache/cache-keys";
 
 const tab = table.leads;
-const fkey = 'leads_owner_id_fkey';
-const assignedFkey = 'leads_assigned_to_fkey';
+
+const fkey = "leads_owner_id_fkey";
+const assignedFkey = "leads_assigned_to_fkey";
 
 const selectAllWithOwner = `
-    *, 
-    owner:organization_members!${fkey} (
-      id,
-      profile:profiles(
-        first_name,
-        last_name,
-        avatar_url
-      )
-    ),
-    assigned:organization_members!${assignedFkey} (
-      id,
-      profile:profiles(
-        first_name,
-        last_name,
-        avatar_url
-      )
-    )`;
+  *, 
+  owner:organization_members!${fkey} (
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  ),
+  assigned:organization_members!${assignedFkey} (
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  )
+`;
 
 const all = selectAllWithOwner;
 
@@ -92,10 +93,10 @@ export const getLeadsListsFromDB = async (
       const { data, error } = await db
         .from(tab)
         .select(all)
-        .eq('org_id', orgId)
-        .is('deleted_at', null)
-        .eq('is_archived', false)
-        .order('first_name', { ascending: true });
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .eq("is_archived", false)
+        .order("first_name", { ascending: true });
 
       if (error) {
         throw new AppError(
@@ -130,9 +131,9 @@ export const getLeadListByIDFromDB = async (
       const { data, error } = await db
         .from(tab)
         .select(all)
-        .eq('org_id', orgId)
-        .eq('id', leadId)
-        .is('deleted_at', null)
+        .eq("org_id", orgId)
+        .eq("id", leadId)
+        .is("deleted_at", null)
         .single();
 
       if (error) {
@@ -168,9 +169,9 @@ export const getLeadByIDFromDB = async (
       const { data, error } = await db
         .from(tab)
         .select(all)
-        .is('deleted_at', null)
-        .eq('id', id)
-        .eq('org_id', orgId)
+        .is("deleted_at", null)
+        .eq("id", id)
+        .eq("org_id", orgId)
         .single();
 
       if (error) {
@@ -196,12 +197,14 @@ export const addLeadToDB = async (
 
   const { data, error } = await db
     .from(tab)
-    .insert([{
-      ...lead,
-      org_id: orgId,
-      owner_id: memberId,
-      updated_by: memberId,
-    }])
+    .insert([
+      {
+        ...lead,
+        org_id: orgId,
+        owner_id: memberId,
+        updated_by: memberId,
+      },
+    ])
     .select(all)
     .single();
 
@@ -226,12 +229,14 @@ export const updateLeadPersonalFromDB = async (
 
   const { data, error } = await db
     .from(tab)
-    .update([{
-      ...personal,
-      updated_by: memberId
-    }])
-    .eq('id', id)
-    .eq('org_id', orgId)
+    .update([
+      {
+        ...personal,
+        updated_by: memberId,
+      },
+    ])
+    .eq("id", id)
+    .eq("org_id", orgId)
     .select(all)
     .single();
 
@@ -258,10 +263,10 @@ export const updateLeadSocialsFromDB = async (
     .from(tab)
     .update({
       ...socials,
-      updated_by: memberId
+      updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
+    .eq("id", id)
+    .eq("org_id", orgId)
     .select(all)
     .single();
 
@@ -288,10 +293,10 @@ export const updateLeadCareerFromDB = async (
     .from(tab)
     .update({
       ...career,
-      updated_by: memberId
+      updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
+    .eq("id", id)
+    .eq("org_id", orgId)
     .select(all)
     .single();
 
@@ -312,12 +317,15 @@ export const updateLeadAvatarFromDB = async (
   avatarFileId: string | null,
   avatarUrl: string | null,
   accessToken: string
-): Promise<LeadListItem> => {
+): Promise<{
+  data: LeadListItem;
+  oldAvatarFileId: string | null;
+}> => {
   const db = createSupabaseUserClient(accessToken);
 
   const { data: lead, error: fetchError } = await db
     .from(tab)
-    .select('avatar_file_id')
+    .select("avatar_file_id")
     .eq("id", id)
     .eq("org_id", orgId)
     .single();
@@ -329,7 +337,7 @@ export const updateLeadAvatarFromDB = async (
     );
   }
 
-  const oldAvatarFileId = lead?.avatar_file_id;
+  const oldAvatarFileId = lead?.avatar_file_id ?? null;
 
   const { data, error } = await db
     .from(tab)
@@ -350,11 +358,10 @@ export const updateLeadAvatarFromDB = async (
     );
   }
 
-  if (oldAvatarFileId && oldAvatarFileId !== avatarFileId) {
-    await deleteImageKitFile(oldAvatarFileId);
-  }
-
-  return data;
+  return {
+    data,
+    oldAvatarFileId,
+  };
 };
 
 export const updateLeadStatusFromDB = async (
@@ -436,11 +443,11 @@ export const updateLeadSourceFromDB = async (
   const { data, error } = await db
     .from(tab)
     .update({
-      source: source,
-      updated_by: memberId
+      source,
+      updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
+    .eq("id", id)
+    .eq("org_id", orgId)
     .select(all)
     .single();
 
@@ -466,11 +473,11 @@ export const updateLeadPriorityFromDB = async (
   const { data, error } = await db
     .from(tab)
     .update({
-      priority: priority,
-      updated_by: memberId
+      priority,
+      updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
+    .eq("id", id)
+    .eq("org_id", orgId)
     .select(all)
     .single();
 
@@ -496,11 +503,11 @@ export const updateLeadNotesFromDB = async (
   const { data, error } = await db
     .from(tab)
     .update({
-      notes: notes,
-      updated_by: memberId
+      notes,
+      updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
+    .eq("id", id)
+    .eq("org_id", orgId)
     .select(all)
     .single();
 
@@ -527,10 +534,10 @@ export const updateLeadPreferredTimeFromDB = async (
     .from(tab)
     .update({
       preferred_contact_time: preferredTime,
-      updated_by: memberId
+      updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
+    .eq("id", id)
+    .eq("org_id", orgId)
     .select(all)
     .single();
 
@@ -645,8 +652,8 @@ export const deleteLeadFromDB = async (
       deleted_at: new Date().toISOString(),
       deleted_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId);
+    .eq("id", id)
+    .eq("org_id", orgId);
 
   if (error) {
     throw new AppError(
