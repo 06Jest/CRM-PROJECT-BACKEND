@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../../middleware/auth.middleware';
 import { 
   getContacts,
   addContact,
@@ -18,11 +18,11 @@ import {
   updateContactAvatar,
   archiveContact,
   archiveBulkContacts
-} from '../controllers/contacts.controller';
-import { validateBody } from '../middleware/validate';
-import { addContactSchema, updateCareerSchema, updateContactAvatarSchema, updateContactNotesSchema, updateContactPreferredTimeSchema, updateContactPrioritySchema, updateContactSchema, updateContactSourceSchema, updateSocialsSchema } from '../schema/contacts.schema';
-import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
-import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
+} from './contacts.controller';
+import { validateBody } from '../../middleware/validate';
+import { addContactSchema, updateCareerSchema, updateContactAvatarSchema, updateContactNotesSchema, updateContactPreferredTimeSchema, updateContactPrioritySchema, updateContactSchema, updateContactSourceSchema, updateSocialsSchema } from './contacts.schema';
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../../idempotency/idempotency.middleware';
 
 
 const router = Router();

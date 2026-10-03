@@ -10,7 +10,7 @@ import orgRoutes from './routes/organizations.routes';
 import orgMembersRoutes from './routes/organizations.members.routes';
 import orgInvitesRoutes from './routes/organizations.invites.routes';
 import imageKitRoutes from './routes/imagekit.routes';
-import contactRoutes from './routes/contacts.routes';
+import contactRoutes from './features/contacts/contacts.routes';
 import leadsRoutes from './features/leads/leads.routes';
 import dealsRoutes from './routes/deals.routes';
 import customersRoutes from './routes/customers.routes'

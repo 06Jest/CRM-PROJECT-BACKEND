@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { GENDERS, PREFERRED_CONTACT_TIMES, PRIORITIES, ROLES, SOURCES, SUFFIXES } from "../types/global";
-import { CONTACT_STATUSES } from "../types/contact";
+import { CONTACT_STATUSES } from "../features/contacts/contact.types";
 import { LEAD_STATUSES } from "../features/leads/leads.types";
 import { DEAL_STAGES } from "../types/deal";
 import { PROFILE_STATUSES } from "../types/profile";

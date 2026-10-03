@@ -20,7 +20,7 @@ import {
   websiteSchema,
   longTextSchema,
   avatarSchema,
- } from "./global.schema";
+ } from "../../schema/global.schema";
 
 
 export const addContactSchema = z.object({

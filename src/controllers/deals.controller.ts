@@ -18,7 +18,7 @@ import { uuidSchema } from "../schema/global.schema";
 import {
   getContactByIDFromDB,
   updateContactStatusFromDB,
-} from "../services/contacts.service";
+} from "../features/contacts/contacts.repository";
 import { addCustomerToDB } from "../services/customer.service";
 import { addActivityToDB } from "../services/activities.service";
 import { ensureResourceLimit } from "../services/plans.service";

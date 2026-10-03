@@ -1,13 +1,13 @@
-import pubSubService from "./pubsub.service";
-import { PUBSUB_CHANNELS } from "./pubsub.channels";
-import { LeadEvent } from "./pubsub.types";
+import pubSubService from "../../pubsub/pubsub.service";
+import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
+import { ContactEvent } from "./contact-events.types";
 
-class LeadEventsPublisher {
+class ContactEventsPublisher {
   async publish(
-    event: Omit<LeadEvent, "timestamp">
+    event: Omit<ContactEvent, "timestamp">
   ): Promise<void> {
-    await pubSubService.publish<LeadEvent>(
-      PUBSUB_CHANNELS.LEADS,
+    await pubSubService.publish<ContactEvent>(
+      PUBSUB_CHANNELS.CONTACTS,
       {
         ...event,
         timestamp: new Date().toISOString(),
@@ -18,93 +18,80 @@ class LeadEventsPublisher {
   async created(
     orgId: string,
     memberId: string,
-    leadId: string
+    contactId: string
   ): Promise<void> {
     await this.publish({
       type: "created",
       orgId,
       memberId,
-      leadId,
+      contactId,
     });
   }
 
   async updated(
     orgId: string,
     memberId: string,
-    leadId: string
+    contactId: string
   ): Promise<void> {
     await this.publish({
       type: "updated",
       orgId,
       memberId,
-      leadId,
+      contactId,
     });
   }
 
   async deleted(
     orgId: string,
     memberId: string,
-    leadId: string
+    contactId: string
   ): Promise<void> {
     await this.publish({
       type: "deleted",
       orgId,
       memberId,
-      leadId,
+      contactId,
     });
   }
 
   async archived(
     orgId: string,
     memberId: string,
-    leadId: string
+    contactId: string
   ): Promise<void> {
     await this.publish({
       type: "archived",
       orgId,
       memberId,
-      leadId,
-    });
-  }
-
-  async converted(
-    orgId: string,
-    memberId: string,
-    leadId: string
-  ): Promise<void> {
-    await this.publish({
-      type: "converted",
-      orgId,
-      memberId,
-      leadId,
+      contactId,
     });
   }
 
   async bulkDeleted(
     orgId: string,
     memberId: string,
-    leadIds: string[]
+    contactIds: string[]
   ): Promise<void> {
     await this.publish({
       type: "bulk_deleted",
       orgId,
       memberId,
-      leadIds,
+      contactIds,
     });
   }
 
   async bulkArchived(
     orgId: string,
     memberId: string,
-    leadIds: string[]
+    contactIds: string[]
   ): Promise<void> {
     await this.publish({
       type: "bulk_archived",
       orgId,
       memberId,
-      leadIds,
+      contactIds,
     });
   }
 }
 
-export default new LeadEventsPublisher();
+export default new ContactEventsPublisher();

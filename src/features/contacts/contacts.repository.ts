@@ -1,4 +1,4 @@
-import { createSupabaseUserClient } from '../config/supabase';
+import { createSupabaseUserClient } from '../../config/supabase';
 import type {
   AddContact,
   Contact,
@@ -7,23 +7,21 @@ import type {
   ContactPersonal,
   ContactSocials,
   ContactStatus,
-} from '../types/contact';
+} from './contact.types';
 
-import { AppError } from '../middleware/error.middleware';
-import { table } from '../config/tables';
-import { PreferredTime, Priority, Source } from '../types/global';
-import { deleteImageKitFile } from './imagekit.service';
-import cacheService from '../cache/cache.service';
+import { AppError } from '../../middleware/error.middleware';
+import { table } from '../../config/tables';
+import { PreferredTime, Priority, Source } from '../../types/global';
+import cacheService from '../../cache/cache.service';
 import {
   contactsRawListCacheKey,
   contactsListCacheKey,
   contactListCacheKey,
   contactCacheKey,
-} from '../cache/cache-keys';
+} from '../../cache/cache-keys';
 
 const tab = table.contacts;
 const fkey = 'contacts_owner_id_fkey';
-
 
 const selectAllWithOwner = `
   *,
@@ -207,8 +205,6 @@ export const addContactToDB = async (
     );
   }
 
-  
-
   return data;
 };
 
@@ -238,8 +234,6 @@ export const addContactFromLeadsToDB = async (
       `Failed to add Contact: ${error.message}`
     );
   }
-
-  
 
   return data;
 };
@@ -271,8 +265,6 @@ export const updateContactPersonalFromDB = async (
     );
   }
 
-  
-
   return data;
 };
 
@@ -302,8 +294,6 @@ export const updateContactSocialsFromDB = async (
       `Failed to update Contact Socials: ${error.message}`
     );
   }
-
-  
 
   return data;
 };
@@ -335,8 +325,6 @@ export const updateContactCareerFromDB = async (
     );
   }
 
-  
-
   return data;
 };
 
@@ -347,7 +335,10 @@ export const updateContactAvatarFromDB = async (
   avatarFileId: string | null,
   avatarUrl: string | null,
   accessToken: string
-): Promise<ContactListItem> => {
+): Promise<{
+  data: ContactListItem;
+  oldAvatarFileId: string | null;
+}> => {
   const db = createSupabaseUserClient(accessToken);
 
   const { data: contact, error: fetchError } = await db
@@ -364,7 +355,7 @@ export const updateContactAvatarFromDB = async (
     );
   }
 
-  const oldAvatarFileId = contact?.avatar_file_id;
+  const oldAvatarFileId = contact?.avatar_file_id ?? null;
 
   const { data, error } = await db
     .from(tab)
@@ -385,13 +376,10 @@ export const updateContactAvatarFromDB = async (
     );
   }
 
-  if (oldAvatarFileId && oldAvatarFileId !== avatarFileId) {
-    await deleteImageKitFile(oldAvatarFileId);
-  }
-
-  
-
-  return data;
+  return {
+    data,
+    oldAvatarFileId,
+  };
 };
 
 export const updateContactStatusFromDB = async (
@@ -420,8 +408,6 @@ export const updateContactStatusFromDB = async (
       `Failed to update Contact Status: ${error.message}`
     );
   }
-
-  
 
   return data;
 };
@@ -453,8 +439,6 @@ export const updateContactSourceFromDB = async (
     );
   }
 
-  
-
   return data;
 };
 
@@ -484,8 +468,6 @@ export const updateContactPriorityFromDB = async (
       `Failed to update Contact Priority: ${error.message}`
     );
   }
-
-  
 
   return data;
 };
@@ -517,8 +499,6 @@ export const updateContactNotesFromDB = async (
     );
   }
 
-  
-
   return data;
 };
 
@@ -548,8 +528,6 @@ export const updateContactPreferredTmeFromDB = async (
       `Failed to update Contact preferred time: ${error.message}`
     );
   }
-
-  
 
   return data;
 };
@@ -581,8 +559,6 @@ export const archiveBulkContactsFromDB = async (
     );
   }
 
-  
-
   return ids;
 };
 
@@ -613,8 +589,6 @@ export const archiveContactFromDB = async (
     );
   }
 
-  
-
   return id;
 };
 
@@ -642,8 +616,6 @@ export const deleteContactFromDB = async (
     );
   }
 
-  
-
   return id;
 };
 
@@ -670,8 +642,6 @@ export const deleteBulkContactsFromDB = async (
       `Failed to delete Contacts: ${error.message}`
     );
   }
-
-  
 
   return ids;
 };

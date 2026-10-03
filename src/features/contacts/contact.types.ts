@@ -1,4 +1,4 @@
-import { Gender, PreferredTime, Priority, Source, Suffix } from "./global";
+import { Gender, PreferredTime, Priority, Source, Suffix } from "../../types/global";
 
 export const CONTACT_STATUSES = [
   "Contacted",

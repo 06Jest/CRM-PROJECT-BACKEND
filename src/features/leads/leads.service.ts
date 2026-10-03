@@ -34,12 +34,12 @@ import type {
   Source,
 } from "../../types/global";
 
-import { addContactFromLeadsToDB } from "../../services/contacts.service";
-import type { AddContact } from "../../types/contact";
+import { addContactFromLeadsToDB } from "../contacts/contacts.repository";
+import type { AddContact } from "../contacts/contact.types";
 import { addActivityToDB } from "../../services/activities.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 import { deleteImageKitFile } from "../../services/imagekit.service";
-import leadEventsPublisher from "../../pubsub/lead-events.publisher";
+import leadEventsPublisher from "./lead-events.publisher";
 import { table } from "../../config/tables";
 
 export const getLeads = async (

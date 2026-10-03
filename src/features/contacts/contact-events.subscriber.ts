@@ -1,12 +1,12 @@
-import pubSubService from "./pubsub.service";
-import { PUBSUB_CHANNELS } from "./pubsub.channels";
-import { LeadEvent } from "./pubsub.types";
-import cacheService from "../cache/cache.service";
+import pubSubService from "../../pubsub/pubsub.service";
+import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
+import { ContactEvent } from "./contact-events.types";
+import cacheService from "../../cache/cache.service";
 
-class LeadEventsSubscriber {
+class ContactEventsSubscriber {
   async start(): Promise<void> {
-    await pubSubService.subscribe<LeadEvent>(
-      PUBSUB_CHANNELS.LEADS,
+    await pubSubService.subscribe<ContactEvent>(
+      PUBSUB_CHANNELS.CONTACTS,
       async (event) => {
         if (!event.orgId) {
           return;
@@ -17,11 +17,10 @@ class LeadEventsSubscriber {
           case "updated":
           case "deleted":
           case "archived":
-          case "converted":
           case "bulk_deleted":
           case "bulk_archived":
             await cacheService.deleteByPrefix(
-              `leads:${event.orgId}:`
+              `contacts:${event.orgId}:`
             );
 
             await cacheService.deleteByPrefix(
@@ -39,4 +38,4 @@ class LeadEventsSubscriber {
   }
 }
 
-export default new LeadEventsSubscriber();
+export default new ContactEventsSubscriber();

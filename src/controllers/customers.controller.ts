@@ -15,7 +15,7 @@ import {
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
 import { addActivityToDB } from "../services/activities.service";
-import { updateContactStatusFromDB } from "../services/contacts.service";
+import { updateContactStatusFromDB } from "../features/contacts/contacts.repository";
 import customerEventsPublisher from "../pubsub/customer-events.publisher";
 
 export const getCustomers = async (
