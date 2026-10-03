@@ -1,7 +1,7 @@
-import pubSubService from "./pubsub.service";
-import { PUBSUB_CHANNELS } from "./pubsub.channels";
-import { NoteEvent } from "./note-events.types";
-import cacheService from "../cache/cache.service";
+import pubSubService from "../../pubsub/pubsub.service";
+import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
+import { NoteEvent } from "./notes-events.types";
+import cacheService from "../../cache/cache.service";
 
 class NoteEventsSubscriber {
   async start(): Promise<void> {

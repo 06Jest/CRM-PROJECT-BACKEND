@@ -26,7 +26,7 @@ import leadEventsSubscriber from './features/leads/leads-events.subscriber';
 import contactEventsSubscriber from "./features/contacts/contacts-events.subscriber";
 import dealEventsSubscriber from "./features/deals/deals-events.subscriber";
 import taskEventsSubscriber from "./pubsub/task-events.subscriber";
-import noteEventsSubscriber from "./pubsub/note-events.subscriber";
+import noteEventsSubscriber from "./features/notes/notes-events.subscriber";
 import callEventsSubscriber from "./pubsub/call-events.subscriber";
 import customerEventsSubscriber from "./features/customers/customers-events.subscriber";
 

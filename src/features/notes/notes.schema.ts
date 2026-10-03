@@ -6,7 +6,7 @@ import {
   noteVisibilitySchema,
   titleSchema,
   longTextSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 export const addNoteSchema = z.object({
   target_type: noteTargetTypeSchema,

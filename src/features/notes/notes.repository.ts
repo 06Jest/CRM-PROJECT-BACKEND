@@ -1,19 +1,19 @@
-import { createSupabaseUserClient } from "../config/supabase";
-import { AppError } from "../middleware/error.middleware";
-import { table } from "../config/tables";
-import cacheService from "../cache/cache.service";
+import { createSupabaseUserClient } from "../../config/supabase";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
+import cacheService from "../../cache/cache.service";
 import {
   notesPublicListCacheKey,
   notesListCacheKey,
   notesPrivateListCacheKey,
   noteCacheKey,
-} from "../cache/cache-keys";
+} from "../../cache/cache-keys";
 
 import type {
   NoteListItem,
   AddNote,
   UpdateNote,
-} from "../types/note";
+} from "./notes.types";
 
 const tab = table.notes;
 const fkey = "notes_author_id_fkey";
@@ -30,8 +30,6 @@ const selectAllWithAuthor = `
   )
 `;
 
-const all = selectAllWithAuthor;
-
 export const getPublicNotesFromDB = async (
   orgId: string,
   accessToken: string
@@ -45,7 +43,7 @@ export const getPublicNotesFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithAuthor)
         .eq("org_id", orgId)
         .eq("visibility", "public")
         .is("deleted_at", null)
@@ -81,7 +79,7 @@ export const getPrivateNotesFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithAuthor)
         .eq("org_id", orgId)
         .eq("author_id", memberId)
         .eq("visibility", "private")
@@ -118,7 +116,7 @@ export const getNotesFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithAuthor)
         .eq("org_id", orgId)
         .is("deleted_at", null)
         .or(
@@ -153,7 +151,7 @@ export const getNoteByIDFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithAuthor)
         .eq("id", id)
         .eq("org_id", orgId)
         .is("deleted_at", null)
@@ -174,8 +172,8 @@ export const getNoteByIDFromDB = async (
 
 export const addNoteToDB = async (
   profileId: string,
-  orgId: string | undefined,
-  memberId: string | undefined,
+  orgId: string,
+  memberId: string,
   note: AddNote,
   accessToken: string
 ): Promise<NoteListItem> => {
@@ -186,11 +184,11 @@ export const addNoteToDB = async (
     .insert({
       ...note,
       profile_id: profileId,
-      org_id: orgId ?? null,
-      author_id: memberId ?? null,
-      updated_by: memberId ?? null,
+      org_id: orgId,
+      author_id: memberId,
+      updated_by: memberId,
     })
-    .select(all)
+    .select(selectAllWithAuthor)
     .single();
 
   if (error) {
@@ -222,7 +220,7 @@ export const updateNoteFromDB = async (
     .eq("org_id", orgId)
     .eq("author_id", memberId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithAuthor)
     .single();
 
   if (error) {
@@ -253,7 +251,7 @@ export const isPinnedNoteFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithAuthor)
     .single();
 
   if (error) {

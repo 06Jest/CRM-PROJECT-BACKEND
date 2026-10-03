@@ -1,6 +1,6 @@
-import pubSubService from "./pubsub.service";
-import { PUBSUB_CHANNELS } from "./pubsub.channels";
-import { NoteEvent } from "./note-events.types";
+import pubSubService from "../../pubsub/pubsub.service";
+import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
+import { NoteEvent } from "./notes-events.types";
 
 class NoteEventsPublisher {
   async publish(

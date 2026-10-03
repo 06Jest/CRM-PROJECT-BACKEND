@@ -1,5 +1,5 @@
 import z from "zod";
-import { addNoteToDB } from "../../services/notes.service";
+import { addNoteService } from "../../features/notes/notes.service";
 import {
   AIToolDefinition,
   AIToolError,
@@ -21,7 +21,11 @@ const createNoteSchema = z.object({
 });
 
 const verifyTargetOwnership = async (
-  targetType: "lead" | "contact" | "deal" | "customer",
+  targetType:
+    | "lead"
+    | "contact"
+    | "deal"
+    | "customer",
   targetId: string,
   orgId: string,
   accessToken: string
@@ -45,7 +49,9 @@ const verifyTargetOwnership = async (
     .maybeSingle();
 
   if (error) {
-    throw new Error("Failed to verify target ownership.");
+    throw new Error(
+      "Failed to verify target ownership."
+    );
   }
 
   if (!data) {
@@ -60,7 +66,7 @@ export const createNoteTool: AIToolDefinition = {
 
   description:
     "Create a note in the user's CRM. Use this when the user explicitly asks to create or save a note.",
-  
+
   requiredRoles: ["owner", "manager", "agent"],
 
   requiresConfirmation: true,
@@ -70,7 +76,6 @@ export const createNoteTool: AIToolDefinition = {
       type: "string",
       description:
         "The type of CRM record the note belongs to. Use personal when the note is not attached to a specific CRM record.",
-      
       enum: [
         "lead",
         "contact",
@@ -99,17 +104,23 @@ export const createNoteTool: AIToolDefinition = {
 
     visibility: {
       type: "string",
-      description: "Whether the note is private or visible to the organization.",
+      description:
+        "Whether the note is private or visible to the organization.",
       enum: ["private", "public"],
     },
   },
 
   async execute(arguments_, context) {
-    const parsed = createNoteSchema.safeParse(arguments_);
+    const parsed = createNoteSchema.safeParse(
+      arguments_
+    );
 
     if (!parsed.success) {
-      throw new AIToolError("Invalid arguments for create_note.");
+      throw new AIToolError(
+        "Invalid arguments for create_note."
+      );
     }
+
     if (!context.profileId) {
       throw new AIToolError(
         "A profile context is required to create a note."
@@ -151,10 +162,10 @@ export const createNoteTool: AIToolDefinition = {
       );
     }
 
-    return addNoteToDB(
+    return addNoteService(
       context.profileId,
-      context.orgId,
-      context.memberId,
+      context.orgId!,
+      context.memberId!,
       {
         target_type: args.target_type,
         target_id: args.target_id ?? null,
@@ -164,6 +175,5 @@ export const createNoteTool: AIToolDefinition = {
       },
       context.accessToken
     );
-
   },
 };

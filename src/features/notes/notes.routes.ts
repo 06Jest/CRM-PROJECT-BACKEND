@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../../middleware/auth.middleware';
 
-import { validateBody } from '../middleware/validate';
+import { validateBody } from '../../middleware/validate';
 
 import {
   addNote,
@@ -15,16 +15,16 @@ import {
   getNotes,
   isPinnedNote,
   archiveNote
-} from '../controllers/notes.controller';
+} from './notes.controller';
 
 import {
   addNoteSchema,
   pinNoteSchema,
   updateNoteSchema
-} from '../schema/note.schema';
+} from './notes.schema';
 
-import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
-import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../../idempotency/idempotency.middleware';
 
 
 const router = Router();
