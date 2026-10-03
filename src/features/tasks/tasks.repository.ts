@@ -1,17 +1,17 @@
-import { createSupabaseUserClient } from "../config/supabase";
-import { AppError } from "../middleware/error.middleware";
-import { table } from "../config/tables";
+import { createSupabaseUserClient } from "../../config/supabase";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
 import {
   AddTask,
   TaskListItem,
   TaskPriority,
   UpdateTask,
-} from "../types/task";
-import cacheService from "../cache/cache.service";
+} from "./tasks.types";
+import cacheService from "../../cache/cache.service";
 import {
   tasksRawListCacheKey,
   taskCacheKey,
-} from "../cache/cache-keys";
+} from "../../cache/cache-keys";
 
 const tab = table.tasks;
 
@@ -38,8 +38,6 @@ const selectAllWithUsers = `
   )
 `;
 
-const all = selectAllWithUsers;
-
 export const getTasksFromDB = async (
   orgId: string,
   memberId: string,
@@ -57,10 +55,12 @@ export const getTasksFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithUsers)
         .eq("org_id", orgId)
         .is("deleted_at", null)
-        .or(`author_id.eq.${memberId},assigned_to.eq.${memberId}`)
+        .or(
+          `author_id.eq.${memberId},assigned_to.eq.${memberId}`
+        )
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -95,11 +95,13 @@ export const getTaskByIDFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithUsers)
         .eq("id", id)
         .eq("org_id", orgId)
         .is("deleted_at", null)
-        .or(`author_id.eq.${memberId},assigned_to.eq.${memberId}`)
+        .or(
+          `author_id.eq.${memberId},assigned_to.eq.${memberId}`
+        )
         .single();
 
       if (error) {
@@ -117,8 +119,8 @@ export const getTaskByIDFromDB = async (
 
 export const addTaskToDB = async (
   profileId: string,
-  orgId: string | undefined,
-  memberId: string | undefined,
+  orgId: string,
+  memberId: string,
   task: AddTask,
   accessToken: string
 ): Promise<TaskListItem> => {
@@ -129,12 +131,12 @@ export const addTaskToDB = async (
     .insert({
       ...task,
       profile_id: profileId,
-      org_id: orgId ?? null,
-      author_id: memberId ?? null,
+      org_id: orgId,
+      author_id: memberId,
       assigned_to: task.assigned_to ?? memberId,
-      updated_by: memberId ?? null,
+      updated_by: memberId,
     })
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -166,7 +168,7 @@ export const updateTaskFromDB = async (
     .eq("org_id", orgId)
     .eq("author_id", memberId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -198,7 +200,7 @@ export const assignTaskFromDB = async (
     .eq("org_id", orgId)
     .eq("author_id", memberId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -230,7 +232,7 @@ export const updateTaskPriorityFromDB = async (
     .eq("org_id", orgId)
     .eq("author_id", memberId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -261,7 +263,7 @@ export const updateTaskDueDateFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -295,7 +297,7 @@ export const completeTaskFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {

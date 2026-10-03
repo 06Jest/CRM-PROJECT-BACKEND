@@ -10,7 +10,7 @@ import {
   taskTypesSchema,
   longTextSchema,
   shortTextSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 export const addTaskSchema = z.object({
   title: titleSchema,

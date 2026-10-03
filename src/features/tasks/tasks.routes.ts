@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../../middleware/auth.middleware';
 
-import { validateBody } from '../middleware/validate';
+import { validateBody } from '../../middleware/validate';
 
 import {
   getTasks,
@@ -15,7 +15,7 @@ import {
   updateTaskDueDate,
   deleteTask,
   archiveTask
-} from '../controllers/tasks.controller';
+} from './tasks.controller';
 
 import {
   addTaskSchema,
@@ -24,10 +24,10 @@ import {
   completeTaskSchema,
   updateTaskPrioritySchema,
   updateTaskDueDateSchema
-} from '../schema/tasks.schema';
+} from './tasks.schema';
 
-import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
-import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../../idempotency/idempotency.middleware';
 
 
 const router = Router();

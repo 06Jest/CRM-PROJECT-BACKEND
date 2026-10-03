@@ -1,25 +1,23 @@
-import { Request, Response, NextFunction } from "express";
-import { AppError } from "../middleware/error.middleware";
-import { uuidSchema } from "../schema/global.schema";
+import {
+  Request,
+  Response,
+  NextFunction,
+} from "express";
+import { AppError } from "../../middleware/error.middleware";
+import { uuidSchema } from "../../schema/global.schema";
 
 import {
-  getTasksFromDB,
-  getTaskByIDFromDB,
-  addTaskToDB,
-  updateTaskFromDB,
-  completeTaskFromDB,
-  assignTaskFromDB,
-  updateTaskDueDateFromDB,
-  updateTaskPriorityFromDB,
-  deleteTaskFromDB,
-  archiveTaskFromDB,
-} from "../services/tasks.service";
-
-import { addActivityToDB } from "../services/activities.service";
-import { ensureResourceLimit } from "../services/plans.service";
-import { table } from "../config/tables";
-import taskEventsPublisher from "../pubsub/task-events.publisher";
-
+  addTaskService,
+  archiveTaskService,
+  assignTaskService,
+  completeTaskService,
+  deleteTaskService,
+  getTaskByIDService,
+  getTasksService,
+  updateTaskDueDateService,
+  updateTaskPriorityService,
+  updateTaskService,
+} from "./tasks.service";
 
 export const getTasks = async (
   req: Request,
@@ -28,14 +26,14 @@ export const getTasks = async (
 ) => {
   try {
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-    const tasks = await getTasksFromDB(
+    const tasks = await getTasksService(
       orgId,
       memberId,
       accessToken
@@ -46,12 +44,10 @@ export const getTasks = async (
       message: "Tasks fetch successful",
       data: tasks,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const getTaskByID = async (
   req: Request,
@@ -62,14 +58,14 @@ export const getTaskByID = async (
     const id = uuidSchema.parse(req.params.id);
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await getTaskByIDFromDB(
+    const data = await getTaskByIDService(
       id,
       orgId,
       memberId,
@@ -81,12 +77,10 @@ export const getTaskByID = async (
       message: "Task fetch successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const addTask = async (
   req: Request,
@@ -105,15 +99,7 @@ export const addTask = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    await ensureResourceLimit(
-      orgId,
-      table.tasks,
-      "tasks",
-      "active_limit",
-      accessToken
-    );
-
-    const data = await addTaskToDB(
+    const data = await addTaskService(
       profileId,
       orgId,
       memberId,
@@ -121,51 +107,15 @@ export const addTask = async (
       accessToken
     );
 
-
-    await addActivityToDB(
-      orgId,
-      memberId,
-      {
-        lead_id:
-          data.target_type === "lead"
-            ? data.target_id
-            : undefined,
-
-        contact_id:
-          data.target_type === "contact"
-            ? data.target_id
-            : undefined,
-
-        customer_id:
-          data.target_type === "customer"
-            ? data.target_id
-            : undefined,
-
-        type: "task",
-        action: "created",
-        title:
-          `New task for ${data.assignee.profile.first_name} ${data.assignee.profile.last_name}`,
-
-        target_name:
-          `${data.assignee.profile.first_name} ${data.assignee.profile.last_name}`,
-
-        description:
-          `Created task "${data.title}"`,
-      },accessToken
-    );
-
-
     return res.status(201).json({
       success: true,
       message: "Add Task successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const updateTask = async (
   req: Request,
@@ -173,38 +123,19 @@ export const updateTask = async (
   next: NextFunction
 ) => {
   try {
-
     const id = uuidSchema.parse(req.params.id);
 
     const task = req.body;
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-
-    const check = await getTaskByIDFromDB(
-      id,
-      orgId,
-      memberId,
-      accessToken
-    );
-
-
-    if (check.author_id !== memberId) {
-      throw new AppError(
-        403,
-        "Only the task creator can edit this task"
-      );
-    }
-
-
-    const data = await updateTaskFromDB(
+    const data = await updateTaskService(
       id,
       orgId,
       memberId,
@@ -212,18 +143,15 @@ export const updateTask = async (
       accessToken
     );
 
-
     return res.status(200).json({
       success: true,
       message: "Update Task successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const assignTask = async (
   req: Request,
@@ -231,38 +159,19 @@ export const assignTask = async (
   next: NextFunction
 ) => {
   try {
-
     const id = uuidSchema.parse(req.params.id);
 
     const { assigned_to } = req.body;
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-
-    const check = await getTaskByIDFromDB(
-      id,
-      orgId,
-      memberId,
-      accessToken
-    );
-
-
-    if (check.author_id !== memberId) {
-      throw new AppError(
-        403,
-        "Only the task creator can assign this task"
-      );
-    }
-
-
-    const data = await assignTaskFromDB(
+    const data = await assignTaskService(
       id,
       orgId,
       memberId,
@@ -270,19 +179,11 @@ export const assignTask = async (
       accessToken
     );
 
-    await taskEventsPublisher.assigned(
-    orgId,
-    memberId,
-    data.id
-  );
-
-
     return res.status(200).json({
       success: true,
       message: "Task assigned successfully",
       data,
     });
-
   } catch (err) {
     next(err);
   }
@@ -299,37 +200,14 @@ export const completeTask = async (
     const { completed } = req.body;
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-
-    const check = await getTaskByIDFromDB(
-      id,
-      orgId,
-      memberId,
-      accessToken
-    );
-
-
-    const isAllowed =
-      check.author_id === memberId ||
-      check.assigned_to === memberId;
-
-
-    if (!isAllowed) {
-      throw new AppError(
-        403,
-        "Only the task creator or assignee can complete this task"
-      );
-    }
-
-
-    const data = await completeTaskFromDB(
+    const data = await completeTaskService(
       id,
       orgId,
       memberId,
@@ -337,24 +215,15 @@ export const completeTask = async (
       accessToken
     );
 
-    await taskEventsPublisher.completed(
-      orgId,
-      memberId,
-      data.id
-    );
-
     return res.status(200).json({
       success: true,
       message: "Task updated successfully",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
-
 
 export const updateTaskPriority = async (
   req: Request,
@@ -362,38 +231,19 @@ export const updateTaskPriority = async (
   next: NextFunction
 ) => {
   try {
-
     const id = uuidSchema.parse(req.params.id);
 
     const { priority } = req.body;
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-
-    const check = await getTaskByIDFromDB(
-      id,
-      orgId,
-      memberId,
-      accessToken
-    );
-
-
-    if (check.author_id !== memberId) {
-      throw new AppError(
-        403,
-        "Only the task creator can update the task priority"
-      );
-    }
-
-
-    const data = await updateTaskPriorityFromDB(
+    const data = await updateTaskPriorityService(
       id,
       orgId,
       memberId,
@@ -401,19 +251,15 @@ export const updateTaskPriority = async (
       accessToken
     );
 
-
     return res.status(200).json({
       success: true,
       message: "Task priority updated successfully",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
-
 
 export const updateTaskDueDate = async (
   req: Request,
@@ -421,38 +267,19 @@ export const updateTaskDueDate = async (
   next: NextFunction
 ) => {
   try {
-
     const id = uuidSchema.parse(req.params.id);
 
     const { due_date } = req.body;
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-
-    const check = await getTaskByIDFromDB(
-      id,
-      orgId,
-      memberId,
-      accessToken
-    );
-
-
-    if (check.author_id !== memberId) {
-      throw new AppError(
-        403,
-        "Only the task creator can update the due date"
-      );
-    }
-
-
-    const data = await updateTaskDueDateFromDB(
+    const data = await updateTaskDueDateService(
       id,
       orgId,
       memberId,
@@ -460,23 +287,15 @@ export const updateTaskDueDate = async (
       accessToken
     );
 
-    await taskEventsPublisher.updated(
-      orgId,
-      memberId,
-      data.id
-    );
-
     return res.status(200).json({
       success: true,
       message: "Task due date updated successfully",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
 
 export const archiveTask = async (
   req: Request,
@@ -494,17 +313,11 @@ export const archiveTask = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await archiveTaskFromDB(
+    const data = await archiveTaskService(
       id,
       orgId,
       memberId,
       accessToken
-    );
-
-    await taskEventsPublisher.archived(
-      orgId,
-      memberId,
-      data
     );
 
     return res.status(200).json({
@@ -517,62 +330,34 @@ export const archiveTask = async (
   }
 };
 
-
 export const deleteTask = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-
     const id = uuidSchema.parse(req.params.id);
 
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-
-    const check = await getTaskByIDFromDB(
+    const data = await deleteTaskService(
       id,
       orgId,
       memberId,
       accessToken
     );
-
-
-    if (check.author_id !== memberId) {
-      throw new AppError(
-        403,
-        "Only the task creator can delete this task"
-      );
-    }
-
-
-    const data = await deleteTaskFromDB(
-      id,
-      orgId,
-      memberId,
-      accessToken
-    );
-
-    await taskEventsPublisher.deleted(
-      orgId,
-      memberId,
-      data
-    );
-
 
     return res.status(200).json({
       success: true,
       message: "Delete Task successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }

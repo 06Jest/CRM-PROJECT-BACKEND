@@ -1,7 +1,7 @@
-import pubSubService from "./pubsub.service";
-import { PUBSUB_CHANNELS } from "./pubsub.channels";
-import { TaskEvent } from "./task-events.types";
-import cacheService from "../cache/cache.service";
+import pubSubService from "../../pubsub/pubsub.service";
+import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
+import { TaskEvent } from "./tasks-events.types";
+import cacheService from "../../cache/cache.service";
 
 class TaskEventsSubscriber {
   async start(): Promise<void> {

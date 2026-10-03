@@ -1,16 +1,17 @@
-import z from "zod";
-import { addTaskToDB } from "../../services/tasks.service";
 import {
   AIToolDefinition,
   AIToolError,
 } from "./tool.registry";
 import { createSupabaseUserClient } from "../../config/supabase";
-import { addTaskSchema } from "../../schema/tasks.schema";
-
-
+import { addTaskSchema } from "../../features/tasks/tasks.schema";
+import { addTaskService } from "../../features/tasks/tasks.service";
 
 const verifyTargetOwnership = async (
-  targetType: "lead" | "contact" | "deal" | "customer",
+  targetType:
+    | "lead"
+    | "contact"
+    | "deal"
+    | "customer",
   targetId: string,
   orgId: string,
   accessToken: string
@@ -140,9 +141,10 @@ export const createTaskTool: AIToolDefinition = {
         "Invalid arguments for create_task."
       );
     }
+
     if (!context.profileId) {
       throw new AIToolError(
-        "A profile context is required to create a note."
+        "A profile context is required to create a task."
       );
     }
 
@@ -187,13 +189,19 @@ export const createTaskTool: AIToolDefinition = {
       );
     }
 
+    if (!context.orgId || !context.memberId) {
+      throw new AIToolError(
+        "An organization context is required to create a task."
+      );
+    }
+
     if (!context.accessToken) {
       throw new AIToolError(
         "An access token is required to create a task."
       );
     }
 
-    return addTaskToDB(
+    return addTaskService(
       context.profileId,
       context.orgId,
       context.memberId,
