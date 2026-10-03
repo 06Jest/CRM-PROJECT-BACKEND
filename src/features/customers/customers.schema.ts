@@ -3,7 +3,7 @@ import {
   uuidSchema,
   CustomerStatusSchema,
   longTextSchema,
- } from "./global.schema";
+ } from "../../schema/global.schema";
 
 
 export const addCustomerSchema = z.object({

@@ -38,7 +38,7 @@ import {
 import {
   deleteBulkCustomersByBulkContactIDsFromDB,
   deleteCustomerByContactIDFromDB,
-} from '../../services/customer.service';
+} from '../customers/customers.repository';
 
 import { addActivityToDB } from '../../services/activities.service';
 import { ensureResourceLimit } from '../../services/plans.service';

@@ -28,7 +28,7 @@ import dealEventsSubscriber from "./features/deals/deals-events.subscriber";
 import taskEventsSubscriber from "./pubsub/task-events.subscriber";
 import noteEventsSubscriber from "./pubsub/note-events.subscriber";
 import callEventsSubscriber from "./pubsub/call-events.subscriber";
-import customerEventsSubscriber from "./pubsub/customer-events.subscriber";
+import customerEventsSubscriber from "./features/customers/customers-events.subscriber";
 
 const PORT = process.env.PORT || 5000;
 

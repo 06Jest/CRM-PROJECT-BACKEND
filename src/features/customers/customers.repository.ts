@@ -1,24 +1,23 @@
-
-import { createSupabaseUserClient } from '../config/supabase';
-import { AppError } from '../middleware/error.middleware';
-import { table } from '../config/tables';
+import { createSupabaseUserClient } from "../../config/supabase";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
 import type {
   Customer,
   CustomerListItem,
-  CustomerStatus
-} from '../types/customer';
-import cacheService from '../cache/cache.service';
+  CustomerStatus,
+} from "./customers.types";
+import cacheService from "../../cache/cache.service";
 import {
   customersRawListCacheKey,
   customersListCacheKey,
   customerListCacheKey,
-  customerCacheKey
-} from '../cache/cache-keys';
+  customerCacheKey,
+} from "../../cache/cache-keys";
 
 const tab = table.customers;
 
-const fkey = 'customers_owner_id_fkey';
-const contactfkey = 'fk_customer_contact';
+const fkey = "customers_owner_id_fkey";
+const contactfkey = "fk_customer_contact";
 
 const selectAllWithOwner = `
   *,
@@ -47,8 +46,6 @@ const selectAllWithOwner = `
   )
 `;
 
-const all = selectAllWithOwner;
-
 export const getCustomersFromDB = async (
   orgId: string,
   accessToken: string
@@ -62,12 +59,10 @@ export const getCustomersFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select('*')
-        .eq('org_id', orgId)
-        .is('deleted_at', null)
-        .order('first_name', {
-          ascending: true
-        });
+        .select("*")
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .order("first_name", { ascending: true });
 
       if (error) {
         throw new AppError(
@@ -95,9 +90,9 @@ export const getCustomersListsFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
-        .eq('org_id', orgId)
-        .is('deleted_at', null);
+        .select(selectAllWithOwner)
+        .eq("org_id", orgId)
+        .is("deleted_at", null);
 
       if (error) {
         throw new AppError(
@@ -129,9 +124,9 @@ export const getCustomerListByIDFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
-        .eq('org_id', orgId)
-        .eq('id', customerId)
+        .select(selectAllWithOwner)
+        .eq("org_id", orgId)
+        .eq("id", customerId)
         .single();
 
       if (error) {
@@ -152,10 +147,7 @@ export const getCustomerByIDFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<CustomerListItem> => {
-  const cacheKey = customerCacheKey(
-    orgId,
-    id
-  );
+  const cacheKey = customerCacheKey(orgId, id);
 
   return cacheService.getOrSet(
     cacheKey,
@@ -164,10 +156,10 @@ export const getCustomerByIDFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
-        .eq('id', id)
-        .eq('org_id', orgId)
-        .is('deleted_at', null)
+        .select(selectAllWithOwner)
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
         .single();
 
       if (error) {
@@ -196,12 +188,12 @@ export const addCustomerToDB = async (
     .from(tab)
     .insert({
       contact_id: contactId,
-      status: 'Active',
+      status: "Active",
       org_id: orgId,
       owner_id: memberId,
       assigned_to,
     })
-    .select(all)
+    .select(selectAllWithOwner)
     .single();
 
   if (error) {
@@ -227,11 +219,11 @@ export const updateCustomerNotesFromDB = async (
     .from(tab)
     .update({
       notes,
-      updated_by: memberId
+      updated_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .select(all)
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .select(selectAllWithOwner)
     .single();
 
   if (error) {
@@ -267,7 +259,11 @@ export const updateCustomerStatusFromDB = async (
     );
   }
 
-  return getCustomerByIDFromDB(id, orgId, accessToken);
+  return getCustomerByIDFromDB(
+    id,
+    orgId,
+    accessToken
+  );
 };
 
 export const deleteCustomerFromDB = async (
@@ -282,10 +278,10 @@ export const deleteCustomerFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: memberId
+      deleted_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId);
+    .eq("id", id)
+    .eq("org_id", orgId);
 
   if (error) {
     throw new AppError(
@@ -309,10 +305,10 @@ export const deleteBulkCustomersFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: memberId
+      deleted_by: memberId,
     })
-    .in('id', ids)
-    .eq('org_id', orgId);
+    .in("id", ids)
+    .eq("org_id", orgId);
 
   if (error) {
     throw new AppError(
@@ -337,12 +333,12 @@ export const archiveCustomerFromDB = async (
     .update({
       is_archived: true,
       archived_at: new Date().toISOString(),
-      archived_by: memberId
+      archived_by: memberId,
     })
-    .eq('id', id)
-    .eq('org_id', orgId)
-    .is('deleted_at', null)
-    .eq('is_archived', false);
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
 
   if (error) {
     throw new AppError(
@@ -367,12 +363,12 @@ export const archiveBulkCustomersFromDB = async (
     .update({
       is_archived: true,
       archived_at: new Date().toISOString(),
-      archived_by: memberId
+      archived_by: memberId,
     })
-    .in('id', ids)
-    .eq('org_id', orgId)
-    .is('deleted_at', null)
-    .eq('is_archived', false);
+    .in("id", ids)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
 
   if (error) {
     throw new AppError(
@@ -396,10 +392,10 @@ export const deleteCustomerByContactIDFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: memberId
+      deleted_by: memberId,
     })
-    .eq('contact_id', id)
-    .eq('org_id', orgId);
+    .eq("contact_id", id)
+    .eq("org_id", orgId);
 
   if (error) {
     throw new AppError(
@@ -423,10 +419,10 @@ export const deleteBulkCustomersByBulkContactIDsFromDB = async (
     .from(tab)
     .update({
       deleted_at: new Date().toISOString(),
-      deleted_by: memberId
+      deleted_by: memberId,
     })
-    .in('contact_id', ids)
-    .eq('org_id', orgId);
+    .in("contact_id", ids)
+    .eq("org_id", orgId);
 
   if (error) {
     throw new AppError(

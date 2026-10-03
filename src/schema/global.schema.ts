@@ -4,7 +4,7 @@ import { CONTACT_STATUSES } from "../features/contacts/contact.types";
 import { LEAD_STATUSES } from "../features/leads/leads.types";
 import { DEAL_STAGES } from "../features/deals/deals.types";
 import { PROFILE_STATUSES } from "../types/profile";
-import { CUSTOMER_STATUSES } from "../types/customer";
+import { CUSTOMER_STATUSES } from "../features/customers/customers.types";
 import { NOTE_TARGET_TYPES, NOTE_VISIBILITIES } from "../types/note";
 import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../types/email";
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TARGET_TYPES, TASK_TYPES, TASK_VISIBILITIES } from "../types/task";

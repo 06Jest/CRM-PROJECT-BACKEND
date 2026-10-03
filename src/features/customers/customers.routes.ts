@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../../middleware/auth.middleware';
 
-import { validateBody } from '../middleware/validate';
-import { archiveBulkCustomers, archiveCustomer, deleteBulkCustomers, deleteCustomer, getCustomerListByID, getCustomers, getCustomersLists, updateCustomerNotes, updateCustomerStatus } from '../controllers/customers.controller';
-import { updateCustomerNotesSchema, updateCustomerStatusSchema } from '../schema/customer.schema';
-import { deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+import { validateBody } from '../../middleware/validate';
+import { archiveBulkCustomers, archiveCustomer, deleteBulkCustomers, deleteCustomer, getCustomerListByID, getCustomers, getCustomersLists, updateCustomerNotes, updateCustomerStatus } from './customers.controller';
+import { updateCustomerNotesSchema, updateCustomerStatusSchema } from './customers.schema';
+import { deleteLimiter, readLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
 
 
 const router = Router();

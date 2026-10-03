@@ -17,7 +17,7 @@ import {
   updateContactStatusFromDB,
 } from "../contacts/contacts.repository";
 
-import { addCustomerToDB } from "../../services/customer.service";
+import { addCustomerToDB } from "../customers/customers.repository";
 import { addActivityToDB } from "../../services/activities.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 import { table } from "../../config/tables";

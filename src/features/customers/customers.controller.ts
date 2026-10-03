@@ -1,22 +1,19 @@
 
 import { Request, Response, NextFunction } from "express";
 import {
-  archiveBulkCustomersFromDB,
-  archiveCustomerFromDB,
-  deleteBulkCustomersFromDB,
-  deleteCustomerFromDB,
-  getCustomerByIDFromDB,
-  getCustomerListByIDFromDB,
-  getCustomersFromDB,
-  getCustomersListsFromDB,
-  updateCustomerNotesFromDB,
-  updateCustomerStatusFromDB,
-} from "../services/customer.service";
-import { AppError } from "../middleware/error.middleware";
-import { uuidSchema } from "../schema/global.schema";
-import { addActivityToDB } from "../services/activities.service";
-import { updateContactStatusFromDB } from "../features/contacts/contacts.repository";
-import customerEventsPublisher from "../pubsub/customer-events.publisher";
+  archiveBulkCustomersService,
+  archiveCustomerService,
+  deleteBulkCustomersService,
+  deleteCustomerService,
+  getCustomerByIDService,
+  getCustomerListByIDService,
+  getCustomersService,
+  getCustomersListsService,
+  updateCustomerNotesService,
+  updateCustomerStatusService,
+} from "./customers.service";
+import { AppError } from "../../middleware/error.middleware";
+import { uuidSchema } from "../../schema/global.schema";
 
 export const getCustomers = async (
   req: Request,
@@ -31,7 +28,7 @@ export const getCustomers = async (
       throw new AppError(401, "Unauthorized");
     }
 
-    const customers = await getCustomersFromDB(
+    const customers = await getCustomersService(
       orgId,
       accessToken
     );
@@ -59,7 +56,7 @@ export const getCustomersLists = async (
       throw new AppError(401, "Unauthorized");
     }
 
-    const customers = await getCustomersListsFromDB(
+    const customers = await getCustomersListsService(
       orgId,
       accessToken
     );
@@ -88,7 +85,7 @@ export const getCustomerListByID = async (
       throw new AppError(401, "Unauthorized");
     }
 
-    const customer = await getCustomerListByIDFromDB(
+    const customer = await getCustomerListByIDService(
       id,
       orgId,
       accessToken
@@ -119,7 +116,7 @@ export const getCustomerByID = async (
       throw new AppError(401, "Unauthorized");
     }
 
-    const customer = await getCustomerByIDFromDB(
+    const customer = await getCustomerByIDService(
       id,
       orgId,
       accessToken
@@ -152,18 +149,12 @@ export const updateCustomerNotes = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await updateCustomerNotesFromDB(
+    const data = await updateCustomerNotesService(
       id,
       orgId,
       memberId,
       notes,
       accessToken
-    );
-
-    await customerEventsPublisher.updated(
-      orgId,
-      memberId,
-      id
     );
 
     return res.status(200).json({
@@ -193,34 +184,12 @@ export const updateCustomerStatus = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await updateCustomerStatusFromDB(
+    const data = await updateCustomerStatusService(
       id,
       orgId,
       memberId,
       status,
       accessToken
-    );
-
-    if (status === "Churned") {
-      const customer = await getCustomerByIDFromDB(
-        id,
-        orgId,
-        accessToken
-      );
-
-      await updateContactStatusFromDB(
-        customer.contact_id,
-        orgId,
-        memberId,
-        "Churned",
-        accessToken
-      );
-    }
-
-    await customerEventsPublisher.statusUpdated(
-      orgId,
-      memberId,
-      id
     );
 
     return res.status(200).json({
@@ -249,17 +218,11 @@ export const archiveCustomer = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await archiveCustomerFromDB(
+    const data = await archiveCustomerService(
       id,
       orgId,
       memberId,
       accessToken
-    );
-
-    await customerEventsPublisher.archived(
-      orgId,
-      memberId,
-      id
     );
 
     return res.status(200).json({
@@ -288,39 +251,11 @@ export const deleteCustomer = async (
       throw new AppError(401, "Unauthorized user");
     }
 
-    const deleted = await getCustomerByIDFromDB(
-      id,
-      orgId,
-      accessToken
-    );
-
-    const data = await deleteCustomerFromDB(
+    const data = await deleteCustomerService(
       id,
       orgId,
       memberId,
       accessToken
-    );
-
-    await addActivityToDB(
-      orgId,
-      memberId,
-      {
-        customer_id: deleted.id,
-        type: "customer",
-        action: "deleted",
-        title: "Removed customer",
-        target_name:
-          `${deleted.contact?.first_name} ${deleted.contact?.last_name}`,
-        description:
-          `Removed ${deleted.contact?.first_name} ${deleted.contact?.last_name} as customer`,
-      },
-      accessToken
-    );
-
-    await customerEventsPublisher.deleted(
-      orgId,
-      memberId,
-      id
     );
 
     return res.status(200).json({
@@ -346,32 +281,22 @@ export const archiveBulkCustomers = async (
     const accessToken = req.cookies.accessToken;
 
     if (!Array.isArray(ids) || ids.length === 0) {
-      throw new AppError(
-        400,
-        "Customer ids required"
-      );
+      throw new AppError(400, "Customer ids required");
     }
 
     if (!memberId || !orgId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized user"
-      );
+      throw new AppError(401, "Unauthorized user");
     }
 
-    const validIds = ids.map((id) => uuidSchema.parse(id));
+    const validIds = ids.map((id) =>
+      uuidSchema.parse(id)
+    );
 
-    const data = await archiveBulkCustomersFromDB(
+    const data = await archiveBulkCustomersService(
       validIds,
       orgId,
       memberId,
       accessToken
-    );
-
-    await customerEventsPublisher.bulkArchived(
-      orgId,
-      memberId,
-      validIds
     );
 
     return res.status(200).json({
@@ -397,27 +322,22 @@ export const deleteBulkCustomers = async (
     const accessToken = req.cookies.accessToken;
 
     if (!Array.isArray(ids) || ids.length === 0) {
-      throw new AppError(
-        400,
-        "Customer ids required"
-      );
+      throw new AppError(400, "Customer ids required");
     }
 
     if (!memberId || !orgId || !accessToken) {
       throw new AppError(401, "Unauthorized user");
     }
 
-    const data = await deleteBulkCustomersFromDB(
-      ids,
+    const validIds = ids.map((id) =>
+      uuidSchema.parse(id)
+    );
+
+    const data = await deleteBulkCustomersService(
+      validIds,
       orgId,
       memberId,
       accessToken
-    );
-
-    await customerEventsPublisher.bulkDeleted(
-      orgId,
-      memberId,
-      ids
     );
 
     return res.status(200).json({
