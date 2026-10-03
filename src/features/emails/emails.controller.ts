@@ -1,35 +1,32 @@
-import { Request, Response, NextFunction } from "express";
+import {
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 
-import { AppError } from "../middleware/error.middleware";
-import { uuidSchema } from "../schema/global.schema";
+import { AppError } from "../../middleware/error.middleware";
+import { uuidSchema } from "../../schema/global.schema";
 
 import {
-  getEmailsFromDB,
-  getEmailByIDFromDB,
-  createEmailDraftToDB,
-  updateDraftEmail,
-  getLeadEmailsFromDB,
-  getContactEmailsFromDB,
-  getCustomerEmailsFromDB,
-  deleteEmailFromDB,
-  sendEmailDraft,
-} from "../services/email.service";
-import { addActivityToDB } from "../services/activities.service";
-
-
-
+  getEmailsService,
+  getEmailByIDService,
+  createEmailDraftService,
+  updateEmailDraftService,
+  getLeadEmailHistoryService,
+  getContactEmailHistoryService,
+  getCustomerEmailHistoryService,
+  deleteEmailService,
+  sendEmailService,
+} from "./emails.service";
 
 export const getAllEmails = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -38,45 +35,33 @@ export const getAllEmails = async (
       );
     }
 
-
-    const data = await getEmailsFromDB(
+    const data = await getEmailsService(
       orgId,
       accessToken
     );
 
-
     return res.status(200).json({
-      success:true,
-      message:"Emails fetch successful",
+      success: true,
+      message: "Emails fetch successful",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };
-
-
-
 
 export const getEmailByID = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const id = uuidSchema.parse(
       req.params.id
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -85,42 +70,31 @@ export const getEmailByID = async (
       );
     }
 
-
-    const data = await getEmailByIDFromDB(
+    const data = await getEmailByIDService(
       id,
       orgId,
       accessToken
     );
 
-
     return res.status(200).json({
-      success:true,
-      message:"Email fetch successful",
+      success: true,
+      message: "Email fetch successful",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };
-
-
-
 
 export const addEmailDraft = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(
@@ -129,26 +103,21 @@ export const addEmailDraft = async (
       );
     }
 
-
-    const data = await createEmailDraftToDB(
+    const data = await createEmailDraftService(
       orgId,
       memberId,
       req.body,
       accessToken
     );
 
-
     return res.status(201).json({
-      success:true,
-      message:"Email draft created successfully",
+      success: true,
+      message: "Email draft created successfully",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };
 
 export const sendEmail = async (
@@ -157,75 +126,50 @@ export const sendEmail = async (
   next: NextFunction
 ) => {
   try {
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
+
     const orgId = req.user?.org_id;
     const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
-
-    if (!orgId || !accessToken || !memberId) {
+    if (!orgId || !memberId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized user"
       );
     }
 
-
-    const data = await sendEmailDraft(
+    const data = await sendEmailService(
       id,
       orgId,
-      accessToken
-    );
-
-    const targetName =
-      data.lead
-        ? `${data.lead.first_name} ${data.lead.last_name}`
-        : data.contact
-          ? `${data.contact.first_name} ${data.contact.last_name}`
-          : "Unknown";
-
-    await addActivityToDB(
-      orgId,
       memberId,
-      {
-        lead_id: data.lead_id,
-        contact_id: data.contact_id,
-        type: "email",
-        action: "sent",
-        title: "Email sent",
-        target_name: targetName,
-        description: `Sent Email to ${targetName}`,
-      },
       accessToken
     );
 
     return res.status(200).json({
-      success:true,
-      message:"Email sent successfully",
+      success: true,
+      message: "Email sent successfully",
       data,
     });
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
 };
-
 
 export const updateEmailDraft = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const id = uuidSchema.parse(
       req.params.id
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -234,47 +178,35 @@ export const updateEmailDraft = async (
       );
     }
 
-
-    const data = await updateDraftEmail(
+    const data = await updateEmailDraftService(
       id,
       orgId,
       req.body,
       accessToken
     );
 
-
     return res.status(200).json({
-      success:true,
-      message:"Email draft updated successfully",
+      success: true,
+      message: "Email draft updated successfully",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };
-
-
-
 
 export const getLeadEmailHistory = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const leadId = uuidSchema.parse(
       req.params.leadId
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -283,46 +215,36 @@ export const getLeadEmailHistory = async (
       );
     }
 
-
-    const data = await getLeadEmailsFromDB(
-      orgId,
-      leadId,
-      accessToken
-    );
-
+    const data =
+      await getLeadEmailHistoryService(
+        orgId,
+        leadId,
+        accessToken
+      );
 
     return res.status(200).json({
-      success:true,
-      message:"Lead email history fetch successful",
+      success: true,
+      message:
+        "Lead email history fetch successful",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };
-
-
-
 
 export const getContactEmailHistory = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const contactId = uuidSchema.parse(
       req.params.contactId
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -331,46 +253,36 @@ export const getContactEmailHistory = async (
       );
     }
 
-
-    const data = await getContactEmailsFromDB(
-      orgId,
-      contactId,
-      accessToken
-    );
-
+    const data =
+      await getContactEmailHistoryService(
+        orgId,
+        contactId,
+        accessToken
+      );
 
     return res.status(200).json({
-      success:true,
-      message:"Contact email history fetch successful",
+      success: true,
+      message:
+        "Contact email history fetch successful",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };
-
-
-
 
 export const getCustomerEmailHistory = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const customerId = uuidSchema.parse(
       req.params.customerId
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -379,46 +291,36 @@ export const getCustomerEmailHistory = async (
       );
     }
 
-
-    const data = await getCustomerEmailsFromDB(
-      orgId,
-      customerId,
-      accessToken
-    );
-
+    const data =
+      await getCustomerEmailHistoryService(
+        orgId,
+        customerId,
+        accessToken
+      );
 
     return res.status(200).json({
-      success:true,
-      message:"Customer email history fetch successful",
+      success: true,
+      message:
+        "Customer email history fetch successful",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };
-
-
-
 
 export const removeEmail = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   try {
-
     const id = uuidSchema.parse(
       req.params.id
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -427,23 +329,18 @@ export const removeEmail = async (
       );
     }
 
-
-    const data = await deleteEmailFromDB(
+    const data = await deleteEmailService(
       id,
       orgId,
       accessToken
     );
 
-
     return res.status(200).json({
-      success:true,
-      message:"Delete Email successful",
+      success: true,
+      message: "Delete Email successful",
       data,
     });
-
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
-
 };

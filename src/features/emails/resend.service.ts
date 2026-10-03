@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
-import { AppError } from "../middleware/error.middleware";
-import { config } from "../config/environment";
+import { AppError } from "../../middleware/error.middleware";
+import { config } from "../../config/environment";
 
 const resend = new Resend(config.EMAIL.resend.key);
 

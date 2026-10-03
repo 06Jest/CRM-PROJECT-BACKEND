@@ -4,9 +4,9 @@ import {
   authenticateUser,
   requireActiveMembership,
   verifyToken,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   getAllEmails,
@@ -18,12 +18,12 @@ import {
   getContactEmailHistory,
   getCustomerEmailHistory,
   removeEmail,
-} from "../controllers/email.controller";
+} from "./emails.controller";
 
 import {
   createEmailDraftSchema,
   updateEmailDraftSchema,
-} from "../schema/email.schema";
+} from "./emails.schema";
 
 import {
   createLimiter,
@@ -31,9 +31,9 @@ import {
   emailLimiter,
   readLimiter,
   updateLimiter,
-} from "../middleware/rate.limit.middleware";
+} from "../../middleware/rate.limit.middleware";
 
-import { idempotencyMiddleware } from "../idempotency/idempotency.middleware";
+import { idempotencyMiddleware } from "../../idempotency/idempotency.middleware";
 
 const router = Router();
 

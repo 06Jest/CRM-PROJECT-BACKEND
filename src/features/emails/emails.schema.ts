@@ -5,7 +5,7 @@ import {
   emailSchema,
   emailSubjectSchema,
   emailBodySchema,
-} from "./global.schema";
+} from "./../../schema/global.schema";
 
 export const createEmailDraftSchema = z.object({
 
