@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
-import { getDeals, addDeal, updateDeal, deleteDeal, updateDealStage, getDealsLists, getDealListByID, getDealsListsByContactID, archiveDeal} from './../controllers/deals.controller'
-import { validateBody } from '../middleware/validate';
-import { addDealSchema, updateDealSchema, updateDealStageSchema } from '../schema/deal.schema';
-import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
-import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../../middleware/auth.middleware';
+import { getDeals, addDeal, updateDeal, deleteDeal, updateDealStage, getDealsLists, getDealListByID, getDealsListsByContactID, archiveDeal} from './deals.controller'
+import { validateBody } from '../../middleware/validate';
+import { addDealSchema, updateDealSchema, updateDealStageSchema } from './deals.schema';
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
+import { idempotencyMiddleware } from '../../idempotency/idempotency.middleware';
 
 const router = Router();
 router.use(verifyToken);

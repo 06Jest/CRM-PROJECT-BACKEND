@@ -1,6 +1,6 @@
 import pubSubService from "../../pubsub/pubsub.service";
 import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
-import { ContactEvent } from "./contact-events.types";
+import { ContactEvent } from "./contacts-events.types";
 import cacheService from "../../cache/cache.service";
 
 class ContactEventsSubscriber {

@@ -1,27 +1,26 @@
-
-import { createSupabaseUserClient } from "../config/supabase";
+import { createSupabaseUserClient } from "../../config/supabase";
 import type {
   AddDeal,
   Deal,
   DealListItem,
   DealStage,
   UpdateDeal,
-} from "../types/deal";
-import { AppError } from "../middleware/error.middleware";
-import { table } from "../config/tables";
-import cacheService from "../cache/cache.service";
+} from "./deals.types";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
+import cacheService from "../../cache/cache.service";
 import {
   dealsRawListCacheKey,
   dealsListCacheKey,
   dealListCacheKey,
   dealCacheKey,
   dealsByContactCacheKey,
-} from "../cache/cache-keys";
+} from "../../cache/cache-keys";
 
 const tab = table.deals;
+
 const ownerFkey = "deals_owner_id_fkey";
 const contactFkey = "deals_contact_id_fkey";
-
 
 const selectAll = `
   *, 
@@ -234,8 +233,6 @@ export const addDealToDB = async (
     );
   }
 
-  
-
   return data as DealListItem;
 };
 
@@ -247,7 +244,7 @@ export const getOpenDealsByContactIDFromDB = async (
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
-    .from("deals")
+    .from(tab)
     .select("*")
     .eq("contact_id", contactId)
     .eq("org_id", orgId)
@@ -291,8 +288,6 @@ export const updateDealFromDB = async (
     );
   }
 
-  
-
   return data as DealListItem;
 };
 
@@ -319,9 +314,11 @@ export const updateDealStageFromDB = async (
     );
   }
 
-  
-
-  return getDealsByIDFromDB(id, orgId, accessToken);
+  return getDealsByIDFromDB(
+    id,
+    orgId,
+    accessToken
+  );
 };
 
 export const closeDealFromDB = async (
@@ -353,8 +350,6 @@ export const closeDealFromDB = async (
     );
   }
 
-  
-
   return data as DealListItem;
 };
 
@@ -385,8 +380,6 @@ export const archiveDealFromDB = async (
     );
   }
 
-  
-
   return id;
 };
 
@@ -413,8 +406,6 @@ export const deleteDealFromDB = async (
       `Failed to delete deal: ${error.message}`
     );
   }
-
-  
 
   return id;
 };
@@ -443,8 +434,6 @@ export const deleteAllDealsByContactIDFromDB = async (
     );
   }
 
-  
-
   return id;
 };
 
@@ -471,8 +460,6 @@ export const deleteAllDealsByBulkContactsFromDB = async (
       `Failed to delete deals: ${error.message}`
     );
   }
-
-  
 
   return ids;
 };

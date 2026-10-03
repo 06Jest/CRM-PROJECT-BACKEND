@@ -33,7 +33,7 @@ import {
 import {
   deleteAllDealsByBulkContactsFromDB,
   deleteAllDealsByContactIDFromDB,
-} from '../../services/deals.service';
+} from '../deals/deals.repository';
 
 import {
   deleteBulkCustomersByBulkContactIDsFromDB,
@@ -44,7 +44,7 @@ import { addActivityToDB } from '../../services/activities.service';
 import { ensureResourceLimit } from '../../services/plans.service';
 import { deleteImageKitFile } from '../../services/imagekit.service';
 
-import contactEventsPublisher from './contact-events.publisher';
+import contactEventsPublisher from './contacts-events.publisher';
 import { table } from '../../config/tables';
 
 export const getContactsService = async (

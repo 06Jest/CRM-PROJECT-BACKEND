@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dealStageSchema,  longTextSchema,  titleSchema, uuidSchema, valueSchema } from './global.schema';
+import { dealStageSchema,  longTextSchema,  titleSchema, uuidSchema, valueSchema } from '../../schema/global.schema';
 
 export const addDealSchema = z.object({
 

@@ -39,7 +39,7 @@ import type { AddContact } from "../contacts/contact.types";
 import { addActivityToDB } from "../../services/activities.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 import { deleteImageKitFile } from "../../services/imagekit.service";
-import leadEventsPublisher from "./lead-events.publisher";
+import leadEventsPublisher from "./leads-events.publisher";
 import { table } from "../../config/tables";
 
 export const getLeads = async (

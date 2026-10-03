@@ -2,7 +2,7 @@ import { z } from "zod";
 import { GENDERS, PREFERRED_CONTACT_TIMES, PRIORITIES, ROLES, SOURCES, SUFFIXES } from "../types/global";
 import { CONTACT_STATUSES } from "../features/contacts/contact.types";
 import { LEAD_STATUSES } from "../features/leads/leads.types";
-import { DEAL_STAGES } from "../types/deal";
+import { DEAL_STAGES } from "../features/deals/deals.types";
 import { PROFILE_STATUSES } from "../types/profile";
 import { CUSTOMER_STATUSES } from "../types/customer";
 import { NOTE_TARGET_TYPES, NOTE_VISIBILITIES } from "../types/note";

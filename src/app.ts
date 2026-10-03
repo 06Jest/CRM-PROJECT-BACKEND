@@ -12,7 +12,7 @@ import orgInvitesRoutes from './routes/organizations.invites.routes';
 import imageKitRoutes from './routes/imagekit.routes';
 import contactRoutes from './features/contacts/contacts.routes';
 import leadsRoutes from './features/leads/leads.routes';
-import dealsRoutes from './routes/deals.routes';
+import dealsRoutes from './features/deals/deals.routes';
 import customersRoutes from './routes/customers.routes'
 import notesRoutes from './routes/notes.routes';
 import emailRoutes from './routes/email.routes';
