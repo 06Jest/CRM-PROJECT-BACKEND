@@ -5,7 +5,7 @@ import {
   NameSchema,
   positionSchema,
   profileStatusSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 
 export const completeProfileSchema = z.object({

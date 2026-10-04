@@ -23,7 +23,7 @@ import {
 import {
   manualAddActivitySchema,
   updateActivitySchema,
-} from "../../schema/activities.schema";
+} from "./activities.schema";
 
 import {
   createLimiter,

@@ -3,7 +3,7 @@ import { GENDERS, PREFERRED_CONTACT_TIMES, PRIORITIES, ROLES, SOURCES, SUFFIXES 
 import { CONTACT_STATUSES } from "../features/contacts/contact.types";
 import { LEAD_STATUSES } from "../features/leads/leads.types";
 import { DEAL_STAGES } from "../features/deals/deals.types";
-import { PROFILE_STATUSES } from "../types/profile";
+import { PROFILE_STATUSES } from "../features/profiles/profiles.types";
 import { CUSTOMER_STATUSES } from "../features/customers/customers.types";
 import { NOTE_TARGET_TYPES, NOTE_VISIBILITIES } from "../features/notes/notes.types";
 import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../features/emails/emails.types";

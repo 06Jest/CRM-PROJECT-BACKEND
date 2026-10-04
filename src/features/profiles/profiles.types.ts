@@ -1,5 +1,5 @@
-import { Roles } from "./global";
-import { OrganizationType } from "./organization";
+import { Roles } from "../../types/global";
+import { OrganizationType } from "../../types/organization";
 
 export const PROFILE_STATUSES = [
   "pending",

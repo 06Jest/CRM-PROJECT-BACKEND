@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import authRoutes from './features/auth/auth.routes';
-import profileRoutes from './routes/profiles.routes';
+import profileRoutes from './features/profiles/profiles.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import subscriptionRoutes from './routes/subscription.routes';
 import orgRoutes from './routes/organizations.routes';

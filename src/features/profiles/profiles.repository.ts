@@ -1,38 +1,44 @@
-import { createSupabaseClient, createSupabaseUserClient, supabaseAdmin } from '../config/supabase';
-import { AppError } from '../middleware/error.middleware';
+import {
+  createSupabaseUserClient,
+  supabaseAdmin,
+} from "../../config/supabase";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
+
 import type {
   Profile,
   UpdateProfileDTO,
   DisplayProfile,
   CreateInitialProfileDTO,
   CompleteProfileDTO,
-  ProfileStatus
-} from '../types/profile';
-import type { OnboardingStep, Roles } from '../types/global';
-import { deleteImageKitFile } from "./imagekit.service";
-import { table } from '../config/tables';
+  ProfileStatus,
+} from "./profiles.types";
+
+import type { OnboardingStep } from "../../types/global";
 
 const tab = table.profile;
 
 
 export const getProfileIfExistFromDB = async (
-  userId: string,
+  userId: string
 ): Promise<Profile | null> => {
-
-  const db = supabaseAdmin
-
-  const { data, error } = await db
+  const { data, error } = await supabaseAdmin
     .from(tab)
-    .select('*')
-    .eq('id', userId)
-    .is('deleted_at', null)
+    .select("*")
+    .eq("id", userId)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) {
-    throw new AppError(500, `Failed to fetch profile: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to fetch profile: ${error.message}`
+    );
   }
+
   return data;
 };
+
 
 export const checkEmailIfExistFromDB = async (
   email: string
@@ -50,6 +56,7 @@ export const checkEmailIfExistFromDB = async (
       `Failed to check email existence: ${error.message}`
     );
   }
+
   return data;
 };
 
@@ -59,7 +66,8 @@ export const getProfileByIdFromDB = async (
   accessToken: string
 ): Promise<DisplayProfile> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
+
+  const { data, error } = await db
     .from(tab)
     .select(`
       *,
@@ -83,42 +91,33 @@ export const getProfileByIdFromDB = async (
     .maybeSingle();
 
   if (error) {
-    throw new AppError(
-      500,
-      error.message
-    );
+    throw new AppError(500, error.message);
   }
 
   if (!data) {
-    throw new AppError(
-      404,
-      "Profile not found"
-    );
+    throw new AppError(404, "Profile not found");
   }
 
   return data;
 };
 
 
-
-
-
 export const isProfileExistFromDB = async (
   userId: string
-): Promise<{
-  id: string;
-} | null> => {
-
+): Promise<{ id: string } | null> => {
   const { data, error } = await supabaseAdmin
     .from(tab)
-    .select('id')
-    .eq('id', userId)
+    .select("id")
+    .eq("id", userId)
     .eq("status", "active")
-    .is('deleted_at', null)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) {
-    throw new AppError(500, `Failed to fetch profile: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to fetch profile: ${error.message}`
+    );
   }
 
   return data;
@@ -128,10 +127,7 @@ export const isProfileExistFromDB = async (
 export const createProfileToDB = async (
   dto: CreateInitialProfileDTO
 ): Promise<Profile> => {
-
-  const db = supabaseAdmin;
-
-  const {data,error}=await db
+  const { data, error } = await supabaseAdmin
     .from(tab)
     .insert({
       id: dto.id,
@@ -146,23 +142,40 @@ export const createProfileToDB = async (
     .select()
     .single();
 
+  if (error) {
+    throw new AppError(500, error.message);
+  }
 
-  if(error){
+  return data;
+};
+
+
+export const getProfileByIdForAuthFromDB = async (
+  userId: string
+): Promise<Profile> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .select("*")
+    .eq("id", userId)
+    .is("deleted_at", null)
+    .single();
+
+  if (error) {
     throw new AppError(
       500,
-      error.message
+      `Failed to fetch profile: ${error.message}`
     );
   }
 
   return data;
 };
 
+
 export const updateProfileSetupToDB = async (
   userId: string,
   dto: CompleteProfileDTO,
   accessToken: string
 ): Promise<Profile> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -187,6 +200,119 @@ export const updateProfileSetupToDB = async (
 
   return data;
 };
+
+
+export const updateProfileFromDB = async (
+  userId: string,
+  dto: UpdateProfileDTO,
+  accessToken: string
+): Promise<Profile> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      ...dto,
+    })
+    .eq("id", userId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update profile: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+
+export const getCurrentProfileAvatarFromDB = async (
+  userId: string,
+  accessToken: string
+): Promise<string | null> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .select("avatar_file_id")
+    .eq("id", userId)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to fetch existing profile avatar: ${error.message}`
+    );
+  }
+
+  return data.avatar_file_id;
+};
+
+
+export const updateProfileAvatarFromDB = async (
+  userId: string,
+  avatarUrl: string | null,
+  avatarFileId: string | null,
+  accessToken: string
+): Promise<{
+  avatar_url: string | null;
+  avatar_file_id: string | null;
+}> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      avatar_url: avatarUrl,
+      avatar_file_id: avatarFileId,
+    })
+    .eq("id", userId)
+    .select("avatar_url, avatar_file_id")
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update profile avatar: ${error.message}`
+    );
+  }
+
+  return {
+    avatar_url: data.avatar_url,
+    avatar_file_id: data.avatar_file_id,
+  };
+};
+
+
+export const updateProfileStatusFromDB = async (
+  userId: string,
+  status: ProfileStatus,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      status,
+    })
+    .eq("id", userId)
+    .select("status")
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update profile status: ${error.message}`
+    );
+  }
+
+  return data.status;
+};
+
 
 export const updateOnboardingStepToDB = async (
   userId: string,
@@ -213,6 +339,7 @@ export const updateOnboardingStepToDB = async (
 
   return data;
 };
+
 
 export const completeOnboardingInDB = async (
   userId: string,
@@ -242,149 +369,11 @@ export const completeOnboardingInDB = async (
 };
 
 
-export const getProfileByIdForAuthFromDB = async (
-  userId: string,
-): Promise<Profile> => {
-
-  const { data, error } = await supabaseAdmin
-    .from(tab)
-    .select("*")
-    .eq("id", userId)
-    .is("deleted_at", null)
-    .single();
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to fetch profile: ${error.message}`
-    );
-  }
-
-  return data;
-};
-
-export const updateProfileFromDB = async (
-  userId: string,
-  dto: UpdateProfileDTO,
-  accessToken: string
-): Promise<Profile> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .update({
-      ...dto
-    })
-    .eq('id', userId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to update profile: ${error.message}`
-    );
-  }
-  return data;
-};
-
-
-
-export const updateProfileAvatarFromDB = async (
-  userId: string,
-  avatar_url: string | null,
-  avatar_file_id: string | null,
-  accessToken: string
-): Promise<{
-  avatar_url: string | null;
-  avatar_file_id: string | null;
-}> => {
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data: existingProfile, error: existingError } =
-    await db
-      .from(tab)
-      .select("avatar_url, avatar_file_id")
-      .eq("id", userId)
-      .single();
-
-  if (existingError) {
-    throw new AppError(
-      500,
-      `Failed to fetch existing profile avatar: ${existingError.message}`
-    );
-  }
-
-  const { data, error } = await db
-    .from(tab)
-    .update({
-      avatar_url,
-      avatar_file_id,
-    })
-    .eq("id", userId)
-    .select("avatar_url, avatar_file_id")
-    .single();
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to update profile avatar: ${error.message}`
-    );
-  }
-
-  const oldFileId = existingProfile.avatar_file_id;
-
-  if (oldFileId && oldFileId !== avatar_file_id) {
-    try {
-      await deleteImageKitFile(oldFileId);
-    } catch (err) {
-      console.error(
-        `Failed to delete old ImageKit avatar ${oldFileId}:`,
-        err
-      );
-    }
-  }
-
-  return {
-    avatar_url: data.avatar_url,
-    avatar_file_id: data.avatar_file_id,
-  };
-};
-
-export const updateProfileStatusFromDB = async (
-  userId: string,
-  status: ProfileStatus,
-  accessToken: string
-): Promise<string> => {
-
-  const db = createSupabaseUserClient(accessToken);
-
-  const { data, error } = await db
-    .from(tab)
-    .update({
-      status
-    })
-    .eq("id", userId)
-    .select("status")
-    .single();
-
-  if (error) {
-    throw new AppError(
-      500,
-      `Failed to update profile status: ${error.message}`
-    );
-  }
-  return data.status;
-};
-
 export const updateLastLoginToDB = async (
   profileId: string,
   accessToken: string
 ): Promise<void> => {
-
-  const db =
-    createSupabaseUserClient(accessToken);
+  const db = createSupabaseUserClient(accessToken);
 
   const { error } = await db
     .from(tab)
@@ -399,22 +388,21 @@ export const updateLastLoginToDB = async (
       `Failed to update last login: ${error.message}`
     );
   }
-
 };
+
 
 export const deleteProfileFromDB = async (
   id: string,
   accessToken: string
 ): Promise<string> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { error } = await db
     .from(tab)
     .update({
-      deleted_at: new Date().toISOString()
+      deleted_at: new Date().toISOString(),
     })
-    .eq('id', id)
+    .eq("id", id);
 
   if (error) {
     throw new AppError(

@@ -7,7 +7,7 @@ import {
   manualActivityActionsSchema,
   manualActivityTypesSchema,
   shortTextSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 
 

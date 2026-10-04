@@ -1,19 +1,22 @@
-import { Request, Response, NextFunction } from "express";
+import {
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 
 import {
-  updateProfileSetupToDB,
-  updateProfileFromDB,
-  updateProfileStatusFromDB,
-  updateProfileAvatarFromDB,
-} from "../services/profiles.service";
-import {
-  getProfileByIdFromDB,
-} from "../services/profiles.service";
+  completeProfileSetupService,
+  updateProfileService,
+  updateProfileAvatarService,
+  updateProfileStatusService,
+  getProfileService,
+} from "./profiles.service";
 
-import { AppError } from "../middleware/error.middleware";
-import { metaFromRequest } from "../features/auth/auth.controller";
-import { refreshUserSessionService } from "../features/auth/auth.service";
-import { setAuthCookies } from "../features/auth/cookies.service";
+import { AppError } from "../../middleware/error.middleware";
+
+import { metaFromRequest } from "../auth/auth.controller";
+import { refreshUserSessionService } from "../auth/auth.service";
+import { setAuthCookies } from "../auth/cookies.service";
 
 
 export const completeProfileSetup = async (
@@ -22,7 +25,7 @@ export const completeProfileSetup = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.sub
+    const userId = req.user?.sub;
     const accessToken = req.cookies.accessToken;
 
     if (!userId || !accessToken) {
@@ -32,23 +35,19 @@ export const completeProfileSetup = async (
       );
     }
 
-
     const profile =
-      await updateProfileSetupToDB(
+      await completeProfileSetupService(
         userId,
         req.body,
         accessToken
       );
 
-
     res.status(200).json({
-      success:true,
-      message:"Profile setup completed",
-      data:profile
+      success: true,
+      message: "Profile setup completed",
+      data: profile,
     });
-
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
@@ -58,32 +57,29 @@ export const updateProfile = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-
   try {
-
-    const userId = req.user?.sub
+    const userId = req.user?.sub;
     const accessToken = req.cookies.accessToken;
 
-
-    if(!userId || !accessToken){
+    if (!userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized"
       );
     }
 
-
     const profile =
-      await updateProfileFromDB(
+      await updateProfileService(
         userId,
         req.body,
         accessToken
       );
 
-    const session = await refreshUserSessionService(
-      userId,
-      metaFromRequest(req)
-    );
+    const session =
+      await refreshUserSessionService(
+        userId,
+        metaFromRequest(req)
+      );
 
     setAuthCookies(
       res,
@@ -91,18 +87,16 @@ export const updateProfile = async (
       session.tokens.refreshToken
     );
 
-
     res.status(200).json({
-      success:true,
-      message:"Profile updated successfully",
-      data:profile
+      success: true,
+      message: "Profile updated successfully",
+      data: profile,
     });
-
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
+
 
 export const updateProfileAvatar = async (
   req: Request,
@@ -114,17 +108,24 @@ export const updateProfileAvatar = async (
     const accessToken = req.cookies.accessToken;
 
     if (!userId || !accessToken) {
-      throw new AppError(401, "Unauthorized");
+      throw new AppError(
+        401,
+        "Unauthorized"
+      );
     }
 
-    const { avatar_url, avatar_file_id } = req.body;
+    const {
+      avatar_url,
+      avatar_file_id,
+    } = req.body;
 
-    const avatar = await updateProfileAvatarFromDB(
-      userId,
-      avatar_url ?? null,
-      avatar_file_id ?? null,
-      accessToken
-    );
+    const avatar =
+      await updateProfileAvatarService(
+        userId,
+        avatar_url ?? null,
+        avatar_file_id ?? null,
+        accessToken
+      );
 
     res.status(200).json({
       success: true,
@@ -136,16 +137,17 @@ export const updateProfileAvatar = async (
   }
 };
 
+
 export const updateProfileStatus = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.sub
+    const userId = req.user?.sub;
     const accessToken = req.cookies.accessToken;
 
-    if(!userId || !accessToken){
+    if (!userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized"
@@ -153,26 +155,23 @@ export const updateProfileStatus = async (
     }
 
     const status =
-      await updateProfileStatusFromDB(
+      await updateProfileStatusService(
         userId,
         req.body,
         accessToken
       );
 
     res.status(200).json({
-      success:true,
-      message:"Profile status updated successfully",
-      data:{
-        status
-      }
+      success: true,
+      message: "Profile status updated successfully",
+      data: {
+        status,
+      },
     });
-
-
-  } catch(err){
+  } catch (err) {
     next(err);
   }
 };
-
 
 
 export const getProfile = async (
@@ -180,18 +179,11 @@ export const getProfile = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-
   try {
-    
-    const userId = req.user?.sub
+    const userId = req.user?.sub;
+    const accessToken = req.cookies.accessToken;
 
-    const accessToken =
-      req.cookies.accessToken;
-
-    if (
-      !userId ||
-      !accessToken
-    ) {
+    if (!userId || !accessToken) {
       throw new AppError(
         401,
         "Unauthorized"
@@ -199,7 +191,7 @@ export const getProfile = async (
     }
 
     const profile =
-      await getProfileByIdFromDB(
+      await getProfileService(
         userId,
         accessToken
       );
@@ -208,9 +200,7 @@ export const getProfile = async (
       success: true,
       data: profile,
     });
-
   } catch (err) {
     next(err);
   }
-
 };

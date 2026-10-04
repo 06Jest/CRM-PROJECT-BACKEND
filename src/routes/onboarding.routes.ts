@@ -9,7 +9,7 @@ import { validateBody } from "../middleware/validate";
 
 import {
   completeProfileSchema,
-} from "../schema/profile.schema";
+} from "../features/profiles/profiles.schema";
 
 import {
   createWorkspaceSchema,
@@ -18,7 +18,7 @@ import {
 import {
   createSubscriptionSchema,
 } from "../schema/subscription.schema";
-import { completeProfileSetup } from "../controllers/profile.controller";
+import { completeProfileSetup } from "../features/profiles/profiles.controller";
 import { createWorkspaceController, joinOrganization } from "../controllers/organizations.controller";
 import { createFreeSubscription } from "../controllers/subscription.controller";
 

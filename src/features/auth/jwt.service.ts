@@ -10,7 +10,7 @@ import type {
   RequestMeta,
 } from "./auth.types";
 
-import type { Profile } from "../../types/profile";
+import type { Profile } from "../profiles/profiles.types";
 
 import type { AccessTokenPayload } from "../../types";
 

@@ -31,7 +31,7 @@ import {
   getProfileByIdForAuthFromDB,
   createProfileToDB,
   checkEmailIfExistFromDB,
-} from "../../services/profiles.service";
+} from "../profiles/profiles.repository";
 import {
   getMembershipForAuthFromDB,
 } from "../../services/organization.members.service";

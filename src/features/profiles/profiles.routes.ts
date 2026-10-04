@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { verifyToken } from "../middleware/auth.middleware";
+import { verifyToken } from "../../middleware/auth.middleware";
 
 import {
   completeProfileSetup,
@@ -8,16 +8,16 @@ import {
   updateProfile,
   updateProfileAvatar,
   updateProfileStatus,
-} from "../controllers/profile.controller";
+} from "./profiles.controller";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   completeProfileSchema,
   updateProfileSchema,
   updateProfileAvatarSchema,
   updateProfileStatusSchema,
-} from "../schema/profile.schema";
+} from "./profiles.schema";
 
 
 const router = Router();

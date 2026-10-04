@@ -9,7 +9,7 @@ import {
 
 import {
   getProfileIfExistFromDB,
-} from "../services/profiles.service";
+} from "../features/profiles/profiles.repository";
 
 import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";

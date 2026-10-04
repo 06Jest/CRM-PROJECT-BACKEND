@@ -10,7 +10,7 @@ import {
 import {
   updateOnboardingStepToDB,
   completeOnboardingInDB,
-} from "../services/profiles.service";
+} from "../features/profiles/profiles.repository";
 
 import { AppError } from "../middleware/error.middleware";
 import { metaFromRequest } from "../features/auth/auth.controller";

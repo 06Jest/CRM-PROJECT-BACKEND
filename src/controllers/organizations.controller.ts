@@ -7,7 +7,7 @@ import {
   updateWorkspaceDetailsInDB,
 } from "../services/organization.service";
 import { AppError } from "../middleware/error.middleware";
-import { getProfileIfExistFromDB, updateOnboardingStepToDB } from "../services/profiles.service";
+import { getProfileIfExistFromDB, updateOnboardingStepToDB } from "../features/profiles/profiles.repository";
 import { createOwnerMemberToDB } from "../services/organization.members.service";
 import { metaFromRequest } from "../features/auth/auth.controller";
 import { refreshUserSessionService } from "../features/auth/auth.service";

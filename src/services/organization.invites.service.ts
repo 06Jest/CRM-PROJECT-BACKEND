@@ -3,10 +3,10 @@ import { AppError } from "../middleware/error.middleware";
 import { table } from "../config/tables";
 import { CreateInviteDTO, OrganizationInvite } from "../types/organization.invite";
 import { createSupabaseUserClient, supabaseAdmin } from "../config/supabase";
-import { Profile } from "../types/profile";
+import { Profile } from "../features/profiles/profiles.types";
 import { OrganizationMember } from "../types/organization.member";
 import { addOrganizationMemberToDB, getMembershipForAuthFromDB } from "./organization.members.service";
-import { completeOnboardingInDB } from "./profiles.service";
+import { completeOnboardingInDB } from "../features/profiles/profiles.repository";
 import { joinDefaultConversationsService } from "../features/chats/conversation.member.service";
 
 const tab = table.orginvites;
