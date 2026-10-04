@@ -17,7 +17,7 @@ import customersRoutes from './features/customers/customers.routes'
 import notesRoutes from './features/notes/notes.routes';
 import emailRoutes from './features/emails/emails.routes';
 import tasksRoutes from './features/tasks/tasks.routes';
-import chatsRoutes from './routes/chats.routes';
+import chatsRoutes from './features/chats/chats.routes';
 import callsRoutes from './features/calls/calls.routes';
 import smsRoutes from './features/sms/sms.routes';
 import dashboardRoutes from './routes/dashboard.routes';

@@ -7,7 +7,7 @@ import { Profile } from "../types/profile";
 import { OrganizationMember } from "../types/organization.member";
 import { addOrganizationMemberToDB, getMembershipForAuthFromDB } from "./organization.members.service";
 import { completeOnboardingInDB } from "./profiles.service";
-import { joinDefaultConversations } from "./chats/conversation.member.service";
+import { joinDefaultConversationsService } from "../features/chats/conversation.member.service";
 
 const tab = table.orginvites;
 const acceptanceTab = table.acceptances;
@@ -256,7 +256,7 @@ export const acceptInvite = async (
     status: "invited",
   });
 
-  await joinDefaultConversations(
+  await joinDefaultConversationsService(
     invite.org_id,
     member.id
   );

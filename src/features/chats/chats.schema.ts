@@ -4,7 +4,7 @@ import {
   uuidSchema,
   longTextSchema,
   chatTargetTypeSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 export const createDirectConversationSchema = z.object({
 

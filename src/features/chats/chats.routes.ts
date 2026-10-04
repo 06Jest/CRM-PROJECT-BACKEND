@@ -4,9 +4,9 @@ import {
   authenticateUser,
   requireActiveMembership,
   verifyToken,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   getUserConversations,
@@ -17,14 +17,14 @@ import {
   editMessage,
   deleteMessage,
   markConversationAsRead,
-} from "../controllers/chat.controller";
+} from "./chats.controller";
 
 import {
   createDirectConversationSchema,
   sendMessageSchema,
   updateMessageSchema,
-} from "../schema/chat.schema";
-import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+} from "./chats.schema";
+import { createLimiter, deleteLimiter, readLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
 
 
 const router = Router();

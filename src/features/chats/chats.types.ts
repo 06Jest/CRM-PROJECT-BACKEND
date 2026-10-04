@@ -1,4 +1,4 @@
-import { Roles } from "./global";
+import { Roles } from "../../types/global";
 
 export const CONVERSATION_TYPES = [
   "announcement",

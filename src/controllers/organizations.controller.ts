@@ -10,7 +10,7 @@ import { AppError } from "../middleware/error.middleware";
 import { getProfileIfExistFromDB, updateOnboardingStepToDB } from "../services/profiles.service";
 import { createOwnerMemberToDB } from "../services/organization.members.service";
 import { metaFromRequest, refreshUserSession } from "./auth.controller";
-import { createDefaultConversationsToDB } from "../services/chats/conversation.member.service";
+import { createDefaultConversationsService } from "../features/chats/conversation.member.service";
 import { acceptInvite } from "../services/organization.invites.service";
 
 export const createWorkspaceController = async (
@@ -41,12 +41,12 @@ export const createWorkspaceController = async (
       userId
     );
 
-    await createDefaultConversationsToDB(
+    await createDefaultConversationsService(
       workspace.id,
       member.id,
       workspace.type,
       accessToken
-    )
+    );
 
 
     await updateOnboardingStepToDB(
