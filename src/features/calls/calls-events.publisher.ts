@@ -1,7 +1,7 @@
 
-import pubSubService from "./pubsub.service";
-import { PUBSUB_CHANNELS } from "./pubsub.channels";
-import type { CallEvent } from "./call-events.types";
+import pubSubService from "../../pubsub/pubsub.service";
+import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
+import type { CallEvent } from "./calls-events.types";
 
 class CallEventsPublisher {
   async publish(

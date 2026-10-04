@@ -1,27 +1,25 @@
+import {
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 
-import { Request, Response, NextFunction } from "express";
-import { AppError } from "../middleware/error.middleware";
-import { uuidSchema } from "../schema/global.schema";
+import { AppError } from "../../middleware/error.middleware";
+import { uuidSchema } from "../../schema/global.schema";
 
 import {
-  getCallsFromDB,
-  getCallByIDFromDB,
-  getLeadCallsFromDB,
-  getContactCallsFromDB,
-  addCallToDB,
-  updateCallFromDB,
-  startCallFromDB,
-  endCallFromDB,
-  cancelCallFromDB,
-  deleteCallFromDB,
-  archiveCallFromDB,
-} from "../services/calls.service";
-
-import { addActivityToDB } from "../services/activities.service";
-import { ensureResourceLimit } from "../services/plans.service";
-import { table } from "../config/tables";
-
-import callEventsPublisher from "../pubsub/call-events.publisher";
+  getCallsService,
+  getCallByIDService,
+  getLeadCallsService,
+  getContactCallsService,
+  addCallService,
+  updateCallService,
+  startCallService,
+  endCallService,
+  cancelCallService,
+  archiveCallService,
+  deleteCallService,
+} from "./calls.service";
 
 export const getCalls = async (
   req: Request,
@@ -39,7 +37,7 @@ export const getCalls = async (
       );
     }
 
-    const data = await getCallsFromDB(
+    const data = await getCallsService(
       orgId,
       accessToken
     );
@@ -74,7 +72,7 @@ export const getCallByID = async (
       );
     }
 
-    const data = await getCallByIDFromDB(
+    const data = await getCallByIDService(
       id,
       orgId,
       accessToken
@@ -110,7 +108,7 @@ export const getLeadCalls = async (
       );
     }
 
-    const data = await getLeadCallsFromDB(
+    const data = await getLeadCallsService(
       orgId,
       leadId,
       accessToken
@@ -146,7 +144,7 @@ export const getContactCalls = async (
       );
     }
 
-    const data = await getContactCallsFromDB(
+    const data = await getContactCallsService(
       orgId,
       contactId,
       accessToken
@@ -179,25 +177,11 @@ export const addCall = async (
       );
     }
 
-    await ensureResourceLimit(
-      orgId,
-      table.calls,
-      "calls",
-      "active_limit",
-      accessToken
-    );
-
-    const data = await addCallToDB(
+    const data = await addCallService(
       orgId,
       memberId,
       req.body,
       accessToken
-    );
-
-    await callEventsPublisher.created(
-      orgId,
-      memberId,
-      data.id
     );
 
     return res.status(201).json({
@@ -231,37 +215,12 @@ export const updateCall = async (
       );
     }
 
-    const check = await getCallByIDFromDB(
+    const data = await updateCallService(
       id,
-      orgId,
-      accessToken
-    );
-
-    if (check.status === "completed") {
-      throw new AppError(
-        400,
-        "Completed calls cannot be updated"
-      );
-    }
-
-    if (check.status === "cancelled") {
-      throw new AppError(
-        400,
-        "Cancelled calls cannot be updated"
-      );
-    }
-
-    const data = await updateCallFromDB(
-      id,
-      orgId,
-      req.body,
-      accessToken
-    );
-
-    await callEventsPublisher.updated(
       orgId,
       memberId,
-      data.id
+      req.body,
+      accessToken
     );
 
     return res.status(200).json({
@@ -295,43 +254,11 @@ export const startCall = async (
       );
     }
 
-    const check = await getCallByIDFromDB(
+    const data = await startCallService(
       id,
-      orgId,
-      accessToken
-    );
-
-    if (check.status === "active") {
-      throw new AppError(
-        400,
-        "Call is already active"
-      );
-    }
-
-    if (check.status === "completed") {
-      throw new AppError(
-        400,
-        "Completed calls cannot be started"
-      );
-    }
-
-    if (check.status === "cancelled") {
-      throw new AppError(
-        400,
-        "Cancelled calls cannot be started"
-      );
-    }
-
-    const data = await startCallFromDB(
-      id,
-      orgId,
-      accessToken
-    );
-
-    await callEventsPublisher.started(
       orgId,
       memberId,
-      data.id
+      accessToken
     );
 
     return res.status(200).json({
@@ -365,52 +292,12 @@ export const endCall = async (
       );
     }
 
-    const existing = await getCallByIDFromDB(
+    const data = await endCallService(
       id,
       orgId,
-      accessToken
-    );
-
-    if (existing.status !== "active") {
-      throw new AppError(
-        400,
-        "Only active calls can be completed"
-      );
-    }
-
-    const data = await endCallFromDB(
-      id,
-      orgId,
+      memberId,
       req.body,
       accessToken
-    );
-
-    const targetName =
-      existing.lead
-        ? `${existing.lead.first_name} ${existing.lead.last_name}`
-        : existing.contact
-          ? `${existing.contact.first_name} ${existing.contact.last_name}`
-          : "Unknown";
-
-    await addActivityToDB(
-      orgId,
-      memberId,
-      {
-        lead_id: existing.lead_id,
-        contact_id: existing.contact_id,
-        type: "call",
-        action: "completed",
-        title: "Call completed",
-        target_name: targetName,
-        description: `Completed call: ${existing.subject}`,
-      },
-      accessToken
-    );
-
-    await callEventsPublisher.completed(
-      orgId,
-      memberId,
-      data.id
     );
 
     return res.status(200).json({
@@ -444,36 +331,11 @@ export const cancelCall = async (
       );
     }
 
-    const check = await getCallByIDFromDB(
+    const data = await cancelCallService(
       id,
-      orgId,
-      accessToken
-    );
-
-    if (check.status === "completed") {
-      throw new AppError(
-        400,
-        "Completed calls cannot be cancelled"
-      );
-    }
-
-    if (check.status === "cancelled") {
-      throw new AppError(
-        400,
-        "Call is already cancelled"
-      );
-    }
-
-    const data = await cancelCallFromDB(
-      id,
-      orgId,
-      accessToken
-    );
-
-    await callEventsPublisher.cancelled(
       orgId,
       memberId,
-      data.id
+      accessToken
     );
 
     return res.status(200).json({
@@ -507,17 +369,11 @@ export const archiveCall = async (
       );
     }
 
-    const data = await archiveCallFromDB(
+    const data = await archiveCallService(
       id,
       orgId,
       memberId,
       accessToken
-    );
-
-    await callEventsPublisher.archived(
-      orgId,
-      memberId,
-      id
     );
 
     return res.status(200).json({
@@ -551,16 +407,11 @@ export const deleteCall = async (
       );
     }
 
-    const data = await deleteCallFromDB(
+    const data = await deleteCallService(
       id,
       orgId,
-      accessToken
-    );
-
-    await callEventsPublisher.deleted(
-      orgId,
       memberId,
-      id
+      accessToken
     );
 
     return res.status(200).json({
@@ -572,4 +423,3 @@ export const deleteCall = async (
     next(err);
   }
 };
-

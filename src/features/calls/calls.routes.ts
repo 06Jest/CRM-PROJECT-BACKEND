@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../../middleware/auth.middleware';
 
-import { validateBody } from '../middleware/validate';
+import { validateBody } from '../../middleware/validate';
 
 import {
   getCalls,
@@ -16,14 +16,14 @@ import {
   cancelCall,
   deleteCall,
   archiveCall
-} from '../controllers/call.controller';
+} from './calls.controller';
 
 import {
   addCallSchema,
   updateCallSchema,
   endCallSchema
-} from '../schema/calls.schema';
-import { idempotencyMiddleware } from '../idempotency/idempotency.middleware';
+} from './calls.schema';
+import { idempotencyMiddleware } from '../../idempotency/idempotency.middleware';
 
 
 const router = Router();

@@ -6,7 +6,7 @@ import {
   longTextSchema,
   callOutcomeSchema,
   callTypesSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 
 export const addCallSchema = z.object({

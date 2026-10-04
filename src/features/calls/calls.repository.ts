@@ -1,23 +1,22 @@
-import { createSupabaseUserClient } from "../config/supabase";
-import { table } from "../config/tables";
+import { createSupabaseUserClient } from "../../config/supabase";
+import { table } from "../../config/tables";
+import { AppError } from "../../middleware/error.middleware";
 
-import { AppError } from "../middleware/error.middleware";
-
-import cacheService from "../cache/cache.service";
+import cacheService from "../../cache/cache.service";
 
 import {
   callsListCacheKey,
   callCacheKey,
   leadCallsCacheKey,
   contactCallsCacheKey,
-} from "../cache/cache-keys";
+} from "../../cache/cache-keys";
 
 import type {
   CallListItem,
   CreateCall,
   UpdateCall,
   EndCall,
-} from "../types//calls";
+} from "./calls.types";
 
 const tab = table.calls;
 
@@ -44,8 +43,6 @@ const selectAllWithUsers = `
   )
 `;
 
-const all = selectAllWithUsers;
-
 export const getCallsFromDB = async (
   orgId: string,
   accessToken: string
@@ -59,7 +56,7 @@ export const getCallsFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithUsers)
         .eq("org_id", orgId)
         .is("deleted_at", null)
         .order("created_at", {
@@ -93,7 +90,7 @@ export const getCallByIDFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithUsers)
         .eq("id", id)
         .eq("org_id", orgId)
         .is("deleted_at", null)
@@ -117,7 +114,10 @@ export const getLeadCallsFromDB = async (
   leadId: string,
   accessToken: string
 ): Promise<CallListItem[]> => {
-  const cacheKey = leadCallsCacheKey(orgId, leadId);
+  const cacheKey = leadCallsCacheKey(
+    orgId,
+    leadId
+  );
 
   return cacheService.getOrSet(
     cacheKey,
@@ -126,7 +126,7 @@ export const getLeadCallsFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithUsers)
         .eq("org_id", orgId)
         .eq("lead_id", leadId)
         .is("deleted_at", null)
@@ -152,7 +152,10 @@ export const getContactCallsFromDB = async (
   contactId: string,
   accessToken: string
 ): Promise<CallListItem[]> => {
-  const cacheKey = contactCallsCacheKey(orgId, contactId);
+  const cacheKey = contactCallsCacheKey(
+    orgId,
+    contactId
+  );
 
   return cacheService.getOrSet(
     cacheKey,
@@ -161,7 +164,7 @@ export const getContactCallsFromDB = async (
 
       const { data, error } = await db
         .from(tab)
-        .select(all)
+        .select(selectAllWithUsers)
         .eq("org_id", orgId)
         .eq("contact_id", contactId)
         .is("deleted_at", null)
@@ -197,13 +200,14 @@ export const addCallToDB = async (
         ...call,
         org_id: orgId,
         created_by: memberId,
-        assigned_to: call.assigned_to ?? memberId,
+        assigned_to:
+          call.assigned_to ?? memberId,
         status: "scheduled",
         started_at: null,
         direction: "outbound",
       },
     ])
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -230,7 +234,7 @@ export const updateCallFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -259,7 +263,7 @@ export const startCallFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -276,30 +280,10 @@ export const endCallFromDB = async (
   id: string,
   orgId: string,
   call: EndCall,
+  endedAt: string,
+  durationSeconds: number,
   accessToken: string
 ): Promise<CallListItem> => {
-  const existing = await getCallByIDFromDB(
-    id,
-    orgId,
-    accessToken
-  );
-
-  if (!existing.started_at) {
-    throw new AppError(
-      400,
-      "Call has not been started."
-    );
-  }
-
-  const endedAt = new Date().toISOString();
-
-  const durationSeconds = Math.floor(
-    (
-      new Date(endedAt).getTime() -
-      new Date(existing.started_at).getTime()
-    ) / 1000
-  );
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -314,7 +298,7 @@ export const endCallFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
@@ -342,7 +326,7 @@ export const cancelCallFromDB = async (
     .eq("id", id)
     .eq("org_id", orgId)
     .is("deleted_at", null)
-    .select(all)
+    .select(selectAllWithUsers)
     .single();
 
   if (error) {
