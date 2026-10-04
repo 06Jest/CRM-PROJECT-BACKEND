@@ -13,13 +13,13 @@ import {
 
 import {
   createWorkspaceSchema,
-} from "../schema/organization.schema";
+} from "../features/organizations/organization.schema";
 
 import {
   createSubscriptionSchema,
 } from "../schema/subscription.schema";
 import { completeProfileSetup } from "../features/profiles/profiles.controller";
-import { createWorkspaceController, joinOrganization } from "../controllers/organizations.controller";
+import { createWorkspaceController, joinOrganization } from "../features/organizations/organization.controller";
 import { createFreeSubscription } from "../controllers/subscription.controller";
 
 const router = Router();

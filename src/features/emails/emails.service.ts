@@ -1,6 +1,6 @@
 import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
-import { getWorkspaceName } from "../../services/organization.service";
+import { getWorkspaceNameService } from "../../features/organizations/organization.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 import { sendEmailWithResend } from "./resend.service";
 import { addActivityService } from "../activities/activities.service";
@@ -48,7 +48,7 @@ export const createEmailDraftService = async (
   email: ComposeEmail,
   accessToken: string
 ): Promise<EmailListItem> => {
-  const senderName = await getWorkspaceName(
+  const senderName = await getWorkspaceNameService (
     orgId,
     accessToken
   );

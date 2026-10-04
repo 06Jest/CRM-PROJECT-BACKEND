@@ -5,21 +5,24 @@ import {
   getInvites,
   acceptOrganizationInvite,
   revokeOrganizationInvite,
+} from "./organization-invites.controller";
+
+import {
   approveJoinMember,
   rejectJoinMember,
-} from "../controllers/organization.invites.controller";
+} from "./organization-members.controller";
 
 import {
   verifyToken,
   authenticateUser,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   createOrganizationInviteSchema,
   acceptOrganizationInviteSchema,
-} from "../schema/orginvites.schema";
+} from "./organization-invites.schema";
 
 
 const router = Router();

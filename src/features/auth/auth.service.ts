@@ -33,8 +33,8 @@ import {
   checkEmailIfExistFromDB,
 } from "../profiles/profiles.repository";
 import {
-  getMembershipForAuthFromDB,
-} from "../../services/organization.members.service";
+  getMembershipForAuthService,
+} from "../organizations/organization-members.service";
 
 import { AppError } from "../../middleware/error.middleware";
 
@@ -45,7 +45,7 @@ export const issueSessionService = async (
 ): Promise<TokenPair> => {
   const membership =
     profile.onboarding_completed
-      ? await getMembershipForAuthFromDB(
+      ? await getMembershipForAuthService(
           profile.id
         )
       : null;
@@ -75,7 +75,7 @@ export const reIssueSessionForOnboarding =
     meta: RequestMeta
   ): Promise<TokenPair> => {
     const membership =
-      await getMembershipForAuthFromDB(
+      await getMembershipForAuthService(
         profile.id
       );
 
@@ -467,7 +467,7 @@ export const refreshTokenService =
 
     const membership =
       profile.onboarding_completed
-        ? await getMembershipForAuthFromDB(
+        ? await getMembershipForAuthService(
             profile.id
           )
         : null;

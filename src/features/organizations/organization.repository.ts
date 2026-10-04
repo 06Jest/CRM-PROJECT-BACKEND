@@ -1,17 +1,20 @@
-import { createSupabaseUserClient, supabaseAdmin } from "../config/supabase";
 import {
+  createSupabaseUserClient,
+  supabaseAdmin,
+} from "../../config/supabase";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
+import type {
   Organization,
   CreateWorkspaceDTO,
   DisplayOrganization,
   UpdateWorkspaceDetailsDTO,
-} from "../types/organization";
-import { AppError } from "../middleware/error.middleware";
-import { table } from "../config/tables";
-import { generateSlug } from "../utils/slug";
-import { Subscription } from "@supabase/supabase-js";
+  CreateWorkspacePayload,
+} from "./organization.types";
 
 const tab = table.org;
-const selectAllWithProfile = `
+
+const selectAllWithSubscription = `
   id,
   name,
   display_id,
@@ -39,9 +42,9 @@ const selectAllWithProfile = `
   )
 `;
 
-const all = selectAllWithProfile;
+const all = selectAllWithSubscription;
 
-
+// Get organization with subscription
 export const getWorkspaceDataFromDB = async (
   orgId: string,
   accessToken: string
@@ -53,7 +56,6 @@ export const getWorkspaceDataFromDB = async (
     .select(all)
     .eq("id", orgId)
     .single();
-    
 
   if (error) {
     throw new AppError(
@@ -65,7 +67,8 @@ export const getWorkspaceDataFromDB = async (
   return data;
 };
 
-export const getWorkspaceName = async (
+// Get organization name
+export const getWorkspaceNameFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<string> => {
@@ -73,10 +76,9 @@ export const getWorkspaceName = async (
 
   const { data, error } = await db
     .from(tab)
-    .select('name')
+    .select("name")
     .eq("id", orgId)
     .single();
-    
 
   if (error) {
     throw new AppError(
@@ -88,22 +90,13 @@ export const getWorkspaceName = async (
   return data.name;
 };
 
+// Create organization
 export const createWorkspaceInDB = async (
-  dto: CreateWorkspaceDTO,
+  payload: CreateWorkspacePayload
 ): Promise<Organization> => {
-
-  const db = supabaseAdmin;
-
-  const { data, error } = await db
+  const { data, error } = await supabaseAdmin
     .from(tab)
-    .insert({
-      name: dto.name.trim(),
-      slug: generateSlug(dto.name),
-      type: dto.type,
-      industry: dto.industry ?? null,
-      product_type: dto.product_type ?? null,
-      company_size: dto.company_size ?? null,
-    })
+    .insert(payload)
     .select()
     .single();
 
@@ -124,21 +117,24 @@ export const createWorkspaceInDB = async (
   return data;
 };
 
+// Rename organization
 export const renameWorkspaceInDB = async (
   orgId: string,
   name: string,
+  slug: string,
   accessToken: string
 ): Promise<Organization> => {
   const db = createSupabaseUserClient(accessToken);
-    const { data, error } = await db
-      .from(tab)
-      .update({
-        name,
-        slug: generateSlug(name),
-      })
-      .eq("id",orgId)
-      .select() 
-      .single();
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      name,
+      slug,
+    })
+    .eq("id", orgId)
+    .select()
+    .single();
 
   if (error) {
     throw new AppError(
@@ -146,21 +142,17 @@ export const renameWorkspaceInDB = async (
       `Failed to rename workspace: ${error.message}`
     );
   }
+
   return data;
 };
 
+// Update organization details
 export const updateWorkspaceDetailsInDB = async (
   orgId: string,
-  updates: UpdateWorkspaceDetailsDTO,
+  payload: Record<string, unknown>,
   accessToken: string
 ): Promise<DisplayOrganization> => {
   const db = createSupabaseUserClient(accessToken);
-
-  const payload: Record<string, unknown> = { ...updates };
-
-  if (typeof updates.name === "string" && updates.name.trim()) {
-    payload.slug = generateSlug(updates.name);
-  }
 
   const { data, error } = await db
     .from(tab)

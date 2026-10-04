@@ -1,4 +1,4 @@
-  import type { Roles } from "./global";
+  import type { Roles } from "../../types/global";
 
   export const INVITE_STATUSES = [
     "active",

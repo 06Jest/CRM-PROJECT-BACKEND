@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { orgMemberStatusSchema, roleSchema } from "./global.schema";
+import { orgMemberStatusSchema, roleSchema } from "../../schema/global.schema";
 
 
 

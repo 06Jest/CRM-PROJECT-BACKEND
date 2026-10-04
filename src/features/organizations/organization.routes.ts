@@ -5,20 +5,20 @@ import {
   getWorkspaceData,
   renameWorkspaceController,
   updateWorkspaceDetailsController,
-} from "../controllers/organizations.controller";
+} from "./organization.controller";
 
 import {
   verifyToken,
   authenticateUser,
   requireActiveMembership,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   renameWorkspaceSchema,
   updateWorkspaceDetailsSchema,
-} from "../schema/organization.schema";
+} from "./organization.schema";
 
 const router = Router();
 

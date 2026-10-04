@@ -1,4 +1,4 @@
-import { Roles } from "./global";
+import { Roles } from "../../types/global";
 
 
 export const ORGANIZATION_MEMBER_STATUSES = [

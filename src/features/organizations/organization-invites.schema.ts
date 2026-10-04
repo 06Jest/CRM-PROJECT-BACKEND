@@ -6,7 +6,7 @@ import {
   inviteExpiresAtSchema,
   inviteMaxUsesSchema,
   roleSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 export const createOrganizationInviteSchema = z.object({
 

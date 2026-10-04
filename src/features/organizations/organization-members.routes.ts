@@ -5,20 +5,20 @@ import {
   updateMemberRole,
   updateMemberStatus,
   removeMember,
-} from "../controllers/organization.members.controller";
+} from "./organization-members.controller";
 
 import {
   verifyToken,
   authenticateUser,
   requireActiveMembership,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   updateMemberRoleSchema,
   updateMemberStatusSchema,
-} from "../schema/orgmember.schema";
+} from "./organization-members.schema";
 
 const router = Router();
 

@@ -21,7 +21,7 @@ import {
   createNewConversationToDB,
 } from "./conversation.repository";
 
-import { OrganizationType } from "../../types/organization";
+import { OrganizationType } from "../organizations/organization.types";
 
 export const ensureConversationMember =
   async (

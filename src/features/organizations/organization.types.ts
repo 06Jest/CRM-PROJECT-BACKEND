@@ -1,4 +1,4 @@
-import { Subscription, type SubscriptionPlan, type SubscriptionStatus } from "./subscription";
+import { Subscription, type SubscriptionPlan, type SubscriptionStatus } from "../../types/subscription";
 
 export const ORGANIZATION_TYPES = [
   "personal",
@@ -29,6 +29,15 @@ export interface CreateWorkspaceDTO {
   industry?: string;
   product_type?: string;
   company_size?: string;
+}
+
+export interface CreateWorkspacePayload {
+  name: string;
+  slug: string;
+  type: OrganizationType;
+  industry: string | null;
+  product_type: string | null;
+  company_size: string | null;
 }
 
 export interface DisplayOrganization {

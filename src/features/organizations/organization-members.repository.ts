@@ -1,34 +1,46 @@
-import { createSupabaseUserClient, supabaseAdmin } from "../config/supabase";
-import { AppError } from "../middleware/error.middleware";
-import { Roles } from "../types/global";
-import { CreateOrganizationMemberDTO, DisplayOrganizationMember, OrganizationMember, OrganizationMemberStatus } from "../types/organization.member";
-import { table } from '../config/tables';
+import {
+  createSupabaseUserClient,
+  supabaseAdmin,
+} from "../../config/supabase";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
+
+import type {
+  CreateOrganizationMemberDTO,
+  DisplayOrganizationMember,
+  OrganizationMember,
+  OrganizationMemberStatus,
+} from "./organization-members.types";
+
+import type { Roles } from "../../types/global";
 
 const tab = table.orgmembers;
-const fkey = 'organization_members_profile_fkey';
-const selectAllWithProfile = `*, 
-      profile:profiles!${fkey} (
-        id,
-        first_name,
-        last_name,
-        email,
-        avatar_url
-      )`
+
+const fkey = "organization_members_profile_fkey";
+
+const selectAllWithProfile = `
+  *,
+  profile:profiles!${fkey}(
+    id,
+    first_name,
+    last_name,
+    email,
+    avatar_url
+  )
+`;
 
 const all = selectAllWithProfile;
 
-
+// Get membership for authentication
 export const getMembershipForAuthFromDB = async (
   profileId: string
 ): Promise<OrganizationMember | null> => {
-
   const { data, error } = await supabaseAdmin
     .from(tab)
     .select("*")
     .eq("profile_id", profileId)
     .maybeSingle();
 
-    
   if (error) {
     throw new AppError(
       500,
@@ -39,17 +51,16 @@ export const getMembershipForAuthFromDB = async (
   return data;
 };
 
-export const getMemberIDbyProfileID = async (
+// Get member ID by profile ID
+export const getMemberIDbyProfileIDFromDB = async (
   profileId: string
-): Promise<{id: string}> => {
-
+): Promise<{ id: string }> => {
   const { data, error } = await supabaseAdmin
     .from(tab)
     .select("id")
     .eq("profile_id", profileId)
     .single();
 
-    
   if (error) {
     throw new AppError(
       500,
@@ -60,34 +71,34 @@ export const getMemberIDbyProfileID = async (
   return data;
 };
 
+// Get members list
 export const getMembersListItemFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DisplayOrganizationMember[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
     .from(tab)
     .select(all)
-    .eq('org_id', orgId)
-    .is('deleted_at', null);
-
+    .eq("org_id", orgId)
+    .is("deleted_at", null);
 
   if (error) {
-    throw new AppError(500, `Failed to fetch profile: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to fetch profile: ${error.message}`
+    );
   }
 
   return data ?? [];
 };
 
+// Add organization member
 export const addOrganizationMemberToDB = async (
-  dto: CreateOrganizationMemberDTO,
+  dto: CreateOrganizationMemberDTO
 ): Promise<OrganizationMember> => {
-
-  const db = supabaseAdmin;
-
-  const { data, error } = await db
+  const { data, error } = await supabaseAdmin
     .from(tab)
     .insert({
       org_id: dto.org_id,
@@ -108,12 +119,12 @@ export const addOrganizationMemberToDB = async (
   return data;
 };
 
+// Get organization member by ID
 export const getOrganizationMemberByIdFromDB = async (
   memberId: string,
   orgId: string,
   accessToken: string
 ): Promise<OrganizationMember> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -122,7 +133,6 @@ export const getOrganizationMemberByIdFromDB = async (
     .eq("id", memberId)
     .eq("org_id", orgId)
     .single();
-
 
   if (error || !data) {
     throw new AppError(
@@ -134,27 +144,14 @@ export const getOrganizationMemberByIdFromDB = async (
   return data;
 };
 
-export const requireRole = (
- role:string,
- allowed:string[]
-)=>{
- if(!allowed.includes(role)){
-   throw new AppError(
-     403,
-     "Insufficient permissions"
-   );
- }
-};
+// Get all organization members
+export const getOrganizationMembersFromDB = async (
+  orgId: string,
+  accessToken: string
+): Promise<OrganizationMember[]> => {
+  const db = createSupabaseUserClient(accessToken);
 
-export const getOrganizationMembersFromDB = async(
-  orgId:string,
-  accessToken:string
-):Promise<OrganizationMember[]>=>{
-
-  const db=createSupabaseUserClient(accessToken);
-
-
-  const {data,error}=await db
+  const { data, error } = await db
     .from(tab)
     .select(`
       *,
@@ -166,65 +163,73 @@ export const getOrganizationMembersFromDB = async(
         avatar_url
       )
     `)
-    .eq(
-      "org_id",
-      orgId
+    .eq("org_id", orgId);
+
+  if (error) {
+    throw new AppError(
+      500,
+      error.message
     );
+  }
 
- if(error){
-   throw new AppError(
-     500,
-     error.message
-   );
- }
-
- return data ?? [];
+  return data ?? [];
 };
 
+// Get active profiles
 export const getActiveProfilesFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<DisplayOrganizationMember[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
     .from(tab)
-    .select('*')
-    .eq('org_id', orgId)
+    .select("*")
+    .eq("org_id", orgId)
     .eq("status", "active")
-    .is('deleted_at', null)
-    .order("created_at", { ascending: false });
+    .is("deleted_at", null)
+    .order("created_at", {
+      ascending: false,
+    });
 
   if (error) {
-    throw new AppError(500, `Failed to fetch member profiles: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to fetch member profiles: ${error.message}`
+    );
   }
 
   return data ?? [];
 };
 
+// Get all agents
 export const getAllAgentsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<OrganizationMember[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
     .from(tab)
-    .select('*')
-    .eq('org_id', orgId)
-    .eq('role', 'agent')
-    .is('deleted_at', null)
-    .order("created_at", { ascending: false });
+    .select("*")
+    .eq("org_id", orgId)
+    .eq("role", "agent")
+    .is("deleted_at", null)
+    .order("created_at", {
+      ascending: false,
+    });
 
   if (error) {
-    throw new AppError(500, `Failed to fetch member agents: ${error.message}`);
+    throw new AppError(
+      500,
+      `Failed to fetch member agents: ${error.message}`
+    );
   }
 
   return data ?? [];
 };
 
+// Get member with profile
 export const getMemberWithProfileFromDB = async (
   memberId: string,
   orgId: string,
@@ -249,7 +254,8 @@ export const getMemberWithProfileFromDB = async (
   return data as DisplayOrganizationMember;
 };
 
-export const updateMemberRoleFromDB = async (
+// Update member role
+export const updateMemberRoleInDB = async (
   memberId: string,
   orgId: string,
   role: Roles,
@@ -280,35 +286,41 @@ export const updateMemberRoleFromDB = async (
   );
 };
 
+// Check active member count
+export const getActiveMemberCountFromDB = async (
+  orgId: string,
+  accessToken: string
+): Promise<number> => {
+  const db = createSupabaseUserClient(accessToken);
 
+  const { count, error } = await db
+    .from(tab)
+    .select("id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("org_id", orgId)
+    .eq("status", "active")
+    .is("deleted_at", null);
 
-export const updateMemberStatusFromDB = async (
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to check active member limit: ${error.message}`
+    );
+  }
+
+  return count ?? 0;
+};
+
+// Update member status
+export const updateMemberStatusInDB = async (
   memberId: string,
   orgId: string,
   status: OrganizationMemberStatus,
   accessToken: string
 ): Promise<DisplayOrganizationMember> => {
   const db = createSupabaseUserClient(accessToken);
-
-  if (status === "active") {
-    const { count, error } = await db
-      .from(tab)
-      .select("id", {
-        count: "exact",
-        head: true,
-      })
-      .eq("org_id", orgId)
-      .eq("status", "active")
-      .is("deleted_at", null);
-
-    if (error) {
-      throw new AppError(
-        500,
-        `Failed to check active member limit: ${error.message}`
-      );
-    }
-
-  }
 
   const { data, error } = await db
     .from(tab)
@@ -332,7 +344,8 @@ export const updateMemberStatusFromDB = async (
   );
 };
 
-export const approvedJoinMemberFromDB = async (
+// Approve join member
+export const approveJoinMemberInDB = async (
   memberId: string,
   orgId: string,
   accessToken: string
@@ -341,7 +354,9 @@ export const approvedJoinMemberFromDB = async (
 
   const { data, error } = await db
     .from(tab)
-    .update({ status: 'active' })
+    .update({
+      status: "active",
+    })
     .eq("org_id", orgId)
     .eq("id", memberId)
     .eq("status", "invited")
@@ -362,13 +377,12 @@ export const approvedJoinMemberFromDB = async (
   );
 };
 
-export const rejectJoinMemberFromDB = async (
+// Reject join member
+export const rejectJoinMemberInDB = async (
   memberId: string,
-  orgId: string,
+  orgId: string
 ): Promise<{ id: string }> => {
-  const db = supabaseAdmin;
-
-  const { data, error } = await db
+  const { data, error } = await supabaseAdmin
     .from(tab)
     .delete()
     .eq("org_id", orgId)
@@ -383,41 +397,37 @@ export const rejectJoinMemberFromDB = async (
       `Failed to reject join request: ${error.message}`
     );
   }
+
   return data;
 };
 
+// Create owner member
+export const createOwnerMemberToDB = async (
+  orgId: string,
+  userId: string
+): Promise<OrganizationMember> => {
+  const { data, error } = await supabaseAdmin
+    .from(tab)
+    .insert({
+      org_id: orgId,
+      profile_id: userId,
+      role: "owner",
+      status: "active",
+    })
+    .select()
+    .single();
 
-export const createOwnerMemberToDB = async(
- orgId:string,
- userId:string,
-)=>{
+  if (error) {
+    throw new AppError(
+      500,
+      error.message
+    );
+  }
 
- const db = supabaseAdmin;
-
-
- const {data, error} = await db
- .from(tab)
- .insert({
-    org_id:orgId,
-    profile_id:userId,
-    role:"owner",
-    status:"active"
- })
- .select()
- .single();
-
-
- if(error){
-   throw new AppError(
-    500,
-    error.message
-   );
- }
-
-
- return data;
+  return data;
 };
 
+// Remove organization member
 export const removeOrganizationMemberFromDB = async (
   memberId: string,
   orgId: string,

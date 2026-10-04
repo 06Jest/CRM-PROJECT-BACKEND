@@ -1,19 +1,20 @@
 import { Request, Response, NextFunction } from "express";
 
 import {
-  createWorkspaceInDB,
-  getWorkspaceDataFromDB,
-  renameWorkspaceInDB,
-  updateWorkspaceDetailsInDB,
-} from "../services/organization.service";
-import { AppError } from "../middleware/error.middleware";
-import { getProfileIfExistFromDB, updateOnboardingStepToDB } from "../features/profiles/profiles.repository";
-import { createOwnerMemberToDB } from "../services/organization.members.service";
-import { metaFromRequest } from "../features/auth/auth.controller";
-import { refreshUserSessionService } from "../features/auth/auth.service";
-import { createDefaultConversationsService } from "../features/chats/conversation.member.service";
-import { setAuthCookies } from "../features/auth/cookies.service";
-import { acceptInvite } from "../services/organization.invites.service";
+  createWorkspaceService,
+  getWorkspaceService,
+  renameWorkspaceService,
+  updateWorkspaceDetailsService,
+} from "./organization.service";
+
+import { AppError } from "../../middleware/error.middleware";
+import {
+  getProfileIfExistFromDB,
+} from "../profiles/profiles.repository";
+import { acceptInviteService } from "./organization-invites.service";
+import { metaFromRequest } from "../auth/auth.controller";
+import { refreshUserSessionService } from "../auth/auth.service";
+import { setAuthCookies } from "../auth/cookies.service";
 
 export const createWorkspaceController = async (
   req: Request,
@@ -21,47 +22,23 @@ export const createWorkspaceController = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.sub
+    const userId = req.user?.sub;
     const accessToken = req.cookies.accessToken;
 
     if (!userId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized"
-      );
+      throw new AppError(401, "Unauthorized");
     }
 
-    const dto = req.body;
-
-    const workspace = await createWorkspaceInDB(
-      dto
-    );
-
-
-    const member = await createOwnerMemberToDB(
-      workspace.id,
-      userId
-    );
-
-    await createDefaultConversationsService(
-      workspace.id,
-      member.id,
-      workspace.type,
-      accessToken
-    );
-
-
-    await updateOnboardingStepToDB(
+    const workspace = await createWorkspaceService(
+      req.body,
       userId,
-      2,
       accessToken
     );
 
-    const session =
-      await refreshUserSessionService(
-        userId,
-        metaFromRequest(req)
-      );
+    const session = await refreshUserSessionService(
+      userId,
+      metaFromRequest(req)
+    );
 
     setAuthCookies(
       res,
@@ -69,14 +46,12 @@ export const createWorkspaceController = async (
       session.tokens.refreshToken
     );
 
-
     res.status(201).json({
       success: true,
       message: "Workspace created successfully",
       data: workspace,
     });
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
 };
@@ -92,10 +67,7 @@ export const joinOrganization = async (
     const accessToken = req.cookies.accessToken;
 
     if (!userId || !accessToken) {
-      throw new AppError(
-        401,
-        "Unauthorized"
-      );
+      throw new AppError(401, "Unauthorized");
     }
 
     const profile = await getProfileIfExistFromDB(userId);
@@ -107,26 +79,22 @@ export const joinOrganization = async (
       );
     }
 
-    const workspace = await acceptInvite(
+    const workspace = await acceptInviteService(
       code,
       profile,
       accessToken
     );
-
-    
 
     res.status(200).json({
       success: true,
       message: "Invite Accepted successfully",
       data: workspace,
     });
-
   } catch (err) {
     next(err);
   }
 };
 
- 
 export const getWorkspaceData = async (
   req: Request,
   res: Response,
@@ -143,7 +111,6 @@ export const getWorkspaceData = async (
       );
     }
 
-
     if (!accessToken) {
       throw new AppError(
         401,
@@ -151,20 +118,20 @@ export const getWorkspaceData = async (
       );
     }
 
-
-    const workspace = await getWorkspaceDataFromDB(orgId, accessToken);
+    const workspace = await getWorkspaceService(
+      orgId,
+      accessToken
+    );
 
     res.status(200).json({
       success: true,
       message: "Workspace fetched successfully",
       data: workspace,
     });
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
 };
-
 
 export const renameWorkspaceController = async (
   req: Request,
@@ -184,7 +151,7 @@ export const renameWorkspaceController = async (
       );
     }
 
-    if (role !== 'owner') {
+    if (role !== "owner") {
       throw new AppError(
         400,
         "Only the workspace owner can rename the workspace."
@@ -205,15 +172,18 @@ export const renameWorkspaceController = async (
       );
     }
 
-    const workspace =await renameWorkspaceInDB(orgId, name, accessToken);
+    const workspace = await renameWorkspaceService(
+      orgId,
+      name,
+      accessToken
+    );
 
     res.status(200).json({
       success: true,
       message: "Workspace renamed successfully",
       data: workspace,
     });
-
-  } catch(err) {
+  } catch (err) {
     next(err);
   }
 };
@@ -249,7 +219,7 @@ export const updateWorkspaceDetailsController = async (
       );
     }
 
-    const workspace = await updateWorkspaceDetailsInDB(
+    const workspace = await updateWorkspaceDetailsService(
       orgId,
       req.body,
       accessToken
@@ -260,7 +230,6 @@ export const updateWorkspaceDetailsController = async (
       message: "Workspace details updated successfully",
       data: workspace,
     });
-
   } catch (err) {
     next(err);
   }
