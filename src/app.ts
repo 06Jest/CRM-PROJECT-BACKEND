@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import authRoutes from './features/auth/auth.routes';
 import profileRoutes from './features/profiles/profiles.routes';
 import onboardingRoutes from './routes/onboarding.routes';
-import subscriptionRoutes from './routes/subscription.routes';
+import subscriptionRoutes from './features/subscriptions/subscriptions.routes';
 import orgRoutes from './features/organizations/organization.routes';
 import orgMembersRoutes from './features/organizations/organization-members.routes';
 import orgInvitesRoutes from './features/organizations/organization-invites.routes';

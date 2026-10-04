@@ -19,7 +19,7 @@ import {
 
 import { addCustomerToDB } from "../customers/customers.repository";
 import { addActivityService } from "../activities/activities.service";
-import { ensureResourceLimit } from "../../services/plans.service";
+import { ensureResourceLimitService } from "../subscriptions/subscriptions-limits.service";
 import { table } from "../../config/tables";
 import dealEventsPublisher from "./deals-events.publisher";
 
@@ -70,7 +70,7 @@ export const addDealService = async (
   deal: AddDeal,
   accessToken: string
 ) => {
-  await ensureResourceLimit(
+  await ensureResourceLimitService(
     orgId,
     table.deals,
     "leads",
@@ -171,7 +171,7 @@ export const updateDealStageService = async (
 
   if (stage === "Closed Won") {
     if (contact.status !== "Customer") {
-      await ensureResourceLimit(
+      await ensureResourceLimitService(
         orgId,
         table.customers,
         "customers",

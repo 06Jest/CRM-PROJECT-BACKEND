@@ -1,7 +1,7 @@
 import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
 import { getWorkspaceNameService } from "../../features/organizations/organization.service";
-import { ensureResourceLimit } from "../../services/plans.service";
+import { ensureResourceLimitService } from "../subscriptions/subscriptions-limits.service";
 import { sendEmailWithResend } from "./resend.service";
 import { addActivityService } from "../activities/activities.service";
 
@@ -103,7 +103,7 @@ export const sendEmailService = async (
     );
   }
 
-  await ensureResourceLimit(
+  await ensureResourceLimitService(
     orgId,
     table.emails,
     "emails",

@@ -37,7 +37,7 @@ import type {
 import { addContactFromLeadsToDB } from "../contacts/contacts.repository";
 import type { AddContact } from "../contacts/contact.types";
 import { addActivityService } from "../activities/activities.service";
-import { ensureResourceLimit } from "../../services/plans.service";
+import { ensureResourceLimitService } from "../subscriptions/subscriptions-limits.service";
 import { deleteImageKitFile } from "../../services/imagekit.service";
 import leadEventsPublisher from "./leads-events.publisher";
 import { table } from "../../config/tables";
@@ -86,7 +86,7 @@ export const addLead = async (
   lead: AddLead,
   accessToken: string
 ) => {
-  await ensureResourceLimit(
+  await ensureResourceLimitService(
     orgId,
     table.leads,
     "leads",

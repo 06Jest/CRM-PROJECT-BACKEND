@@ -5,21 +5,21 @@ import {
   getSubscription,
   updateSubscriptionPlan,
   updateSubscriptionStatus,
-} from "../controllers/subscription.controller";
+} from "./subscription.controller";
 
 import {
   verifyToken,
   authenticateUser,
   requireActiveMembership,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   createSubscriptionSchema,
   updateSubscriptionPlanSchema,
   updateSubscriptionStatusSchema,
-} from "../schema/subscription.schema";
+} from "../../schema/subscription.schema";
 
 const router = Router();
 

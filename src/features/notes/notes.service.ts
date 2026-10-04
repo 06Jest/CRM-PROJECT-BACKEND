@@ -11,7 +11,7 @@ import {
   updateNoteFromDB,
 } from "./notes.repository";
 import { AppError } from "../../middleware/error.middleware";
-import { ensureResourceLimit } from "../../services/plans.service";
+import { ensureResourceLimitService } from "../subscriptions/subscriptions-limits.service";
 import { table } from "../../config/tables";
 import noteEventsPublisher from "./notes-events.publisher";
 import type {
@@ -72,7 +72,7 @@ export const addNoteService = async (
   note: AddNote,
   accessToken: string
 ) => {
-  await ensureResourceLimit(
+  await ensureResourceLimitService(
     orgId,
     table.notes,
     "notes",

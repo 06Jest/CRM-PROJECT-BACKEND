@@ -2,7 +2,7 @@ import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
 
 import { addActivityService } from "../activities/activities.service";
-import { ensureResourceLimit } from "../../services/plans.service";
+import { ensureResourceLimitService } from "../subscriptions/subscriptions-limits.service";
 
 import callEventsPublisher from "./calls-events.publisher";
 
@@ -79,7 +79,7 @@ export const addCallService = async (
   call: CreateCall,
   accessToken: string
 ): Promise<CallListItem> => {
-  await ensureResourceLimit(
+  await ensureResourceLimitService(
     orgId,
     table.calls,
     "calls",

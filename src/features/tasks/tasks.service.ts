@@ -1,7 +1,7 @@
 import {
   addActivityService,
 } from "../activities/activities.service";
-import { ensureResourceLimit } from "../../services/plans.service";
+import { ensureResourceLimitService } from "../subscriptions/subscriptions-limits.service";
 import { table } from "../../config/tables";
 import { AppError } from "../../middleware/error.middleware";
 import taskEventsPublisher from "./tasks-events.publisher";
@@ -59,7 +59,7 @@ export const addTaskService = async (
   task: AddTask,
   accessToken: string
 ): Promise<TaskListItem> => {
-  await ensureResourceLimit(
+  await ensureResourceLimitService(
     orgId,
     table.tasks,
     "tasks",

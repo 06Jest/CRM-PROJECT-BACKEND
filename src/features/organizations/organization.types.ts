@@ -1,4 +1,4 @@
-import { Subscription, type SubscriptionPlan, type SubscriptionStatus } from "../../types/subscription";
+import { Subscription, type SubscriptionPlan, type SubscriptionStatus } from "../subscriptions/subscriptions.types";
 
 export const ORGANIZATION_TYPES = [
   "personal",

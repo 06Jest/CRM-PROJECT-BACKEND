@@ -41,7 +41,7 @@ import {
 } from '../customers/customers.repository';
 
 import { addActivityService } from '../activities/activities.service';
-import { ensureResourceLimit } from '../../services/plans.service';
+import { ensureResourceLimitService } from '../subscriptions/subscriptions-limits.service';
 import { deleteImageKitFile } from '../../services/imagekit.service';
 
 import contactEventsPublisher from './contacts-events.publisher';
@@ -85,7 +85,7 @@ export const addContactService = async (
   contact: AddContact,
   accessToken: string
 ) => {
-  await ensureResourceLimit(
+  await ensureResourceLimitService(
     orgId,
     table.contacts,
     'leads',

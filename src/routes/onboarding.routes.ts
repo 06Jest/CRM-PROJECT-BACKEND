@@ -20,7 +20,7 @@ import {
 } from "../schema/subscription.schema";
 import { completeProfileSetup } from "../features/profiles/profiles.controller";
 import { createWorkspaceController, joinOrganization } from "../features/organizations/organization.controller";
-import { createFreeSubscription } from "../controllers/subscription.controller";
+import { createFreeSubscription } from "../features/subscriptions/subscription.controller";
 
 const router = Router();
 

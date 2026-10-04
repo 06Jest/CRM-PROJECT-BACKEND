@@ -1,7 +1,7 @@
-import { supabaseAdmin } from "../config/supabase";
-import { table } from "../config/tables";
-import { RETENTION_LIMITS } from "../types/retention";
-import { getRetentionCutoffDate } from "../utils/retention";
+import { supabaseAdmin } from "../../config/supabase";
+import { table } from "../../config/tables";
+import { RETENTION_LIMITS } from "./retention";
+import { getRetentionCutoffDate } from "../../utils/retention";
 
 
 export const cleanupOrganizationRetention = async (

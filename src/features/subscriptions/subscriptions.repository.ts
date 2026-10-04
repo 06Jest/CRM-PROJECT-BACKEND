@@ -1,21 +1,22 @@
-import { createSupabaseUserClient } from "../config/supabase";
-import { AppError } from "../middleware/error.middleware";
+import { createSupabaseUserClient } from "../../config/supabase";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
+
 import type {
   CreateSubscriptionDTO,
   Subscription,
   SubscriptionPlan,
   SubscriptionStatus,
-} from "../types/subscription";
-import { table } from "../config/tables";
+} from "./subscriptions.types";
 
 const tab = table.subscriptions;
 
-export const createSubscriptionToDB = async (
+// Create subscription
+export const createSubscriptionInDB = async (
   orgId: string,
   dto: CreateSubscriptionDTO,
   accessToken: string
 ): Promise<Subscription> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -25,7 +26,8 @@ export const createSubscriptionToDB = async (
       plan: dto.plan,
       billing_cycle: dto.billing_cycle,
       payment_provider: dto.payment_provider,
-      provider_reference: dto.provider_reference ?? null,
+      provider_reference:
+        dto.provider_reference ?? null,
     })
     .select()
     .single();
@@ -40,11 +42,11 @@ export const createSubscriptionToDB = async (
   return data;
 };
 
+// Get subscription by organization ID
 export const getSubscriptionByOrgIdFromDB = async (
   organizationId: string,
   accessToken: string
 ): Promise<Subscription> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -63,12 +65,12 @@ export const getSubscriptionByOrgIdFromDB = async (
   return data;
 };
 
-export const updateSubscriptionPlanToDB = async (
+// Update subscription plan
+export const updateSubscriptionPlanInDB = async (
   organizationId: string,
   plan: SubscriptionPlan,
   accessToken: string
 ): Promise<Subscription> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -90,14 +92,12 @@ export const updateSubscriptionPlanToDB = async (
   return data;
 };
 
-
-
-export const updateSubscriptionStatusToDB = async (
+// Update subscription status
+export const updateSubscriptionStatusInDB = async (
   organizationId: string,
   status: SubscriptionStatus,
   accessToken: string
 ): Promise<Subscription> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
