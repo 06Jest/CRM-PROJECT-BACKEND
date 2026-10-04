@@ -1,7 +1,7 @@
 import type {
   AnalyticsBreakdown,
   AnalyticsParams,
-} from "../../types/analytics";
+} from "./analytics.types";
 import { getAnalyticsDimension } from "./analytics.dimensions";
 import { createSupabaseUserClient } from "../../config/supabase";
 import { table } from "../../config/tables";

@@ -1,7 +1,7 @@
 import type {
   AnalyticsParams,
   ForecastAnalytics,
-} from "../../types/analytics";
+} from "./analytics.types";
 import { resolveAnalyticsFilters } from "./analyticsFilters";
 import { createSupabaseUserClient } from "../../config/supabase";
 import { table } from "../../config/tables";

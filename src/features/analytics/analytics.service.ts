@@ -1,7 +1,7 @@
 import type {
   AnalyticsData,
   AnalyticsParams,
-} from "../../types/analytics";
+} from "./analytics.types";
 import { getAnalyticsOverview } from "./overview.analytics";
 import { getSalesAnalytics } from "./sales.analytics";
 import { getLeadAnalytics } from "./leads.analytics";

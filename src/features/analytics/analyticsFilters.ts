@@ -3,7 +3,7 @@ import type {
   AnalyticsDateFilter,
   AnalyticsDateRange,
   AnalyticsFilters,
-} from "../../types/analytics";
+} from "./analytics.types";
 
 export interface AnalyticsDateWindow {
   start: Date;

@@ -1,7 +1,7 @@
 import type {
   AnalyticsParams,
   EngagementAnalytics,
-} from "../../types/analytics";
+} from "./analytics.types";
 import { createSupabaseUserClient } from "../../config/supabase";
 import { table } from "../../config/tables";
 import { resolveAnalyticsFilters } from "./analyticsFilters";

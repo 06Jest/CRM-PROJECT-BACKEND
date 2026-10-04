@@ -1,7 +1,7 @@
 import type {
   AnalyticsParams,
   CRMHealthAnalytics,
-} from "../../types/analytics";
+} from "./analytics.types";
 import { createSupabaseUserClient } from "../../config/supabase";
 import { table } from "../../config/tables";
 

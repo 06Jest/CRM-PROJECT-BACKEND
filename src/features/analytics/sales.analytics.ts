@@ -1,16 +1,18 @@
 import type {
   AnalyticsParams,
-  RevenueAnalytics,
-} from "../../types/analytics";
+  SalesAnalytics,
+  SalesStageMetric,
+} from "./analytics.types";
+import { resolveAnalyticsFilters } from "./analyticsFilters";
 import { createSupabaseUserClient } from "../../config/supabase";
 import { table } from "../../config/tables";
-import { resolveAnalyticsFilters } from "./analyticsFilters";
 
-export const getRevenueAnalytics = async ({
+export const getSalesAnalytics = async ({
   accessToken,
   filters,
-}: AnalyticsParams): Promise<RevenueAnalytics> => {
+}: AnalyticsParams): Promise<SalesAnalytics> => {
   const supabase = createSupabaseUserClient(accessToken);
+
   const { current } = resolveAnalyticsFilters(filters);
 
   const { data, error } = await supabase
@@ -23,14 +25,11 @@ export const getRevenueAnalytics = async ({
 
   if (error) {
     throw new Error(
-      `Failed to fetch revenue analytics: ${error.message}`,
+      `Failed to fetch sales analytics: ${error.message}`,
     );
   }
 
-  const stageMap = new Map<
-    string,
-    { stage: string; value: number; count: number }
-  >();
+  const stageMap = new Map<string, SalesStageMetric>();
 
   for (const deal of data ?? []) {
     const stage = deal.stage ?? "Unknown";
@@ -39,33 +38,31 @@ export const getRevenueAnalytics = async ({
     const existing = stageMap.get(stage);
 
     if (existing) {
-      existing.value += value;
       existing.count += 1;
+      existing.value += value;
     } else {
       stageMap.set(stage, {
         stage,
-        value,
         count: 1,
+        value,
       });
     }
   }
 
-  const revenueByStage = Array.from(stageMap.values()).sort(
+  const stages = Array.from(stageMap.values()).sort(
     (a, b) => b.value - a.value,
   );
 
-  const wonDeals = revenueByStage.find(
-    (stage) => stage.stage === "Closed Won",
-  )?.count ?? 0;
-
-  const totalRevenue =
-    revenueByStage.find((stage) => stage.stage === "Closed Won")?.value ?? 0;
-
   return {
     available: true,
-    totalRevenue,
-    wonDeals,
-    averageDealValue: wonDeals > 0 ? totalRevenue / wonDeals : 0,
-    revenueByStage,
+    stages,
+    totalValue: stages.reduce(
+      (total, stage) => total + stage.value,
+      0,
+    ),
+    totalDeals: stages.reduce(
+      (total, stage) => total + stage.count,
+      0,
+    ),
   };
 };

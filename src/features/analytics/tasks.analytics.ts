@@ -1,23 +1,23 @@
 import type {
   AnalyticsParams,
-  LeadAnalytics,
-  LeadStatusMetric,
-} from "../../types/analytics";
+  TaskAnalytics,
+  TaskStatusMetric,
+} from "./analytics.types";
 import { resolveAnalyticsFilters } from "./analyticsFilters";
 import { createSupabaseUserClient } from "../../config/supabase";
 import { table } from "../../config/tables";
 
-export const getLeadAnalytics = async ({
+export const getTaskAnalytics = async ({
   accessToken,
   filters,
-}: AnalyticsParams): Promise<LeadAnalytics> => {
+}: AnalyticsParams): Promise<TaskAnalytics> => {
   const supabase = createSupabaseUserClient(accessToken);
 
   const { current } = resolveAnalyticsFilters(filters);
 
   const { data, error } = await supabase
-    .from(table.leads)
-    .select("status")
+    .from(table.tasks)
+    .select("status, due_date, completed_at")
     .is("deleted_at", null)
     .eq("is_archived", false)
     .gte("created_at", current.start.toISOString())
@@ -25,14 +25,19 @@ export const getLeadAnalytics = async ({
 
   if (error) {
     throw new Error(
-      `Failed to fetch lead analytics: ${error.message}`,
+      `Failed to fetch task analytics: ${error.message}`,
     );
   }
 
-  const statusMap = new Map<string, LeadStatusMetric>();
+  const statusMap = new Map<string, TaskStatusMetric>();
 
-  for (const lead of data ?? []) {
-    const status = lead.status ?? "Unknown";
+  let completedTasks = 0;
+  let overdueTasks = 0;
+
+  const now = new Date();
+
+  for (const task of data ?? []) {
+    const status = task.status ?? "Unknown";
 
     const existing = statusMap.get(status);
 
@@ -44,6 +49,18 @@ export const getLeadAnalytics = async ({
         count: 1,
       });
     }
+
+    if (task.completed_at) {
+      completedTasks += 1;
+    }
+
+    if (
+      task.due_date &&
+      new Date(task.due_date) < now &&
+      !task.completed_at
+    ) {
+      overdueTasks += 1;
+    }
   }
 
   const statuses = Array.from(statusMap.values()).sort(
@@ -53,9 +70,8 @@ export const getLeadAnalytics = async ({
   return {
     available: true,
     statuses,
-    totalLeads: statuses.reduce(
-      (total, status) => total + status.count,
-      0,
-    ),
+    totalTasks: data?.length ?? 0,
+    completedTasks,
+    overdueTasks,
   };
 };

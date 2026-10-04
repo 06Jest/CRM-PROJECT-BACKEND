@@ -29,7 +29,7 @@ import archiveRoutes from './routes/archive.routes';
 import healthRoutes from './routes/health';
 import cookieParser from 'cookie-parser';
 import mcpRoutes from './ai/mcp/routes/mcp.routes';
-import analyticsRoutes from './routes/analytics.routes';
+import analyticsRoutes from './features/analytics/analytics.routes';
 
 const app = express();
 

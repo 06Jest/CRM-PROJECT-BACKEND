@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "../middleware/error.middleware";
-import { getAnalyticsFromDB } from "../services/analytics/analytics.service";
+import { AppError } from "../../middleware/error.middleware";
+import { getAnalyticsFromDB } from "./analytics.service";
 import type {
   AnalyticsComparison,
   AnalyticsDateRange,
   AnalyticsRole,
   AnalyticsBreakdownDimension,
-} from "../types/analytics";
+} from "./analytics.types";
 
 export const getAnalytics = async (
   req: Request,

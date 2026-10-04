@@ -1,4 +1,4 @@
-import type { AnalyticsBreakdownDimension } from "../../types/analytics";
+import type { AnalyticsBreakdownDimension } from "./analytics.types";
 
 export interface AnalyticsDimensionDefinition {
   key: AnalyticsBreakdownDimension;
