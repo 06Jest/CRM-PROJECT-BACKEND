@@ -1,60 +1,47 @@
-import { createSupabaseUserClient } from "../config/supabase";
-import { table } from "../config/tables";
 import type {
   DashboardData,
   DashboardParams,
-} from "../types/dashboard";
-import cacheService from "../cache/cache.service";
-import { dashboardCacheKey } from "../cache/cache-keys";
+} from "./dashboard.types";
+import cacheService from "../../cache/cache.service";
+import { dashboardCacheKey } from "../../cache/cache-keys";
+import { getDashboardDataFromDB } from "./dashboard.repository";
 
-export const getDashboardFromDB = async ({
+export const getDashboardService = async ({
   orgId,
   accessToken,
   memberId,
   role,
 }: DashboardParams): Promise<DashboardData> => {
-
   const cacheKey = dashboardCacheKey(orgId, role, memberId);
 
-  const cachedDashboard = await cacheService.get<DashboardData>(cacheKey);
+  const cachedDashboard =
+    await cacheService.get<DashboardData>(cacheKey);
 
-if (cachedDashboard) {
-  console.log("Dashboard cache HIT:", cacheKey);
-  return cachedDashboard;
-}
-
-console.log("Dashboard cache MISS:", cacheKey);
-  const db = createSupabaseUserClient(accessToken);
-
+  if (cachedDashboard) {
+    return cachedDashboard;
+  }
   const scope = role === "agent" ? "user" : "organization";
 
-  const { data: members, error: membersError } = await db
-    .from(table.orgmembers)
-    .select(`
-      id,
-      profile_id,
-      display_id,
-      role,
-      status,
-      profiles:profile_id (
-        display_name,
-        first_name,
-        last_name,
-        avatar_url,
-        job_title
-      )
-    `)
-    .eq("org_id", orgId)
-    .eq("status", "active")
-    .is("deleted_at", null);
+  const dashboardData = await getDashboardDataFromDB({
+    orgId,
+    accessToken,
+  });
 
-  if (membersError) {
-    throw new Error(
-      `Failed to fetch dashboard members: ${membersError.message}`
-    );
-  }
+  const {
+    members,
+    leads,
+    contacts,
+    customers,
+    deals,
+    tasks,
+    calls,
+    emails,
+    sms,
+    activities,
+    contactActivities,
+  } = dashboardData;
 
-  const dashboardMembers = (members ?? []).map((member) => {
+  const dashboardMembers = members.map((member) => {
     const profile = Array.isArray(member.profiles)
       ? member.profiles[0]
       : member.profiles;
@@ -77,132 +64,12 @@ console.log("Dashboard cache MISS:", cacheKey);
     };
   });
 
-  const [
-    leadsResult,
-    contactsResult,
-    customersResult,
-    dealsResult,
-    tasksResult,
-    callsResult,
-    emailsResult,
-    smsResult,
-    activitiesResult,
-    contactActivitiesResult,
-  ] = await Promise.all([
-    db
-      .from(table.leads)
-      .select(
-        "id, display_id, first_name, last_name, status, priority, source, owner_id, assigned_to, created_at, updated_at, deleted_at, is_archived"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .eq("is_archived", false),
-
-    db
-      .from(table.contacts)
-      .select(
-        "id, display_id, first_name, last_name, priority, owner_id, assigned_to, created_at, updated_at, deleted_at, is_archived"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .eq("is_archived", false),
-
-    db
-      .from(table.customers)
-      .select(
-        "id, contact_id, status, owner_id, assigned_to, created_at, updated_at, deleted_at, is_archived"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .eq("is_archived", false),
-
-    db
-      .from(table.deals)
-      .select(
-        "id, display_id, title, stage, value, owner_id, assigned_to, created_at, updated_at, close_date, deleted_at, is_archived"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .eq("is_archived", false),
-
-    db
-      .from(table.tasks)
-      .select(
-        "id, assigned_to, status, priority, due_date, created_at, updated_at, deleted_at, is_archived"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .eq("is_archived", false),
-
-    db
-      .from(table.calls)
-      .select(
-        "id, assigned_to, created_by, status, priority, scheduled_for, created_at, updated_at, deleted_at, is_archived"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .eq("is_archived", false),
-
-    db
-      .from(table.emails)
-      .select(
-        "id, sender_id, lead_id, contact_id, customer_id, status, sent_at, created_at, updated_at, deleted_at"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null),
-
-    db
-      .from(table.sms)
-      .select(
-        "id, sender_id, lead_id, contact_id, status, created_at, updated_at, deleted_at, is_archived"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .eq("is_archived", false),
-
-    db
-      .from(table.activities)
-      .select(
-        "id, type, action, title, description, target_name, contact_id, lead_id, customer_id, created_by, created_at, updated_at, deleted_at"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(50),
-
-    db
-      .from(table.activities)
-      .select("contact_id, created_at")
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .not("contact_id", "is", null)
-      .order("created_at", { ascending: false }),
-  ]);
-
-  const queryResults = [
-    ["leads", leadsResult],
-    ["contacts", contactsResult],
-    ["customers", customersResult],
-    ["deals", dealsResult],
-    ["tasks", tasksResult],
-    ["calls", callsResult],
-    ["emails", emailsResult],
-    ["sms", smsResult],
-    ["activities", activitiesResult],
-    ["contact activities", contactActivitiesResult],
-  ] as const;
-
-  for (const [name, result] of queryResults) {
-    if (result.error) {
-      throw new Error(
-        `Failed to fetch dashboard ${name}: ${result.error.message}`
-      );
-    }
-  }
-
   const now = new Date();
+
   const inactiveThreshold = new Date(now);
-  inactiveThreshold.setDate(inactiveThreshold.getDate() - 30);
+  inactiveThreshold.setDate(
+    inactiveThreshold.getDate() - 30
+  );
 
   const memberStats = new Map(
     dashboardMembers.map((member) => [
@@ -224,17 +91,6 @@ console.log("Dashboard cache MISS:", cacheKey);
     ])
   );
 
-  const leads = leadsResult.data ?? [];
-  const contacts = contactsResult.data ?? [];
-  const customers = customersResult.data ?? [];
-  const deals = dealsResult.data ?? [];
-  const tasks = tasksResult.data ?? [];
-  const calls = callsResult.data ?? [];
-  const emails = emailsResult.data ?? [];
-  const sms = smsResult.data ?? [];
-  const activities = activitiesResult.data ?? [];
-  const contactActivities = contactActivitiesResult.data ?? [];
-
   for (const lead of leads) {
     const memberId = lead.assigned_to ?? lead.owner_id;
 
@@ -248,7 +104,8 @@ console.log("Dashboard cache MISS:", cacheKey);
   }
 
   for (const contact of contacts) {
-    const memberId = contact.assigned_to ?? contact.owner_id;
+    const memberId =
+      contact.assigned_to ?? contact.owner_id;
 
     if (!memberId) continue;
 
@@ -260,7 +117,8 @@ console.log("Dashboard cache MISS:", cacheKey);
   }
 
   for (const customer of customers) {
-    const memberId = customer.assigned_to ?? customer.owner_id;
+    const memberId =
+      customer.assigned_to ?? customer.owner_id;
 
     if (!memberId) continue;
 
@@ -270,9 +128,10 @@ console.log("Dashboard cache MISS:", cacheKey);
       member.customers += 1;
     }
   }
-  
+
   for (const deal of deals) {
-    const memberId = deal.assigned_to ?? deal.owner_id;
+    const memberId =
+      deal.assigned_to ?? deal.owner_id;
 
     if (!memberId) continue;
 
@@ -373,50 +232,67 @@ console.log("Dashboard cache MISS:", cacheKey);
     }
   }
 
-  const scopedMemberId = scope === "user" ? memberId : null;
+  const scopedMemberId =
+    scope === "user" ? memberId : null;
 
   const scopedLeads = scopedMemberId
     ? leads.filter(
         (lead) =>
-          (lead.assigned_to ?? lead.owner_id) === scopedMemberId
+          (lead.assigned_to ?? lead.owner_id) ===
+          scopedMemberId
       )
     : leads;
 
   const scopedContacts = scopedMemberId
     ? contacts.filter(
         (contact) =>
-          (contact.assigned_to ?? contact.owner_id) === scopedMemberId
+          (contact.assigned_to ?? contact.owner_id) ===
+          scopedMemberId
       )
     : contacts;
 
   const scopedCustomers = scopedMemberId
     ? customers.filter(
         (customer) =>
-          (customer.assigned_to ?? customer.owner_id) === scopedMemberId
+          (customer.assigned_to ?? customer.owner_id) ===
+          scopedMemberId
       )
     : customers;
 
   const scopedDeals = scopedMemberId
     ? deals.filter(
         (deal) =>
-          (deal.assigned_to ?? deal.owner_id) === scopedMemberId
+          (deal.assigned_to ?? deal.owner_id) ===
+          scopedMemberId
       )
     : deals;
 
   const scopedTasks = scopedMemberId
-    ? tasks.filter((task) => task.assigned_to === scopedMemberId)
+    ? tasks.filter(
+        (task) =>
+          task.assigned_to === scopedMemberId
+      )
     : tasks;
 
   const scopedCalls = scopedMemberId
-    ? calls.filter((call) => call.assigned_to === scopedMemberId)
+    ? calls.filter(
+        (call) =>
+          call.assigned_to === scopedMemberId
+      )
     : calls;
 
   const scopedEmails = scopedMemberId
-    ? emails.filter((email) => email.sender_id === scopedMemberId)
+    ? emails.filter(
+        (email) =>
+          email.sender_id === scopedMemberId
+      )
     : emails;
 
   const scopedSms = scopedMemberId
-    ? sms.filter((message) => message.sender_id === scopedMemberId)
+    ? sms.filter(
+        (message) =>
+          message.sender_id === scopedMemberId
+      )
     : sms;
 
   const openDeals = scopedDeals.filter(
@@ -457,12 +333,14 @@ console.log("Dashboard cache MISS:", cacheKey);
     openDeals: openDeals.length,
 
     pipelineValue: openDeals.reduce(
-      (sum, deal) => sum + Number(deal.value ?? 0),
+      (sum, deal) =>
+        sum + Number(deal.value ?? 0),
       0
     ),
 
     wonRevenue: wonDeals.reduce(
-      (sum, deal) => sum + Number(deal.value ?? 0),
+      (sum, deal) =>
+        sum + Number(deal.value ?? 0),
       0
     ),
 
@@ -477,10 +355,11 @@ console.log("Dashboard cache MISS:", cacheKey);
   >();
 
   for (const deal of scopedDeals) {
-    const existing = pipelineMap.get(deal.stage) ?? {
-      count: 0,
-      value: 0,
-    };
+    const existing =
+      pipelineMap.get(deal.stage) ?? {
+        count: 0,
+        value: 0,
+      };
 
     existing.count += 1;
     existing.value += Number(deal.value ?? 0);
@@ -556,14 +435,20 @@ console.log("Dashboard cache MISS:", cacheKey);
     tasksOverdue: overdueTasks.length,
   };
 
-  const membersWithStats = Array.from(memberStats.values());
+  const membersWithStats =
+    Array.from(memberStats.values());
 
-  const lastActivityByContact = new Map<string, string>();
+  const lastActivityByContact =
+    new Map<string, string>();
 
   for (const activityItem of contactActivities) {
     if (!activityItem.contact_id) continue;
 
-    if (!lastActivityByContact.has(activityItem.contact_id)) {
+    if (
+      !lastActivityByContact.has(
+        activityItem.contact_id
+      )
+    ) {
       lastActivityByContact.set(
         activityItem.contact_id,
         activityItem.created_at
@@ -585,10 +470,14 @@ console.log("Dashboard cache MISS:", cacheKey);
       };
 
       const aPriority =
-        priorityRank[a.priority as keyof typeof priorityRank] ?? 99;
+        priorityRank[
+          a.priority as keyof typeof priorityRank
+        ] ?? 99;
 
       const bPriority =
-        priorityRank[b.priority as keyof typeof priorityRank] ?? 99;
+        priorityRank[
+          b.priority as keyof typeof priorityRank
+        ] ?? 99;
 
       if (aPriority !== bPriority) {
         return aPriority - bPriority;
@@ -626,10 +515,14 @@ console.log("Dashboard cache MISS:", cacheKey);
       };
 
       const aPriority =
-        priorityRank[a.priority as keyof typeof priorityRank] ?? 99;
+        priorityRank[
+          a.priority as keyof typeof priorityRank
+        ] ?? 99;
 
       const bPriority =
-        priorityRank[b.priority as keyof typeof priorityRank] ?? 99;
+        priorityRank[
+          b.priority as keyof typeof priorityRank
+        ] ?? 99;
 
       if (aPriority !== bPriority) {
         return aPriority - bPriority;
@@ -656,13 +549,17 @@ console.log("Dashboard cache MISS:", cacheKey);
   const openDealsForAttention = [...openDeals]
     .sort((a, b) => {
       const valueDifference =
-        Number(b.value ?? 0) - Number(a.value ?? 0);
+        Number(b.value ?? 0) -
+        Number(a.value ?? 0);
 
       if (valueDifference !== 0) {
         return valueDifference;
       }
 
-      if (!a.close_date && !b.close_date) return 0;
+      if (!a.close_date && !b.close_date) {
+        return 0;
+      }
+
       if (!a.close_date) return 1;
       if (!b.close_date) return -1;
 
@@ -673,67 +570,83 @@ console.log("Dashboard cache MISS:", cacheKey);
     })
     .slice(0, 5);
 
-  const openDealItems = openDealsForAttention.map((deal) => ({
-    id: deal.id,
-    displayId: deal.display_id,
-    title: deal.title,
-    stage: deal.stage,
-    value: Number(deal.value ?? 0),
-    closeDate: deal.close_date,
-    updatedAt: deal.updated_at,
-  }));
+  const openDealItems =
+    openDealsForAttention.map((deal) => ({
+      id: deal.id,
+      displayId: deal.display_id,
+      title: deal.title,
+      stage: deal.stage,
+      value: Number(deal.value ?? 0),
+      closeDate: deal.close_date,
+      updatedAt: deal.updated_at,
+    }));
 
   const inactiveContacts = [...scopedContacts]
-  .map((contact) => {
-    const lastActivityAt =
-      lastActivityByContact.get(contact.id) ?? null;
+    .map((contact) => {
+      const lastActivityAt =
+        lastActivityByContact.get(contact.id) ??
+        null;
 
-    return {
-      contact,
+      return {
+        contact,
+        lastActivityAt,
+      };
+    })
+    .filter(({ lastActivityAt }) => {
+      if (!lastActivityAt) return true;
+
+      return (
+        new Date(lastActivityAt) <
+        inactiveThreshold
+      );
+    })
+    .sort((a, b) => {
+      const aTime = a.lastActivityAt
+        ? new Date(
+            a.lastActivityAt
+          ).getTime()
+        : 0;
+
+      const bTime = b.lastActivityAt
+        ? new Date(
+            b.lastActivityAt
+          ).getTime()
+        : 0;
+
+      return aTime - bTime;
+    })
+    .slice(0, 5)
+    .map(({ contact, lastActivityAt }) => ({
+      id: contact.id,
+      displayId: contact.display_id,
+      name:
+        [contact.first_name, contact.last_name]
+          .filter(Boolean)
+          .join(" ") || "Unnamed Contact",
+      priority: contact.priority,
       lastActivityAt,
-    };
-  })
-  .filter(({ lastActivityAt }) => {
-    if (!lastActivityAt) return true;
-
-    return new Date(lastActivityAt) < inactiveThreshold;
-  })
-  .sort((a, b) => {
-    const aTime = a.lastActivityAt
-      ? new Date(a.lastActivityAt).getTime()
-      : 0;
-
-    const bTime = b.lastActivityAt
-      ? new Date(b.lastActivityAt).getTime()
-      : 0;
-
-    return aTime - bTime;
-  })
-  .slice(0, 5)
-  .map(({ contact, lastActivityAt }) => ({
-    id: contact.id,
-    displayId: contact.display_id,
-    name:
-      [contact.first_name, contact.last_name]
-        .filter(Boolean)
-        .join(" ") || "Unnamed Contact",
-    priority: contact.priority,
-    lastActivityAt,
-    inactiveDays: lastActivityAt
-      ? Math.floor(
-          (now.getTime() - new Date(lastActivityAt).getTime()) /
-            (1000 * 60 * 60 * 24)
-        )
-      : Math.floor(
-          (now.getTime() - new Date(contact.created_at).getTime()) /
-            (1000 * 60 * 60 * 24)
-        ),
-  }));
+      inactiveDays: lastActivityAt
+        ? Math.floor(
+            (now.getTime() -
+              new Date(
+                lastActivityAt
+              ).getTime()) /
+              (1000 * 60 * 60 * 24)
+          )
+        : Math.floor(
+            (now.getTime() -
+              new Date(
+                contact.created_at
+              ).getTime()) /
+              (1000 * 60 * 60 * 24)
+          ),
+    }));
 
   const scopedActivities =
     scope === "user"
       ? activities.filter(
-          (activity) => activity.created_by === memberId
+          (activity) =>
+            activity.created_by === memberId
         )
       : activities;
 
@@ -742,7 +655,9 @@ console.log("Dashboard cache MISS:", cacheKey);
     .map((activity) => {
       const member = activity.created_by
         ? dashboardMembers.find(
-            (item) => item.memberId === activity.created_by
+            (item) =>
+              item.memberId ===
+              activity.created_by
           )
         : null;
 
@@ -751,8 +666,10 @@ console.log("Dashboard cache MISS:", cacheKey);
         type: activity.type,
         action: activity.action,
         title: activity.title,
-        description: activity.description ?? null,
-        targetName: activity.target_name ?? null,
+        description:
+          activity.description ?? null,
+        targetName:
+          activity.target_name ?? null,
         createdAt: activity.created_at,
         createdBy: member
           ? {
@@ -764,7 +681,7 @@ console.log("Dashboard cache MISS:", cacheKey);
       };
     });
 
-  const dashboardData: DashboardData = {
+  const result: DashboardData = {
     scope,
     role,
     kpis,
@@ -785,13 +702,21 @@ console.log("Dashboard cache MISS:", cacheKey);
       scope === "organization"
         ? membersWithStats
         : membersWithStats.filter(
-            (member) => member.memberId === memberId
+            (member) =>
+              member.memberId === memberId
           ),
   };
 
-  await cacheService.set(cacheKey, dashboardData, 60);
+  await cacheService.set(
+    cacheKey,
+    result,
+    60
+  );
 
-console.log("Dashboard cache SET:", cacheKey);
+  console.log(
+    "Dashboard cache SET:",
+    cacheKey
+  );
 
-return dashboardData;
+  return result;
 };

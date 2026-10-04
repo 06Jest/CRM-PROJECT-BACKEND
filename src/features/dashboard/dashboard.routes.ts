@@ -3,11 +3,11 @@ import { Router } from "express";
 import {
   authenticateUser,
   verifyToken,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { readLimiter } from "../middleware/rate.limit.middleware";
+import { readLimiter } from "../../middleware/rate.limit.middleware";
 
-import { getDashboard } from "../controllers/dashboard.controller";
+import { getDashboard } from "./dashboard.controller";
 
 const router = Router();
 
