@@ -1,0 +1,77 @@
+import { Router } from 'express';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../../middleware/auth.middleware';
+
+import { validateBody } from '../../middleware/validate';
+import { archiveBulkCustomers, archiveCustomer, deleteBulkCustomers, deleteCustomer, getCustomerListByID, getCustomers, getCustomersLists, updateCustomerNotes, updateCustomerStatus } from './customers.controller';
+import { updateCustomerNotesSchema, updateCustomerStatusSchema } from './customers.schema';
+import { deleteLimiter, readLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
+
+
+const router = Router();
+router.use(verifyToken);
+router.use(authenticateUser);
+
+
+router.get(
+  '/show',
+  readLimiter, 
+  getCustomers
+);
+
+router.get(
+  '/show-lists',
+  readLimiter, 
+  getCustomersLists
+);
+
+router.get(
+  '/view-list/:id',
+  readLimiter, 
+  getCustomerListByID
+);
+
+router.use(requireActiveMembership);
+
+router.patch(
+  '/update/notes/:id', 
+  updateLimiter, 
+  validateBody(updateCustomerNotesSchema), 
+  updateCustomerNotes
+);
+
+router.patch(
+  '/update/status/:id', 
+  updateLimiter , 
+  validateBody(updateCustomerStatusSchema), 
+  updateCustomerStatus
+);
+
+router.patch(
+  '/archive/bulk',
+  updateLimiter,
+  archiveBulkCustomers
+);
+
+router.patch(
+  '/archive/:id',
+  updateLimiter,
+  archiveCustomer
+);
+
+router.delete(
+  '/delete',
+  deleteLimiter, 
+  deleteBulkCustomers
+);
+
+router.delete(
+  '/delete/:id',
+  deleteLimiter, 
+  deleteCustomer
+);
+
+
+
+export default router;
+
+ 

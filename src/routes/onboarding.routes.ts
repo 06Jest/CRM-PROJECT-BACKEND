@@ -9,18 +9,18 @@ import { validateBody } from "../middleware/validate";
 
 import {
   completeProfileSchema,
-} from "../schema/profile.schema";
+} from "../features/profiles/profiles.schema";
 
 import {
   createWorkspaceSchema,
-} from "../schema/organization.schema";
+} from "../features/organizations/organization.schema";
 
 import {
   createSubscriptionSchema,
 } from "../schema/subscription.schema";
-import { completeProfileSetup } from "../controllers/profile.controller";
-import { createWorkspaceController, joinOrganization } from "../controllers/organizations.controller";
-import { createFreeSubscription } from "../controllers/subscription.controller";
+import { completeProfileSetup } from "../features/profiles/profiles.controller";
+import { createWorkspaceController, joinOrganization } from "../features/organizations/organization.controller";
+import { createFreeSubscription } from "../features/subscriptions/subscription.controller";
 
 const router = Router();
 

@@ -1,0 +1,590 @@
+import { Request, Response, NextFunction } from "express";
+import { AppError } from "../../middleware/error.middleware";
+import { uuidSchema } from "../../schema/global.schema";
+
+import * as leadService from "./leads.service";
+
+export const getLeads = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !memberId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
+    }
+
+    const leads = await leadService.getLeads(
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Leads fetch successful",
+      data: leads,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getLeadsLists = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !memberId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
+    }
+
+    const leads = await leadService.getLeadsLists(
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Leads fetch successful",
+      data: leads,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getLeadListByID = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !memberId || !accessToken) {
+      throw new AppError(401, "Unauthorized");
+    }
+
+    const lead = await leadService.getLeadListByID(
+      id,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Lead fetch successful",
+      data: lead,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const addLead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!orgId || !memberId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.addLead(
+      orgId,
+      memberId,
+      req.body,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Add Lead successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadPersonal = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.updateLeadPersonal(
+      id,
+      orgId,
+      memberId,
+      req.body,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Lead successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadSocials = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.updateLeadSocials(
+      id,
+      orgId,
+      memberId,
+      req.body,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadCareer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.updateLeadCareer(
+      id,
+      orgId,
+      memberId,
+      req.body,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadSource = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { source } = req.body;
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.updateLeadSource(
+      id,
+      orgId,
+      memberId,
+      source,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact source successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadPriority = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { priority } = req.body;
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.updateLeadPriority(
+      id,
+      orgId,
+      memberId,
+      priority,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact priority successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadNotes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { notes } = req.body;
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.updateLeadNotes(
+      id,
+      orgId,
+      memberId,
+      notes,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Contact Notes successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadPreferredTime = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { preferredTime } = req.body;
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data =
+      await leadService.updateLeadPreferredTime(
+        id,
+        orgId,
+        memberId,
+        preferredTime,
+        accessToken
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Update Contact Preferred contact time successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadAvatar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { avatar_file_id, avatar_url } = req.body;
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.updateLeadAvatar(
+      id,
+      orgId,
+      memberId,
+      avatar_file_id ?? null,
+      avatar_url ?? null,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Lead Avatar successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLeadStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+    const { status } = req.body;
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.updateLeadStatus(
+      id,
+      orgId,
+      memberId,
+      status,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Update Lead Status successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const archiveLead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.archiveLead(
+      id,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Lead successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const archiveBulkLeads = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ids = req.body.ids;
+
+    if (!ids || !Array.isArray(ids)) {
+      throw new AppError(400, "Leads required");
+    }
+
+    const validIds = ids.map((id) =>
+      uuidSchema.parse(id)
+    );
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data =
+      await leadService.archiveBulkLeads(
+        validIds,
+        orgId,
+        memberId,
+        accessToken
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Archive Leads successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteLead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = uuidSchema.parse(req.params.id);
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data = await leadService.deleteLead(
+      id,
+      orgId,
+      memberId,
+      accessToken
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Delete Lead successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteBulkLeads = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ids = req.body.ids;
+
+    if (!ids || !Array.isArray(ids)) {
+      throw new AppError(400, "Leads required");
+    }
+
+    const validIds = ids.map((id) =>
+      uuidSchema.parse(id)
+    );
+
+    const orgId = req.user?.org_id;
+    const memberId = req.user?.member_id;
+    const accessToken = req.cookies.accessToken;
+
+    if (!memberId || !orgId || !accessToken) {
+      throw new AppError(401, "Unauthorized user");
+    }
+
+    const data =
+      await leadService.deleteBulkLeads(
+        validIds,
+        orgId,
+        memberId,
+        accessToken
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Delete Leads successful",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

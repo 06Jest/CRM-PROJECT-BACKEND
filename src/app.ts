@@ -2,26 +2,26 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import authRoutes from './routes/auth.routes';
-import profileRoutes from './routes/profiles.routes';
+import authRoutes from './features/auth/auth.routes';
+import profileRoutes from './features/profiles/profiles.routes';
 import onboardingRoutes from './routes/onboarding.routes';
-import subscriptionRoutes from './routes/subscription.routes';
-import orgRoutes from './routes/organizations.routes';
-import orgMembersRoutes from './routes/organizations.members.routes';
-import orgInvitesRoutes from './routes/organizations.invites.routes';
+import subscriptionRoutes from './features/subscriptions/subscriptions.routes';
+import orgRoutes from './features/organizations/organization.routes';
+import orgMembersRoutes from './features/organizations/organization-members.routes';
+import orgInvitesRoutes from './features/organizations/organization-invites.routes';
 import imageKitRoutes from './routes/imagekit.routes';
-import contactRoutes from './routes/contacts.routes';
-import leadsRoutes from './routes/leads.routes';
-import dealsRoutes from './routes/deals.routes';
-import customersRoutes from './routes/customers.routes'
-import notesRoutes from './routes/notes.routes';
-import emailRoutes from './routes/email.routes';
-import tasksRoutes from './routes/tasks.routes';
-import chatsRoutes from './routes/chats.routes';
-import callsRoutes from './routes/calls.routes';
-import smsRoutes from './routes/sms.routes';
-import dashboardRoutes from './routes/dashboard.routes';
-import activitiesRoutes from './routes/activities.routes'
+import contactRoutes from './features/contacts/contacts.routes';
+import leadsRoutes from './features/leads/leads.routes';
+import dealsRoutes from './features/deals/deals.routes';
+import customersRoutes from './features/customers/customers.routes'
+import notesRoutes from './features/notes/notes.routes';
+import emailRoutes from './features/emails/emails.routes';
+import tasksRoutes from './features/tasks/tasks.routes';
+import chatsRoutes from './features/chats/chats.routes';
+import callsRoutes from './features/calls/calls.routes';
+import smsRoutes from './features/sms/sms.routes';
+import dashboardRoutes from './features/dashboard/dashboard.routes';
+import activitiesRoutes from './features/activities/activities.routes'
 import aiRoutes from "./ai/routes/ai.routes";
 import feedbackRoutes from './routes/feedback.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
@@ -29,7 +29,7 @@ import archiveRoutes from './routes/archive.routes';
 import healthRoutes from './routes/health';
 import cookieParser from 'cookie-parser';
 import mcpRoutes from './ai/mcp/routes/mcp.routes';
-import analyticsRoutes from './routes/analytics.routes';
+import analyticsRoutes from './features/analytics/analytics.routes';
 
 const app = express();
 

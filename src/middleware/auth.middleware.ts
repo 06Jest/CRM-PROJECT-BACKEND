@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { createSupabaseUserClient } from "../config/supabase";
 import { AppError } from "./error.middleware";
-import { verifyAccessToken } from "../services/jwt.service";
+import { verifyAccessToken } from "../features/auth/jwt.service";
 import { table } from "../config/tables";
 
 

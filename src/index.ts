@@ -22,13 +22,13 @@ dotenv.config();
 import app from './app';
 import redisClient from './config/redis';
 import pubsubService from './pubsub/pubsub.service';
-import leadEventsSubscriber from './pubsub/lead-events.subscriber';
-import contactEventsSubscriber from "./pubsub/contact-events.subscriber";
-import dealEventsSubscriber from "./pubsub/deal-events.subscriber";
-import taskEventsSubscriber from "./pubsub/task-events.subscriber";
-import noteEventsSubscriber from "./pubsub/note-events.subscriber";
-import callEventsSubscriber from "./pubsub/call-events.subscriber";
-import customerEventsSubscriber from "./pubsub/customer-events.subscriber";
+import leadEventsSubscriber from './features/leads/leads-events.subscriber';
+import contactEventsSubscriber from "./features/contacts/contacts-events.subscriber";
+import dealEventsSubscriber from "./features/deals/deals-events.subscriber";
+import taskEventsSubscriber from "./features/tasks/tasks-events.subscriber";
+import noteEventsSubscriber from "./features/notes/notes-events.subscriber";
+import callEventsSubscriber from "./features/calls/calls-events.subscriber";
+import customerEventsSubscriber from "./features/customers/customers-events.subscriber";
 
 const PORT = process.env.PORT || 5000;
 

@@ -1,0 +1,22 @@
+import { z } from "zod";
+import {
+  passwordSchema,
+  emailSchema,
+} from "../../schema/global.schema";
+
+export const signUpSchema = z.object({
+  email: emailSchema,
+
+  password: passwordSchema,
+});
+
+export const signInSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const changePasswordSchema = z.object({
+  current_password: passwordSchema,
+
+  new_password: passwordSchema,
+});

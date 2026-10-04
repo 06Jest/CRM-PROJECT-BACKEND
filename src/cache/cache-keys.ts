@@ -1,4 +1,4 @@
-import type { AnalyticsParams } from "../types/analytics";
+import type { AnalyticsParams } from "../features/analytics/analytics.types";
 
 export const dashboardCacheKey = (
   orgId: string,

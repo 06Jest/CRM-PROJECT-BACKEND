@@ -1,0 +1,395 @@
+import { createSupabaseUserClient } from "../../config/supabase";
+import { table } from "../../config/tables";
+import { AppError } from "../../middleware/error.middleware";
+
+import cacheService from "../../cache/cache.service";
+
+import {
+  callsListCacheKey,
+  callCacheKey,
+  leadCallsCacheKey,
+  contactCallsCacheKey,
+} from "../../cache/cache-keys";
+
+import type {
+  CallListItem,
+  CreateCall,
+  UpdateCall,
+  EndCall,
+} from "./calls.types";
+
+const tab = table.calls;
+
+const creatorFKey = "calls_created_by_fkey";
+const assignedFKey = "calls_assigned_to_fkey";
+
+const selectAllWithUsers = `
+  *,
+  creator:organization_members!${creatorFKey}(
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  ),
+  assigned_user:organization_members!${assignedFKey}(
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  )
+`;
+
+export const getCallsFromDB = async (
+  orgId: string,
+  accessToken: string
+): Promise<CallListItem[]> => {
+  const cacheKey = callsListCacheKey(orgId);
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAllWithUsers)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Calls: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
+};
+
+export const getCallByIDFromDB = async (
+  id: string,
+  orgId: string,
+  accessToken: string
+): Promise<CallListItem> => {
+  const cacheKey = callCacheKey(orgId, id);
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAllWithUsers)
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .single();
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Call: ${error.message}`
+        );
+      }
+
+      return data;
+    },
+    60
+  );
+};
+
+export const getLeadCallsFromDB = async (
+  orgId: string,
+  leadId: string,
+  accessToken: string
+): Promise<CallListItem[]> => {
+  const cacheKey = leadCallsCacheKey(
+    orgId,
+    leadId
+  );
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAllWithUsers)
+        .eq("org_id", orgId)
+        .eq("lead_id", leadId)
+        .is("deleted_at", null)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Lead Calls: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
+};
+
+export const getContactCallsFromDB = async (
+  orgId: string,
+  contactId: string,
+  accessToken: string
+): Promise<CallListItem[]> => {
+  const cacheKey = contactCallsCacheKey(
+    orgId,
+    contactId
+  );
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAllWithUsers)
+        .eq("org_id", orgId)
+        .eq("contact_id", contactId)
+        .is("deleted_at", null)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Contact Calls: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
+};
+
+export const addCallToDB = async (
+  orgId: string,
+  memberId: string,
+  call: CreateCall,
+  accessToken: string
+): Promise<CallListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .insert([
+      {
+        ...call,
+        org_id: orgId,
+        created_by: memberId,
+        assigned_to:
+          call.assigned_to ?? memberId,
+        status: "scheduled",
+        started_at: null,
+        direction: "outbound",
+      },
+    ])
+    .select(selectAllWithUsers)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to add Call: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+export const updateCallFromDB = async (
+  id: string,
+  orgId: string,
+  call: UpdateCall,
+  accessToken: string
+): Promise<CallListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update(call)
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .select(selectAllWithUsers)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Call: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+export const startCallFromDB = async (
+  id: string,
+  orgId: string,
+  accessToken: string
+): Promise<CallListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      status: "active",
+      started_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .select(selectAllWithUsers)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to start Call: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+export const endCallFromDB = async (
+  id: string,
+  orgId: string,
+  call: EndCall,
+  endedAt: string,
+  durationSeconds: number,
+  accessToken: string
+): Promise<CallListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      status: "completed",
+      outcome: call.outcome,
+      notes: call.notes,
+      ended_at: endedAt,
+      duration_seconds: durationSeconds,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .select(selectAllWithUsers)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to end Call: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+export const cancelCallFromDB = async (
+  id: string,
+  orgId: string,
+  accessToken: string
+): Promise<CallListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      status: "cancelled",
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .select(selectAllWithUsers)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to cancel Call: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+export const archiveCallFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive Call: ${error.message}`
+    );
+  }
+
+  return id;
+};
+
+export const deleteCallFromDB = async (
+  id: string,
+  orgId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      deleted_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("org_id", orgId);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to delete Call: ${error.message}`
+    );
+  }
+
+  return id;
+};

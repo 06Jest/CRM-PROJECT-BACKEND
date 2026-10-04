@@ -1,20 +1,20 @@
 import { z } from "zod";
 import { GENDERS, PREFERRED_CONTACT_TIMES, PRIORITIES, ROLES, SOURCES, SUFFIXES } from "../types/global";
-import { CONTACT_STATUSES } from "../types/contact";
-import { LEAD_STATUSES } from "../types/lead";
-import { DEAL_STAGES } from "../types/deal";
-import { PROFILE_STATUSES } from "../types/profile";
-import { CUSTOMER_STATUSES } from "../types/customer";
-import { NOTE_TARGET_TYPES, NOTE_VISIBILITIES } from "../types/note";
-import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../types/email";
-import { TASK_PRIORITIES, TASK_STATUSES, TASK_TARGET_TYPES, TASK_TYPES, TASK_VISIBILITIES } from "../types/task";
-import { CHAT_TARGET_TYPES, CONVERSATION_TYPES } from "../types/chat";
-import { CALL_STATUSES, CALL_OUTCOMES, CALL_TYPES } from "../types/calls";
-import { SMS_STATUSES } from "../types/sms";
-import { ACTIVITY_ACTIONS, ACTIVITY_TYPES, MANUAL_ACTIVITY_ACTIONS, MANUAL_ACTIVITY_TYPES } from "../types/activity";
-import { BILLING_CYCLES, PAYMENT_PROVIDERS, SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUSES } from "../types/subscription";
-import { ORGANIZATION_TYPES } from "../types/organization";
-import { ORGANIZATION_MEMBER_STATUSES } from "../types/organization.member";
+import { CONTACT_STATUSES } from "../features/contacts/contact.types";
+import { LEAD_STATUSES } from "../features/leads/leads.types";
+import { DEAL_STAGES } from "../features/deals/deals.types";
+import { PROFILE_STATUSES } from "../features/profiles/profiles.types";
+import { CUSTOMER_STATUSES } from "../features/customers/customers.types";
+import { NOTE_TARGET_TYPES, NOTE_VISIBILITIES } from "../features/notes/notes.types";
+import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../features/emails/emails.types";
+import { TASK_PRIORITIES, TASK_STATUSES, TASK_TARGET_TYPES, TASK_TYPES, TASK_VISIBILITIES } from "../features/tasks/tasks.types";
+import { CHAT_TARGET_TYPES, CONVERSATION_TYPES } from "../features/chats/chats.types";
+import { CALL_STATUSES, CALL_OUTCOMES, CALL_TYPES } from "../features/calls/calls.types";
+import { SMS_STATUSES } from "../features/sms/sms.types";
+import { ACTIVITY_ACTIONS, ACTIVITY_TYPES, MANUAL_ACTIVITY_ACTIONS, MANUAL_ACTIVITY_TYPES } from "../features/activities/activities.types";
+import { BILLING_CYCLES, PAYMENT_PROVIDERS, SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUSES } from "../features/subscriptions/subscriptions.types";
+import { ORGANIZATION_TYPES } from "../features/organizations/organization.types";
+import { ORGANIZATION_MEMBER_STATUSES } from "../features/organizations/organization-members.types";
 
 export const sourceSchema = z.enum(SOURCES);
 

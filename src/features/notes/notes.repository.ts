@@ -1,0 +1,351 @@
+import { createSupabaseUserClient } from "../../config/supabase";
+import { AppError } from "../../middleware/error.middleware";
+import { table } from "../../config/tables";
+import cacheService from "../../cache/cache.service";
+import {
+  notesPublicListCacheKey,
+  notesListCacheKey,
+  notesPrivateListCacheKey,
+  noteCacheKey,
+} from "../../cache/cache-keys";
+
+import type {
+  NoteListItem,
+  AddNote,
+  UpdateNote,
+} from "./notes.types";
+
+const tab = table.notes;
+const fkey = "notes_author_id_fkey";
+
+const selectAllWithAuthor = `
+  *,
+  author:organization_members!${fkey} (
+    id,
+    profile:profiles(
+      first_name,
+      last_name,
+      avatar_url
+    )
+  )
+`;
+
+export const getPublicNotesFromDB = async (
+  orgId: string,
+  accessToken: string
+): Promise<NoteListItem[]> => {
+  const cacheKey = notesPublicListCacheKey(orgId);
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAllWithAuthor)
+        .eq("org_id", orgId)
+        .eq("visibility", "public")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Notes: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
+};
+
+export const getPrivateNotesFromDB = async (
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<NoteListItem[]> => {
+  const cacheKey = notesPrivateListCacheKey(
+    orgId,
+    memberId
+  );
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAllWithAuthor)
+        .eq("org_id", orgId)
+        .eq("author_id", memberId)
+        .eq("visibility", "private")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Notes: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
+};
+
+export const getNotesFromDB = async (
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<NoteListItem[]> => {
+  const cacheKey = notesListCacheKey(
+    orgId,
+    memberId
+  );
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAllWithAuthor)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .or(
+          `visibility.eq.public,and(visibility.eq.private,author_id.eq.${memberId})`
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Notes: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
+};
+
+export const getNoteByIDFromDB = async (
+  id: string,
+  orgId: string,
+  accessToken: string
+): Promise<NoteListItem> => {
+  const cacheKey = noteCacheKey(orgId, id);
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(selectAllWithAuthor)
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .is("deleted_at", null)
+        .single();
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Note: ${error.message}`
+        );
+      }
+
+      return data;
+    },
+    60
+  );
+};
+
+export const addNoteToDB = async (
+  profileId: string,
+  orgId: string,
+  memberId: string,
+  note: AddNote,
+  accessToken: string
+): Promise<NoteListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .insert({
+      ...note,
+      profile_id: profileId,
+      org_id: orgId,
+      author_id: memberId,
+      updated_by: memberId,
+    })
+    .select(selectAllWithAuthor)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to add Note: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+export const updateNoteFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  note: UpdateNote,
+  accessToken: string
+): Promise<NoteListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      ...note,
+      updated_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("author_id", memberId)
+    .is("deleted_at", null)
+    .select(selectAllWithAuthor)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Note: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+export const isPinnedNoteFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  pinned: boolean,
+  accessToken: string
+): Promise<NoteListItem> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { data, error } = await db
+    .from(tab)
+    .update({
+      pinned,
+      updated_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .is("deleted_at", null)
+    .select(selectAllWithAuthor)
+    .single();
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to update Note: ${error.message}`
+    );
+  }
+
+  return data;
+};
+
+export const archiveNoteFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("author_id", memberId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to archive Note: ${error.message}`
+    );
+  }
+
+  return id;
+};
+
+export const deletePrivateNoteFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("author_id", memberId);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to delete Note: ${error.message}`
+    );
+  }
+
+  return id;
+};
+
+export const deleteNoteFromDB = async (
+  id: string,
+  orgId: string,
+  memberId: string,
+  accessToken: string
+): Promise<string> => {
+  const db = createSupabaseUserClient(accessToken);
+
+  const { error } = await db
+    .from(tab)
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: memberId,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId);
+
+  if (error) {
+    throw new AppError(
+      500,
+      `Failed to delete Note: ${error.message}`
+    );
+  }
+
+  return id;
+};
