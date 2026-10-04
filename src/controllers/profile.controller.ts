@@ -11,7 +11,9 @@ import {
 } from "../services/profiles.service";
 
 import { AppError } from "../middleware/error.middleware";
-import { metaFromRequest, refreshUserSession } from "./auth.controller";
+import { metaFromRequest } from "../features/auth/auth.controller";
+import { refreshUserSessionService } from "../features/auth/auth.service";
+import { setAuthCookies } from "../features/auth/cookies.service";
 
 
 export const completeProfileSetup = async (
@@ -78,10 +80,15 @@ export const updateProfile = async (
         accessToken
       );
 
-    await refreshUserSession(
-      res,
+    const session = await refreshUserSessionService(
       userId,
       metaFromRequest(req)
+    );
+
+    setAuthCookies(
+      res,
+      session.tokens.accessToken,
+      session.tokens.refreshToken
     );
 
 

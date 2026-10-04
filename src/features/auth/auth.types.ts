@@ -1,5 +1,5 @@
 import { JwtPayload } from "jsonwebtoken";
-import { Roles } from "./global";
+import { Roles } from "../../types/global";
 
 export interface SignUpDTO {
   email: string;

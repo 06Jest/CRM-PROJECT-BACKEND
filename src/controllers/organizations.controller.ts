@@ -9,8 +9,10 @@ import {
 import { AppError } from "../middleware/error.middleware";
 import { getProfileIfExistFromDB, updateOnboardingStepToDB } from "../services/profiles.service";
 import { createOwnerMemberToDB } from "../services/organization.members.service";
-import { metaFromRequest, refreshUserSession } from "./auth.controller";
+import { metaFromRequest } from "../features/auth/auth.controller";
+import { refreshUserSessionService } from "../features/auth/auth.service";
 import { createDefaultConversationsService } from "../features/chats/conversation.member.service";
+import { setAuthCookies } from "../features/auth/cookies.service";
 import { acceptInvite } from "../services/organization.invites.service";
 
 export const createWorkspaceController = async (
@@ -55,10 +57,16 @@ export const createWorkspaceController = async (
       accessToken
     );
 
-    await refreshUserSession(
+    const session =
+      await refreshUserSessionService(
+        userId,
+        metaFromRequest(req)
+      );
+
+    setAuthCookies(
       res,
-      userId,
-      metaFromRequest(req)
+      session.tokens.accessToken,
+      session.tokens.refreshToken
     );
 
 

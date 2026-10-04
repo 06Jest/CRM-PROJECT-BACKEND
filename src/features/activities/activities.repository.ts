@@ -294,7 +294,7 @@ export const getActivitiesByTypeFromDB = async (
   );
 };
 
-export const addActivityService = async (
+export const addActivityToDB = async (
   orgId: string,
   memberId: string,
   activity: CreateActivity,

@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   passwordSchema,
   emailSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 export const signUpSchema = z.object({
   email: emailSchema,

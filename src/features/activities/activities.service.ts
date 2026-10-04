@@ -6,7 +6,7 @@ import {
   getCustomerActivitiesFromDB,
   getActivitiesByActionFromDB,
   getActivitiesByTypeFromDB,
-  addActivityService as createActivityInDB,
+  addActivityToDB as createActivityInDB,
   manualAddActivityToDB as createManualActivityInDB,
   updateActivityFromDB,
   deleteActivityFromDB,

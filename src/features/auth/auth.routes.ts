@@ -9,25 +9,25 @@ import {
   signOut,
   oauthLogin,
   demoLogin,
-} from "../controllers/auth.controller";
+} from "./auth.controller";
 
 import {
   verifyToken,
   authenticateUser,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   signUpSchema,
   signInSchema,
   changePasswordSchema,
-} from "../schema/auth.schema";
+} from "./auth.schema";
 
 import {
   loginLimiter,
   refreshLimiter,
-} from "../middleware/rate.limit.middleware";
+} from "../../middleware/rate.limit.middleware";
 
 const router = Router();
 

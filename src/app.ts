@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import authRoutes from './routes/auth.routes';
+import authRoutes from './features/auth/auth.routes';
 import profileRoutes from './routes/profiles.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import subscriptionRoutes from './routes/subscription.routes';
