@@ -9,18 +9,18 @@ import {
   addSms,
   updateSmsStatus,
   archiveSms
-} from '../controllers/sms.controller';
+} from './sms.controller';
 
-import { validateBody } from '../middleware/validate';
+import { validateBody } from '../../middleware/validate';
 
 import {
   addSmsSchema,
   updateSmsStatusSchema
-} from '../schema/sms.schema';
+} from './sms.schema';
 
-import { authenticateUser, requireActiveMembership, verifyToken } from '../middleware/auth.middleware';
+import { authenticateUser, requireActiveMembership, verifyToken } from '../../middleware/auth.middleware';
 
-import { readLimiter, smsLimiter, updateLimiter } from '../middleware/rate.limit.middleware';
+import { readLimiter, smsLimiter, updateLimiter } from '../../middleware/rate.limit.middleware';
 
 
 const router = Router();

@@ -1,22 +1,19 @@
-import { createSupabaseUserClient } from "../config/supabase";
-import { table } from "../config/tables";
+import { createSupabaseUserClient } from "../../config/supabase";
+import { table } from "../../config/tables";
 
-import { AppError } from "../middleware/error.middleware";
+import { AppError } from "../../middleware/error.middleware";
 
 import type {
   SmsListItem,
   CreateSms,
   SmsStatus,
-} from "../types/sms";
-
+} from "./sms.types";
 
 const tab = table.sms;
-
 
 const senderFKey = "sms_sender_id_fkey";
 const contactFKey = "sms_contact_id_fkey";
 const leadFKey = "sms_lead_id_fkey";
-
 
 const selectAll = `
   *,
@@ -44,13 +41,10 @@ const selectAll = `
   )
 `;
 
-
-
 export const getSmsFromDB = async (
   orgId: string,
   accessToken: string
 ): Promise<SmsListItem[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -61,7 +55,6 @@ export const getSmsFromDB = async (
       ascending: false,
     });
 
-
   if (error) {
     throw new AppError(
       500,
@@ -69,19 +62,14 @@ export const getSmsFromDB = async (
     );
   }
 
-
   return data ?? [];
-
 };
-
-
 
 export const getSmsByIDFromDB = async (
   id: string,
   orgId: string,
   accessToken: string
 ): Promise<SmsListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -91,7 +79,6 @@ export const getSmsByIDFromDB = async (
     .eq("org_id", orgId)
     .single();
 
-
   if (error) {
     throw new AppError(
       500,
@@ -99,19 +86,14 @@ export const getSmsByIDFromDB = async (
     );
   }
 
-
   return data;
-
 };
-
-
 
 export const getLeadSmsFromDB = async (
   orgId: string,
   leadId: string,
   accessToken: string
 ): Promise<SmsListItem[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -123,7 +105,6 @@ export const getLeadSmsFromDB = async (
       ascending: false,
     });
 
-
   if (error) {
     throw new AppError(
       500,
@@ -131,19 +112,14 @@ export const getLeadSmsFromDB = async (
     );
   }
 
-
   return data ?? [];
-
 };
-
-
 
 export const getContactSmsFromDB = async (
   orgId: string,
   contactId: string,
   accessToken: string
 ): Promise<SmsListItem[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -155,7 +131,6 @@ export const getContactSmsFromDB = async (
       ascending: false,
     });
 
-
   if (error) {
     throw new AppError(
       500,
@@ -163,19 +138,14 @@ export const getContactSmsFromDB = async (
     );
   }
 
-
   return data ?? [];
-
 };
-
-
 
 export const getSmsByStatusFromDB = async (
   orgId: string,
   status: SmsStatus,
   accessToken: string
 ): Promise<SmsListItem[]> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -187,7 +157,6 @@ export const getSmsByStatusFromDB = async (
       ascending: false,
     });
 
-
   if (error) {
     throw new AppError(
       500,
@@ -195,12 +164,8 @@ export const getSmsByStatusFromDB = async (
     );
   }
 
-
   return data ?? [];
-
 };
-
-
 
 export const addSmsToDB = async (
   orgId: string,
@@ -208,7 +173,6 @@ export const addSmsToDB = async (
   sms: CreateSms,
   accessToken: string
 ): Promise<SmsListItem> => {
-
   const db = createSupabaseUserClient(accessToken);
 
   const { data, error } = await db
@@ -219,12 +183,11 @@ export const addSmsToDB = async (
         org_id: orgId,
         sender_id: memberId,
         status: "sent",
-        sent_at: new Date().toISOString(),  
+        sent_at: new Date().toISOString(),
       },
     ])
     .select(selectAll)
     .single();
-
 
   if (error) {
     throw new AppError(
@@ -233,32 +196,21 @@ export const addSmsToDB = async (
     );
   }
 
-
   return data;
-
 };
-
-
 
 export const updateSmsStatusFromDB = async (
   id: string,
   orgId: string,
   status: SmsStatus,
+  lifecycleUpdate: {
+    status: SmsStatus;
+    delivered_at?: string;
+    failed_at?: string;
+  },
   accessToken: string
 ): Promise<SmsListItem> => {
   const db = createSupabaseUserClient(accessToken);
-
-  const timestamp = new Date().toISOString();
-
-  const lifecycleUpdate = {
-    status,
-    ...(status === "delivered" && {
-      delivered_at: timestamp,
-    }),
-    ...(status === "failed" && {
-      failed_at: timestamp,
-    }),
-  };
 
   const { data, error } = await db
     .from(tab)
@@ -277,6 +229,7 @@ export const updateSmsStatusFromDB = async (
 
   return data;
 };
+
 export const archiveSmsFromDB = async (
   id: string,
   orgId: string,

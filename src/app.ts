@@ -19,7 +19,7 @@ import emailRoutes from './features/emails/emails.routes';
 import tasksRoutes from './features/tasks/tasks.routes';
 import chatsRoutes from './routes/chats.routes';
 import callsRoutes from './features/calls/calls.routes';
-import smsRoutes from './routes/sms.routes';
+import smsRoutes from './features/sms/sms.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import activitiesRoutes from './routes/activities.routes'
 import aiRoutes from "./ai/routes/ai.routes";

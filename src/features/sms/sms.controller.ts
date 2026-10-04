@@ -1,30 +1,26 @@
-import { Request, Response, NextFunction } from "express";
+import {
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 
-import { AppError } from "../middleware/error.middleware";
-
-import { uuidSchema } from "../schema/global.schema";
+import { AppError } from "../../middleware/error.middleware";
+import { uuidSchema } from "../../schema/global.schema";
 
 import {
-  getSmsFromDB,
-  getSmsByIDFromDB,
-  getLeadSmsFromDB,
-  getContactSmsFromDB,
-  getSmsByStatusFromDB,
-  addSmsToDB,
-  updateSmsStatusFromDB,
-  archiveSmsFromDB,
-  // deleteSmsFromDB,
-} from "../services/sms.service";
+  getSmsService,
+  getSmsByIDService,
+  getLeadSmsService,
+  getContactSmsService,
+  getSmsByStatusService,
+  addSmsService,
+  updateSmsStatusService,
+  archiveSmsService,
+} from "./sms.service";
 
 import type {
   SmsStatus,
-} from "../types/sms";
-
-import { addActivityToDB } from "../services/activities.service";
-import { ensureResourceLimit } from "../services/plans.service";
-import { table } from "../config/tables";
-
-
+} from "./sms.types";
 
 export const getSms = async (
   req: Request,
@@ -32,10 +28,8 @@ export const getSms = async (
   next: NextFunction
 ) => {
   try {
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -44,26 +38,20 @@ export const getSms = async (
       );
     }
 
-
-    const data = await getSmsFromDB(
+    const data = await getSmsService(
       orgId,
       accessToken
     );
-
 
     return res.status(200).json({
       success: true,
       message: "SMS fetch successful",
       data,
     });
-
-
   } catch (err) {
     next(err);
   }
 };
-
-
 
 export const getSmsByID = async (
   req: Request,
@@ -71,15 +59,12 @@ export const getSmsByID = async (
   next: NextFunction
 ) => {
   try {
-
     const id = uuidSchema.parse(
       req.params.id
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -88,27 +73,21 @@ export const getSmsByID = async (
       );
     }
 
-
-    const data = await getSmsByIDFromDB(
+    const data = await getSmsByIDService(
       id,
       orgId,
       accessToken
     );
-
 
     return res.status(200).json({
       success: true,
       message: "SMS fetch successful",
       data,
     });
-
-
   } catch (err) {
     next(err);
   }
 };
-
-
 
 export const getLeadSms = async (
   req: Request,
@@ -116,15 +95,12 @@ export const getLeadSms = async (
   next: NextFunction
 ) => {
   try {
-
     const leadId = uuidSchema.parse(
       req.params.leadId
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -133,27 +109,21 @@ export const getLeadSms = async (
       );
     }
 
-
-    const data = await getLeadSmsFromDB(
+    const data = await getLeadSmsService(
       orgId,
       leadId,
       accessToken
     );
-
 
     return res.status(200).json({
       success: true,
       message: "Lead SMS fetch successful",
       data,
     });
-
-
   } catch (err) {
     next(err);
   }
 };
-
-
 
 export const getContactSms = async (
   req: Request,
@@ -161,15 +131,12 @@ export const getContactSms = async (
   next: NextFunction
 ) => {
   try {
-
     const contactId = uuidSchema.parse(
       req.params.contactId
     );
 
-
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -178,21 +145,17 @@ export const getContactSms = async (
       );
     }
 
-
-    const data = await getContactSmsFromDB(
+    const data = await getContactSmsService(
       orgId,
       contactId,
       accessToken
     );
-
 
     return res.status(200).json({
       success: true,
       message: "Contact SMS fetch successful",
       data,
     });
-
-
   } catch (err) {
     next(err);
   }
@@ -217,26 +180,21 @@ export const getSmsByStatus = async (
     const status =
       req.params.status as SmsStatus;
 
-
-    const data = await getSmsByStatusFromDB(
+    const data = await getSmsByStatusService(
       orgId,
       status,
       accessToken
     );
-
 
     return res.status(200).json({
       success: true,
       message: "SMS fetch successful",
       data,
     });
-
   } catch (err) {
     next(err);
   }
 };
-
-
 
 export const addSms = async (
   req: Request,
@@ -244,11 +202,9 @@ export const addSms = async (
   next: NextFunction
 ) => {
   try {
-
     const orgId = req.user?.org_id;
-    const memberId = req.user?.member_id
+    const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !memberId || !accessToken) {
       throw new AppError(
@@ -257,78 +213,18 @@ export const addSms = async (
       );
     }
 
-
-    const sms = req.body;
-
-
-    if (
-      sms.lead_id &&
-      sms.contact_id
-    ) {
-      throw new AppError(
-        400,
-        "SMS can only belong to either lead or contact"
-      );
-    }
-
-
-    if (
-      !sms.lead_id &&
-      !sms.contact_id
-    ) {
-      throw new AppError(
-        400,
-        "SMS requires a lead or contact"
-      );
-    }
-    await ensureResourceLimit(
-      orgId,
-      table.sms,
-      "sms",
-      "active_limit",
-      accessToken
-    );
-
-
-    const data = await addSmsToDB(
+    const data = await addSmsService(
       orgId,
       memberId,
-      sms,
+      req.body,
       accessToken
     );
-
-
-    const targetName =
-      data.lead
-        ? `${data.lead.first_name} ${data.lead.last_name}`
-        : data.contact
-          ? `${data.contact.first_name} ${data.contact.last_name}`
-          : "Unknown";
-
-
-    await addActivityToDB(
-      orgId,
-      memberId,
-      {
-        lead_id: data.lead_id,
-        contact_id: data.contact_id,
-        type: "sms",
-        action: "sent",
-        title: "SMS sent",
-        target_name: targetName,
-        description: `Sent SMS to ${targetName}`,
-      },
-      accessToken
-    );
-
 
     return res.status(201).json({
       success: true,
       message: "Add SMS successful",
       data,
     });
-
-
   } catch (err) {
     next(err);
   }
@@ -340,17 +236,22 @@ export const archiveSms = async (
   next: NextFunction
 ) => {
   try {
-    const id = uuidSchema.parse(req.params.id);
+    const id = uuidSchema.parse(
+      req.params.id
+    );
 
     const orgId = req.user?.org_id;
     const memberId = req.user?.member_id;
     const accessToken = req.cookies.accessToken;
 
     if (!orgId || !memberId || !accessToken) {
-      throw new AppError(401, "Unauthorized user");
+      throw new AppError(
+        401,
+        "Unauthorized user"
+      );
     }
 
-    const data = await archiveSmsFromDB(
+    const data = await archiveSmsService(
       id,
       orgId,
       memberId,
@@ -367,22 +268,18 @@ export const archiveSms = async (
   }
 };
 
-
-
 export const updateSmsStatus = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-
     const id = uuidSchema.parse(
       req.params.id
     );
 
     const orgId = req.user?.org_id;
     const accessToken = req.cookies.accessToken;
-
 
     if (!orgId || !accessToken) {
       throw new AppError(
@@ -391,52 +288,20 @@ export const updateSmsStatus = async (
       );
     }
 
-
     const { status } = req.body;
 
-
-    const existing = await getSmsByIDFromDB(
-      id,
-      orgId,
-      accessToken
-    );
-
-
-    if (
-      existing.status === "delivered"
-    ) {
-      throw new AppError(
-        400,
-        "Delivered SMS cannot be updated"
-      );
-    }
-
-
-    if (
-      existing.status === "failed"
-    ) {
-      throw new AppError(
-        400,
-        "Failed SMS cannot be updated"
-      );
-    }
-
-
-    const data = await updateSmsStatusFromDB(
+    const data = await updateSmsStatusService(
       id,
       orgId,
       status,
       accessToken
     );
 
-
     return res.status(200).json({
       success: true,
       message: "Update SMS status successful",
       data,
     });
-
-
   } catch (err) {
     next(err);
   }

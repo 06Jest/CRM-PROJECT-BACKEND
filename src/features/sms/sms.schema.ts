@@ -4,7 +4,7 @@ import {
   uuidSchema,
   longTextSchema,
   smsStatusSchema,
-} from "./global.schema";
+} from "../../schema/global.schema";
 
 
 export const addSmsSchema = z

@@ -10,7 +10,7 @@ import { EMAIL_PROVIDERS, EMAIL_STATUSES } from "../features/emails/emails.types
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TARGET_TYPES, TASK_TYPES, TASK_VISIBILITIES } from "../features/tasks/tasks.types";
 import { CHAT_TARGET_TYPES, CONVERSATION_TYPES } from "../types/chat";
 import { CALL_STATUSES, CALL_OUTCOMES, CALL_TYPES } from "../features/calls/calls.types";
-import { SMS_STATUSES } from "../types/sms";
+import { SMS_STATUSES } from "../features/sms/sms.types";
 import { ACTIVITY_ACTIONS, ACTIVITY_TYPES, MANUAL_ACTIVITY_ACTIONS, MANUAL_ACTIVITY_TYPES } from "../types/activity";
 import { BILLING_CYCLES, PAYMENT_PROVIDERS, SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUSES } from "../types/subscription";
 import { ORGANIZATION_TYPES } from "../types/organization";
