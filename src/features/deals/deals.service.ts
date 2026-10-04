@@ -17,6 +17,15 @@ import {
   updateContactStatusFromDB,
 } from "../contacts/contacts.repository";
 
+import cacheService from "../../cache/cache.service";
+import {
+  dealCacheKey,
+  dealListCacheKey,
+  dealsListCacheKey,
+  dealsRawListCacheKey,
+  dealsByContactCacheKey,
+} from "../../cache/cache-keys";
+
 import { addCustomerToDB } from "../customers/customers.repository";
 import { addActivityService } from "../activities/activities.service";
 import { ensureResourceLimitService } from "../subscriptions/subscriptions-limits.service";
@@ -167,8 +176,6 @@ export const updateDealStageService = async (
     accessToken
   );
 
-  let data: DealListItem;
-
   if (stage === "Closed Won") {
     if (contact.status !== "Customer") {
       await ensureResourceLimitService(
@@ -225,14 +232,6 @@ export const updateDealStageService = async (
       },
       accessToken
     );
-
-    data = await updateDealStageFromDB(
-      id,
-      orgId,
-      memberId,
-      stage,
-      accessToken
-    );
   } else if (stage === "Closed Lost") {
     await addActivityService(
       orgId,
@@ -247,15 +246,34 @@ export const updateDealStageService = async (
       },
       accessToken
     );
+  }
 
-    data = await updateDealStageFromDB(
-      id,
-      orgId,
-      memberId,
-      stage,
-      accessToken
-    );
+  await updateDealStageFromDB(
+    id,
+    orgId,
+    memberId,
+    stage,
+    accessToken
+  );
 
+  // Invalidate deal caches before fetching the updated deal.
+  await Promise.all([
+    cacheService.delete(dealCacheKey(orgId, id)),
+    cacheService.delete(dealListCacheKey(orgId, id)),
+    cacheService.delete(dealsListCacheKey(orgId)),
+    cacheService.delete(dealsRawListCacheKey(orgId)),
+    cacheService.delete(
+      dealsByContactCacheKey(orgId, contact.id)
+    ),
+  ]);
+
+  const data = await getDealsByIDFromDB(
+    id,
+    orgId,
+    accessToken
+  );
+
+  if (stage === "Closed Lost") {
     const openDeals = await getOpenDealsByContactIDFromDB(
       contact.id,
       orgId,
@@ -290,14 +308,6 @@ export const updateDealStageService = async (
         accessToken
       );
     }
-  } else {
-    data = await updateDealStageFromDB(
-      id,
-      orgId,
-      memberId,
-      stage,
-      accessToken
-    );
   }
 
   if (stage === "Closed Won" || stage === "Closed Lost") {

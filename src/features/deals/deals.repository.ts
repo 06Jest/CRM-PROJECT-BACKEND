@@ -291,13 +291,43 @@ export const updateDealFromDB = async (
   return data as DealListItem;
 };
 
+// export const updateDealStageFromDB = async (
+//   id: string,
+//   orgId: string,
+//   memberId: string,
+//   stage: DealStage,
+//   accessToken: string
+// ): Promise<DealListItem> => {
+//   const db = createSupabaseUserClient(accessToken);
+
+//   const { error } = await db.rpc("update_deal_stage", {
+//     p_deal_id: id,
+//     p_org_id: orgId,
+//     p_member_id: memberId,
+//     p_stage: stage,
+//   });
+
+//   if (error) {
+//     throw new AppError(
+//       500,
+//       `Failed to update deal stage: ${error.message}`
+//     );
+//   }
+
+//   return getDealsByIDFromDB(
+//     id,
+//     orgId,
+//     accessToken
+//   );
+// };
+
 export const updateDealStageFromDB = async (
   id: string,
   orgId: string,
   memberId: string,
   stage: DealStage,
   accessToken: string
-): Promise<DealListItem> => {
+): Promise<void> => {
   const db = createSupabaseUserClient(accessToken);
 
   const { error } = await db.rpc("update_deal_stage", {
@@ -313,13 +343,8 @@ export const updateDealStageFromDB = async (
       `Failed to update deal stage: ${error.message}`
     );
   }
-
-  return getDealsByIDFromDB(
-    id,
-    orgId,
-    accessToken
-  );
 };
+
 
 export const closeDealFromDB = async (
   id: string,

@@ -105,22 +105,26 @@ export const reIssueSessionForOnboarding =
     };
   };
 
-export const getCurrentUserService =
-  async (
-    userId: string,
-    accessToken: string
-  ) => {
-    if (!userId) {
-      throw new AppError(
-        401,
-        "Unauthorized"
-      );
-    }
-
-    return getProfileByIdForAuthFromDB(
-      userId
+export const getCurrentUserService = async (
+  userId: string,
+  accessToken: string
+) => {
+  if (!userId) {
+    throw new AppError(
+      401,
+      "Unauthorized"
     );
+  }
+
+  const profile = await getProfileByIdForAuthFromDB(userId);
+
+  const membership = await getMembershipForAuthService(userId);
+
+  return {
+    ...profile,
+    membership: membership ? [membership] : [],
   };
+};
 
 
 export const signUpService = async (
