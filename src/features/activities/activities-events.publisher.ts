@@ -1,6 +1,6 @@
-import pubSubService from "./pubsub.service";
-import { PUBSUB_CHANNELS } from "./pubsub.channels";
-import { ActivityEvent } from "./activity-events.types";
+import pubSubService from "../../pubsub/pubsub.service";
+import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
+import { ActivityEvent } from "./activities-events.types";
 
 class ActivityEventsPublisher {
   async publish(

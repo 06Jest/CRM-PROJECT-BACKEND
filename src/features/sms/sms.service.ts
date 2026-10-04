@@ -1,7 +1,7 @@
 import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
 
-import { addActivityToDB } from "../../services/activities.service";
+import { addActivityService } from "../activities/activities.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 
 import type {
@@ -120,7 +120,7 @@ export const addSmsService = async (
       ? `${data.contact.first_name} ${data.contact.last_name}`
       : "Unknown";
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {

@@ -15,7 +15,7 @@ import { AppError } from "../middleware/error.middleware";
 import { uuidSchema } from "../schema/global.schema";
 import { requireManagerOrOwner } from "../utils/requirePermission";
 import { approvedJoinMemberFromDB, getOrganizationMemberByIdFromDB, rejectJoinMemberFromDB } from "../services/organization.members.service";
-import { addActivityToDB } from "../services/activities.service";
+import { addActivityService } from "../features/activities/activities.service";
 import { Roles } from "../types/global";
 
 
@@ -296,7 +296,7 @@ export const approveJoinMember = async (
       .filter(Boolean)
       .join(" ");
 
-    await addActivityToDB(
+    await addActivityService(
       orgId,
       mId,
       {

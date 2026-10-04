@@ -40,7 +40,7 @@ import {
   deleteCustomerByContactIDFromDB,
 } from '../customers/customers.repository';
 
-import { addActivityToDB } from '../../services/activities.service';
+import { addActivityService } from '../activities/activities.service';
 import { ensureResourceLimit } from '../../services/plans.service';
 import { deleteImageKitFile } from '../../services/imagekit.service';
 
@@ -103,7 +103,7 @@ export const addContactService = async (
   const contactName =
     `${data.first_name} ${data.last_name} ${data.suffix ?? ''}`.trim();
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {
@@ -142,7 +142,7 @@ export const addContactFromLeadsService = async (
   const contactName =
     `${data.first_name} ${data.last_name} ${data.suffix ?? ''}`.trim();
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {
@@ -459,7 +459,7 @@ export const deleteContactService = async (
   const contactName =
     `${deleted.first_name} ${deleted.last_name} ${deleted.suffix ?? ''}`.trim();
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {
@@ -525,7 +525,7 @@ export const deleteBulkContactsService = async (
     ),
   ]);
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {

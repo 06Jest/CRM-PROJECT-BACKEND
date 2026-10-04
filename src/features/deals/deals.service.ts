@@ -18,7 +18,7 @@ import {
 } from "../contacts/contacts.repository";
 
 import { addCustomerToDB } from "../customers/customers.repository";
-import { addActivityToDB } from "../../services/activities.service";
+import { addActivityService } from "../activities/activities.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 import { table } from "../../config/tables";
 import dealEventsPublisher from "./deals-events.publisher";
@@ -101,7 +101,7 @@ export const addDealService = async (
     accessToken
   );
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {
@@ -195,7 +195,7 @@ export const updateDealStageService = async (
         accessToken
       );
 
-      await addActivityToDB(
+      await addActivityService(
         orgId,
         memberId,
         {
@@ -212,7 +212,7 @@ export const updateDealStageService = async (
       );
     }
 
-    await addActivityToDB(
+    await addActivityService(
       orgId,
       memberId,
       {
@@ -234,7 +234,7 @@ export const updateDealStageService = async (
       accessToken
     );
   } else if (stage === "Closed Lost") {
-    await addActivityToDB(
+    await addActivityService(
       orgId,
       memberId,
       {
@@ -274,7 +274,7 @@ export const updateDealStageService = async (
         accessToken
       );
 
-      await addActivityToDB(
+      await addActivityService(
         orgId,
         memberId,
         {
@@ -358,7 +358,7 @@ export const deleteDealService = async (
     accessToken
   );
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {

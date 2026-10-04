@@ -1,12 +1,12 @@
-import pubSubService from "./pubsub.service";
-import { PUBSUB_CHANNELS } from "./pubsub.channels";
-import type { ActivityEvent } from "./activity-events.types";
-import cacheService from "../cache/cache.service";
+import pubSubService from "../../pubsub/pubsub.service";
+import { PUBSUB_CHANNELS } from "../../pubsub/pubsub.channels";
+import type { ActivityEvent } from "./activities-events.types";
+import cacheService from "../../cache/cache.service";
 import {
   activitiesCachePrefix,
   dashboardCachePrefix,
   analyticsCachePrefix,
-} from "../cache/cache-keys";
+} from "../../cache/cache-keys";
 
 class ActivityEventsSubscriber {
   async start(): Promise<void> {

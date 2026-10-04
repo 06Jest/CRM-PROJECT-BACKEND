@@ -10,7 +10,7 @@ import {
   updateCustomerNotesFromDB,
   updateCustomerStatusFromDB,
 } from "./customers.repository";
-import { addActivityToDB } from "../../services/activities.service";
+import { addActivityService } from "../activities/activities.service";
 import customerEventsPublisher from "./customers-events.publisher";
 import { updateContactStatusService } from "../contacts/contacts.service";
 import type { CustomerStatus } from "./customers.types";
@@ -158,7 +158,7 @@ export const deleteCustomerService = async (
     accessToken
   );
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {

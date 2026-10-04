@@ -1,6 +1,6 @@
 import {
-  addActivityToDB,
-} from "../../services/activities.service";
+  addActivityService,
+} from "../activities/activities.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 import { table } from "../../config/tables";
 import { AppError } from "../../middleware/error.middleware";
@@ -75,7 +75,7 @@ export const addTaskService = async (
     accessToken
   );
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {

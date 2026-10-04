@@ -36,7 +36,7 @@ import type {
 
 import { addContactFromLeadsToDB } from "../contacts/contacts.repository";
 import type { AddContact } from "../contacts/contact.types";
-import { addActivityToDB } from "../../services/activities.service";
+import { addActivityService } from "../activities/activities.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 import { deleteImageKitFile } from "../../services/imagekit.service";
 import leadEventsPublisher from "./leads-events.publisher";
@@ -101,7 +101,7 @@ export const addLead = async (
     accessToken
   );
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {
@@ -397,7 +397,7 @@ export const updateLeadStatus = async (
     const contactName =
       `${contactData.first_name} ${contactData.last_name} ${contactData.suffix ?? ""}`.trim();
 
-    await addActivityToDB(
+    await addActivityService(
       orgId,
       memberId,
       {
@@ -492,7 +492,7 @@ export const deleteLead = async (
     accessToken
   );
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {
@@ -530,7 +530,7 @@ export const deleteBulkLeads = async (
     accessToken
   );
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {

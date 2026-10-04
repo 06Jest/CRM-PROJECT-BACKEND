@@ -3,7 +3,7 @@ import { table } from "../../config/tables";
 import { getWorkspaceName } from "../../services/organization.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 import { sendEmailWithResend } from "./resend.service";
-import { addActivityToDB } from "../../services/activities.service";
+import { addActivityService } from "../activities/activities.service";
 
 import type {
   EmailListItem,
@@ -138,7 +138,7 @@ export const sendEmailService = async (
         ? `${email.contact.first_name} ${email.contact.last_name}`
         : "Unknown";
 
-    await addActivityToDB(
+    await addActivityService(
       orgId,
       memberId,
       {

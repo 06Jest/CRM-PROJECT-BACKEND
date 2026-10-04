@@ -1,8 +1,8 @@
+import { createSupabaseUserClient } from "../../config/supabase";
+import { table } from "../../config/tables";
+import { AppError } from "../../middleware/error.middleware";
+import cacheService from "../../cache/cache.service";
 
-import { createSupabaseUserClient } from "../config/supabase";
-import { table } from "../config/tables";
-import { AppError } from "../middleware/error.middleware";
-import cacheService from "../cache/cache.service";
 import {
   activitiesRawListCacheKey,
   activityCacheKey,
@@ -11,7 +11,7 @@ import {
   customerActivitiesCacheKey,
   activitiesByActionCacheKey,
   activitiesByTypeCacheKey,
-} from "../cache/cache-keys";
+} from "../../cache/cache-keys";
 
 import type {
   ActivityListItem,
@@ -20,7 +20,7 @@ import type {
   ActivityAction,
   ActivityType,
   ManualCreateActivity,
-} from "../types/activity";
+} from "./activities.types";
 
 const tab = table.activities;
 
@@ -294,7 +294,7 @@ export const getActivitiesByTypeFromDB = async (
   );
 };
 
-export const addActivityToDB = async (
+export const addActivityService = async (
   orgId: string,
   memberId: string,
   activity: CreateActivity,
@@ -405,4 +405,3 @@ export const deleteActivityFromDB = async (
 
   return id;
 };
-

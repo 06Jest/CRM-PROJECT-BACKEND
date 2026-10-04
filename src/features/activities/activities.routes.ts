@@ -4,9 +4,9 @@ import {
   verifyToken,
   authenticateUser,
   requireActiveMembership,
-} from "../middleware/auth.middleware";
+} from "../../middleware/auth.middleware";
 
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../../middleware/validate";
 
 import {
   getActivities,
@@ -18,18 +18,18 @@ import {
   getActivitiesByType,
   manualAddActivity,
   updateActivity,
-} from "../controllers/activities.controller";
+} from "./activities.controller";
 
 import {
   manualAddActivitySchema,
   updateActivitySchema,
-} from "../schema/activities.schema";
+} from "../../schema/activities.schema";
 
 import {
   createLimiter,
   readLimiter,
   updateLimiter,
-} from "../middleware/rate.limit.middleware";
+} from "../../middleware/rate.limit.middleware";
 
 const router = Router();
 

@@ -1,29 +1,23 @@
 import { Request, Response, NextFunction } from "express";
-
-import { AppError } from "../middleware/error.middleware";
-
-import { uuidSchema } from "../schema/global.schema";
-
+import { AppError } from "../../middleware/error.middleware";
+import { uuidSchema } from "../../schema/global.schema";
 import {
-  getActivitiesFromDB,
-  getActivityByIDFromDB,
-  getLeadActivitiesFromDB,
-  getContactActivitiesFromDB,
-  getCustomerActivitiesFromDB,
-  getActivitiesByActionFromDB,
-  getActivitiesByTypeFromDB,
-  addActivityToDB,
-  manualAddActivityToDB,
-  updateActivityFromDB,
-  deleteActivityFromDB,
-} from "../services/activities.service";
-
+  getActivitiesService,
+  getActivityByIDService,
+  getLeadActivitiesService,
+  getContactActivitiesService,
+  getCustomerActivitiesService,
+  getActivitiesByActionService,
+  getActivitiesByTypeService,
+  addActivityService,
+  manualAddActivityService,
+  updateActivityService,
+  deleteActivityService,
+} from "./activities.service";
 import type {
   ActivityAction,
   ActivityType,
-} from "../types/activity";
-
-import activityEventsPublisher from "../pubsub/activity-events.publisher";
+} from "./activities.types";
 
 export const getActivities = async (
   req: Request,
@@ -41,7 +35,7 @@ export const getActivities = async (
       );
     }
 
-    const data = await getActivitiesFromDB(
+    const data = await getActivitiesService(
       orgId,
       accessToken
     );
@@ -76,7 +70,7 @@ export const getActivityByID = async (
       );
     }
 
-    const data = await getActivityByIDFromDB(
+    const data = await getActivityByIDService(
       id,
       orgId,
       accessToken
@@ -112,7 +106,7 @@ export const getLeadActivities = async (
       );
     }
 
-    const data = await getLeadActivitiesFromDB(
+    const data = await getLeadActivitiesService(
       orgId,
       leadId,
       accessToken
@@ -148,7 +142,7 @@ export const getContactActivities = async (
       );
     }
 
-    const data = await getContactActivitiesFromDB(
+    const data = await getContactActivitiesService(
       orgId,
       contactId,
       accessToken
@@ -184,7 +178,7 @@ export const getCustomerActivities = async (
       );
     }
 
-    const data = await getCustomerActivitiesFromDB(
+    const data = await getCustomerActivitiesService(
       orgId,
       customerId,
       accessToken
@@ -220,7 +214,7 @@ export const getActivitiesByAction = async (
       req.params.action as ActivityAction;
 
     const data =
-      await getActivitiesByActionFromDB(
+      await getActivitiesByActionService(
         orgId,
         action,
         accessToken
@@ -256,7 +250,7 @@ export const getActivitiesByType = async (
       req.params.type as ActivityType;
 
     const data =
-      await getActivitiesByTypeFromDB(
+      await getActivitiesByTypeService(
         orgId,
         type,
         accessToken
@@ -289,17 +283,11 @@ export const addActivity = async (
       );
     }
 
-    const data = await addActivityToDB(
+    const data = await addActivityService(
       orgId,
       memberId,
       req.body,
       accessToken
-    );
-
-    await activityEventsPublisher.created(
-      orgId,
-      memberId,
-      data.id
     );
 
     return res.status(201).json({
@@ -330,18 +318,12 @@ export const manualAddActivity = async (
     }
 
     const data =
-      await manualAddActivityToDB(
+      await manualAddActivityService(
         orgId,
         memberId,
         req.body,
         accessToken
       );
-
-    await activityEventsPublisher.created(
-      orgId,
-      memberId,
-      data.id
-    );
 
     return res.status(201).json({
       success: true,
@@ -375,18 +357,13 @@ export const updateActivity = async (
     }
 
     const data =
-      await updateActivityFromDB(
+      await updateActivityService(
         id,
         orgId,
+        memberId,
         req.body,
         accessToken
       );
-
-    await activityEventsPublisher.updated(
-      orgId,
-      memberId,
-      data.id
-    );
 
     return res.status(200).json({
       success: true,
@@ -420,17 +397,12 @@ export const deleteActivity = async (
     }
 
     const data =
-      await deleteActivityFromDB(
+      await deleteActivityService(
         id,
         orgId,
+        memberId,
         accessToken
       );
-
-    await activityEventsPublisher.deleted(
-      orgId,
-      memberId,
-      data
-    );
 
     return res.status(200).json({
       success: true,

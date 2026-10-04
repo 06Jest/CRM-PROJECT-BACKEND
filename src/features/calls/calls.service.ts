@@ -1,7 +1,7 @@
 import { AppError } from "../../middleware/error.middleware";
 import { table } from "../../config/tables";
 
-import { addActivityToDB } from "../../services/activities.service";
+import { addActivityService } from "../activities/activities.service";
 import { ensureResourceLimit } from "../../services/plans.service";
 
 import callEventsPublisher from "./calls-events.publisher";
@@ -245,7 +245,7 @@ export const endCallService = async (
       ? `${existing.contact.first_name} ${existing.contact.last_name}`
       : "Unknown";
 
-  await addActivityToDB(
+  await addActivityService(
     orgId,
     memberId,
     {
