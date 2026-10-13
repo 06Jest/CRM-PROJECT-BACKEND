@@ -9,10 +9,11 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
 
-RUN npm run build && \
-    echo "Checking compiled entry points..." && \
-    ls -la /app/dist && \
-    ls -la /app/dist/src || true
+RUN npm run build \
+    && echo "=== COMPILED FILES ===" \
+    && find /app/dist -maxdepth 3 -type f \
+    && echo "=== ENTRY POINT CHECK ===" \
+    && test -f /app/dist/index.js
 
 EXPOSE 5000
 
