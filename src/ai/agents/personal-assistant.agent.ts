@@ -206,7 +206,7 @@ For out-of-scope requests:
 
 Always remain within the CRM and sales-work scope.
   `,
-  tools: ["search_contacts", "create_note", "create_task"],
+  tools: ["create_note", "create_task"],
   capabilities: [
     "sales_strategy",
     "customer_communication",

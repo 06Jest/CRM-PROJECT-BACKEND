@@ -170,7 +170,7 @@ For an out-of-scope request, do not answer the unrelated topic in detail. Briefl
 
 ## OUTPUT FORMAT AND SYMBOL RULES
 
-Return clean, readable plain text or simple Markdown only when useful.
+Return clean, readable plain text or simple Markdown only when useful. to Always return plain text only. Never use Markdown or HTML formatting.
 
 Do not produce:
 - Markdown headings such as #, ##, or ###
@@ -226,7 +226,12 @@ For out-of-scope requests:
 
 Always remain within the organization's CRM, sales, collaboration, workplace communication, and work-related professional-development scope.
   `,
-  tools: [],
+  tools: [
+    "search_leads",
+    "search_contacts",
+    "search_deals",
+    "search_customers",
+  ],
   capabilities: [
     "organization_crm",
     "organization_insights",

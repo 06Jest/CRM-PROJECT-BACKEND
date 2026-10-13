@@ -14,6 +14,7 @@ import { addActivityService } from "../activities/activities.service";
 import customerEventsPublisher from "./customers-events.publisher";
 import { updateContactStatusService } from "../contacts/contacts.service";
 import type { CustomerStatus } from "./customers.types";
+import { getCustomersContactsListsFromDB } from "../contacts/contacts.repository";
 
 export const getCustomersService = async (
   orgId: string,
@@ -27,6 +28,13 @@ export const getCustomersListsService = async (
   accessToken: string
 ) => {
   return getCustomersListsFromDB(orgId, accessToken);
+};
+
+export const getCustomersContactsListsService = async (
+  orgId: string,
+  accessToken: string
+) => {
+  return getCustomersContactsListsFromDB(orgId, accessToken);
 };
 
 export const getCustomerListByIDService = async (
