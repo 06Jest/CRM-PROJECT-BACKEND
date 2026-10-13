@@ -107,6 +107,38 @@ export const getContactsListsFromDB = async (
   );
 };
 
+export const getCustomersContactsListsFromDB = async (
+  orgId: string,
+  accessToken: string
+): Promise<ContactListItem[]> => {
+  const cacheKey = contactsListCacheKey(orgId);
+
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      const db = createSupabaseUserClient(accessToken);
+
+      const { data, error } = await db
+        .from(tab)
+        .select(all)
+        .eq('org_id', orgId)
+        .eq('status', "customer")
+        .is('deleted_at', null)
+        .order('first_name', { ascending: true });
+
+      if (error) {
+        throw new AppError(
+          500,
+          `Failed to fetch Contacts: ${error.message}`
+        );
+      }
+
+      return data ?? [];
+    },
+    60
+  );
+};
+
 export const getContactListByIDFromDB = async (
   contactId: string,
   orgId: string,
